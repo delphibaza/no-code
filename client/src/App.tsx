@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom"
 import ContextProvider from "./ContextProvider"
 import LayoutApp from "./layout/LayoutApp"
 import MyIdle from "./MyIdle"
+import { ThemeProvider } from "./components/ui/theme-provider"
 
 const App = () => {
   const [queryClient] = useState(
@@ -38,15 +39,17 @@ const App = () => {
   )
   return (
     <BrowserRouter>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <ContextProvider>
-          <QueryClientProvider client={queryClient}>
-            <MyIdle>
-              <LayoutApp />
-            </MyIdle>
-          </QueryClientProvider>
-        </ContextProvider>
-      </trpc.Provider>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <ContextProvider>
+            <QueryClientProvider client={queryClient}>
+              <MyIdle>
+                <LayoutApp />
+              </MyIdle>
+            </QueryClientProvider>
+          </ContextProvider>
+        </trpc.Provider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }
