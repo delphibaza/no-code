@@ -1,57 +1,43 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { httpBatchLink } from "@trpc/client"
-import { useState } from "react"
-import { trpc } from "./utils/trpc"
-import { BrowserRouter } from "react-router-dom"
-import ContextProvider from "./ContextProvider"
-import LayoutApp from "./layout/LayoutApp"
-import MyIdle from "./MyIdle"
-import { ThemeProvider } from "./components/ui/theme-provider"
+import './index.css'
+import { useState, useEffect } from 'react'
+import { createClient, Session } from '@supabase/supabase-js'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { Button } from './components/ui/button'
 
-const App = () => {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            refetchOnWindowFocus: false,
-            retry: false,
-            gcTime: 1000 * 60 * 60 * 24 * 7,
-          },
-        },
-      })
-  )
+const supabase = createClient('https://yvieqjqbspmtoabaozog.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2aWVxanFic3BtdG9hYmFvem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4Njg2NTEsImV4cCI6MjA1MDQ0NDY1MX0.Qs0P1Gj0UeLcuODk3HZ0BaftDeelU96zYdxQNx1hFC8')
 
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: import.meta.env.VITE_URL_BACKEND ?? "http://localhost:2022",
-          fetch(url, options) {
-            return fetch(url, {
-              ...options,
-              credentials: "include",
-            })
-          },
-        }),
-      ],
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
     })
-  )
-  return (
-    <BrowserRouter>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <ContextProvider>
-            <QueryClientProvider client={queryClient}>
-              <MyIdle>
-                <LayoutApp />
-              </MyIdle>
-            </QueryClientProvider>
-          </ContextProvider>
-        </trpc.Provider>
-      </ThemeProvider>
-    </BrowserRouter>
-  )
-}
 
-export default App
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function signOut() {
+    const { error } = await supabase.auth.signOut()
+    console.log(error);
+  }
+
+  if (!session) {
+    return (<Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />)
+  }
+  else {
+    return (
+      <div>
+        Logged in!
+        <Button onClick={signOut}>Log out</Button>
+      </div>
+    )
+  }
+}
