@@ -3,12 +3,14 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { modelConfig, PORT } from "./constants";
 import { templateInitPrompt } from "./prompts/templateInitPrompt";
-import { chatSchema, promptSchema } from "@repo/zod/schema";
+import { chatSchema, promptSchema } from "@repo/common/zod";
 import { parseXML } from "./parseXML";
+import cors from "cors";
 import { getSystemPrompt, getUIPrompt } from "./prompts/systemPrompt";
 dotenv.config();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -37,12 +39,16 @@ app.post("/api/template", async (req, res) => {
       uiPrompt: getUIPrompt()
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Failed to generate template";
-    res.status(500).json({ error: errorMessage });
+    res.status(500).json({
+      msg: error instanceof Error ? error.message : "Failed to generate template"
+    });
   }
 });
 
 app.post("/api/chat", async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
   const validation = chatSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -56,27 +62,17 @@ app.post("/api/chat", async (req, res) => {
     systemInstruction: getSystemPrompt()
   });
   try {
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: "Hello" }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Great to meet you. What would you like to know?" }],
-        },
-      ],
+    const result = await model.generateContentStream({
+      contents: messages
     });
-    let result = await chat.sendMessageStream("I have 2 dogs in my house.");
-    let streamContent = "";
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
-      streamContent += chunkText; // Append chunk to result
+      res.write(`data: ${chunkText}\n\n`);
     }
-
+    res.end();
   } catch (error) {
-    res.status(500).json({ error: "Failed to process chat" });
+    res.write(`data: ${JSON.stringify({ error: "Failed to process chat" })}\n\n`);
+    res.end();
   }
 });
 

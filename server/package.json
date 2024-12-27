@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@repo/zod": "1.0.0",
+    "@repo/common": "1.0.0",
     "cors": "^2.8.5",
     "esbuild": "^0.24.2",
     "express": "^5.0.1"

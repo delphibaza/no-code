@@ -1,9 +1,10 @@
 {
-  "name": "@repo/zod",
+  "name": "@repo/common",
   "private": true,
   "version": "1.0.0",
   "exports": {
-    "./schema": "./index.ts"
+    "./types": "./types/index.ts",
+    "./zod": "./zod/index.ts"
   },
   "scripts": {
     "build": "tsc",
