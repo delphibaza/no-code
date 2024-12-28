@@ -1,12 +1,13 @@
-import express from "express";
-import dotenv from "dotenv";
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import { modelConfig, PORT } from "./constants";
-import { templateInitPrompt } from "./prompts/templateInitPrompt";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { chatSchema, promptSchema } from "@repo/common/zod";
-import { parseXML } from "./parseXML";
+import prisma from "@repo/db/client";
 import cors from "cors";
+import dotenv from "dotenv";
+import express, { NextFunction, Request, Response } from "express";
+import { modelConfig, PORT } from "./constants";
+import { parseXML } from "./parseXML";
 import { getSystemPrompt, getUIPrompt } from "./prompts/systemPrompt";
+import { templateInitPrompt } from "./prompts/templateInitPrompt";
 dotenv.config();
 
 const app = express();
@@ -15,7 +16,14 @@ app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-app.post("/api/template", async (req, res) => {
+const sseMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  next();
+};
+
+app.post("/api/new", async (req, res) => {
   const validation = promptSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -24,16 +32,44 @@ app.post("/api/template", async (req, res) => {
     return;
   }
   const { prompt } = validation.data;
-  const model = genAI.getGenerativeModel(modelConfig);
   try {
-    const result = await model.generateContentStream(templateInitPrompt(prompt));
+    const newProject = await prisma.project.create({
+      data: {
+        name: prompt,
+        createdAt: new Date()
+      }
+    });
+    res.json({
+      projectId: newProject.id
+    });
+  } catch (error) {
+    res.status(500).json({
+      msg: "Failed to create new project"
+    });
+  }
+});
+
+app.get("/api/template/:projectId", async (req, res) => {
+  const model = genAI.getGenerativeModel(modelConfig);
+  const { projectId } = req.params;
+  try {
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId
+      }
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    // Now handle content generation and send it via SSE
+    const result = await model.generateContentStream(templateInitPrompt(project.name));
     let streamContent = "";
+
     // Process the stream chunks
     for await (const chunk of result.stream) {
       const chunkText = chunk.text ? chunk.text() : chunk; // Ensure `chunk.text()` exists
       streamContent += chunkText; // Append chunk to result
     }
-    // Send the parsed template as the response
     res.json({
       template: parseXML(streamContent),
       uiPrompt: getUIPrompt()
@@ -45,10 +81,7 @@ app.post("/api/template", async (req, res) => {
   }
 });
 
-app.post("/api/chat", async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+app.post("/api/chat", sseMiddleware, async (req, res) => {
   const validation = chatSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -66,7 +99,7 @@ app.post("/api/chat", async (req, res) => {
       contents: messages
     });
     for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
+      const chunkText = chunk.text ? chunk.text() : chunk; // Ensure `chunk.text()` exists
       res.write(`data: ${chunkText}\n\n`);
     }
     res.end();

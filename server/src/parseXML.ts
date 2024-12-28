@@ -1,7 +1,7 @@
-import { Result } from "@repo/common/types";
+import { Template } from "@repo/common/types";
 
 export function parseXML(content: string) {
-    const result: Result = {
+    const result: Template = {
         projectId: "",
         title: "",
         files: {}

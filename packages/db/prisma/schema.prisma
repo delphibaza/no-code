@@ -12,3 +12,23 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// User model here
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  files     File[]
+  // userId    String
+  // user      User     @relation(fields: [userId], references: [id])
+}
+
+model File {
+  id        Int      @id @default(autoincrement())
+  path      String
+  content   String[]
+  createdAt DateTime @default(now())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+}
