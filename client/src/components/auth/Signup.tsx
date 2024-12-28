@@ -4,7 +4,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/config/supabaseClient";
 import { useNavigate } from "react-router";
 
-const Login: React.FC = () => {
+const Signup: React.FC = () => {
   const navigate = useNavigate();
 
   supabase.auth.onAuthStateChange((event, session) => {
@@ -13,15 +13,15 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ maxWidth: "420px", margin: "auto", padding: "1rem" }}>
-      <h1 className="w-full text-center text-2xl">Login</h1>
+      <h1 className="w-full text-center text-2xl">Sign Up</h1>
       <Auth
         supabaseClient={supabase}
         providers={["google", "github"]}
         appearance={{ theme: ThemeSupa }}
-        view="sign_in"
+        view="sign_up"
       />
     </div>
   );
 };
 
-export default Login;
+export default Signup;

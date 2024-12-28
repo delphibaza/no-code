@@ -5,7 +5,7 @@ import "./index.css"
 import App from "./App"
 import AuthWrapper from "./components/auth/AuthWrapper"
 import Login from "./components/auth/Login"
-import Register from "./components/auth/Register"
+import Signup from "./components/auth/Signup"
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -16,7 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         {/* Authentication Routes */}
         <Route element={<AuthWrapper />}>
           <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
+          <Route path="signup" element={<Signup />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -17,7 +17,7 @@ const AuthWrapper = () => {
               asChild
               className="bg-transparent border-white text-white hover:bg-white hover:text-black w-40 flex items-center justify-center"
             >
-              <Link to={location.pathname === "/login" ? "/register" : "/login"}>{buttonText}</Link>
+              <Link to={location.pathname === "/login" ? "/signup" : "/login"}>{buttonText}</Link>
             </Button>
           </div>
         </div>
