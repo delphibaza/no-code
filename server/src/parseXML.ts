@@ -1,8 +1,5 @@
-type Result = {
-    projectId: string,
-    title: string,
-    files: { [key: string]: string }
-}
+import { Result } from "@repo/common/types";
+
 export function parseXML(content: string) {
     const result: Result = {
         projectId: "",

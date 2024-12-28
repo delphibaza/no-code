@@ -9,3 +9,6 @@ export const chatSchema = z.object({
         parts: z.array(z.object({ text: z.string() }))
     }))
 });
+
+export type PromptSchema = z.infer<typeof promptSchema>;
+export type ChatSchema = z.infer<typeof chatSchema>;
