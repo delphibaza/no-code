@@ -13,7 +13,7 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ maxWidth: "420px", margin: "auto", padding: "1rem" }}>
-      <h1 className="w-full text-center text-2xl">Login</h1>
+      <h1 className="w-full text-center text-2xl text-black">Login</h1>
       <Auth
         supabaseClient={supabase}
         providers={["google", "github"]}
