@@ -3,32 +3,18 @@ import { chatSchema, promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import { modelConfig, PORT } from "./constants";
-import { parseXML } from "./parseXML";
+import { sseMiddleware } from "./middlewares/sseMiddleware";
+import { parseXML } from "./utils/parseXML";
 import { getSystemPrompt, getUIPrompt } from "./prompts/systemPrompt";
-import { templateInitPrompt } from "./prompts/templateInitPrompt";
 dotenv.config();
-
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  "https://yvieqjqbspmtoabaozog.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2aWVxanFic3BtdG9hYmFvem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4Njg2NTEsImV4cCI6MjA1MDQ0NDY1MX0.Qs0P1Gj0UeLcuODk3HZ0BaftDeelU96zYdxQNx1hFC8"
-);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-const sseMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  next();
-};
 
 app.post("/api/new", async (req, res) => {
   const validation = promptSchema.safeParse(req.body);
@@ -44,6 +30,8 @@ app.post("/api/new", async (req, res) => {
       data: {
         name: prompt,
         createdAt: new Date(),
+        status: "NEW",
+        userId: "cm59k02420000ff6m7t1a7ret"
       },
     });
     res.json({
@@ -68,6 +56,22 @@ app.get("/api/template/:projectId", async (req, res) => {
     if (!project) {
       throw new Error("Project not found");
     }
+    // IN_PROGRESS projects have already generated template
+    if (project.status === "IN_PROGRESS") {
+      const existingTemplate = await prisma.file.findMany({
+        where: {
+          projectId: project.id,
+        }
+      });
+      if (existingTemplate.length === 0) throw new Error("Template not found");
+      res.json({
+        projectId: project.id,
+        title: project.name,
+        template: existingTemplate,
+        uiPrompt: getUIPrompt(),
+      });
+      return;
+    }
     // Now handle content generation and send it via SSE
     const result = await model.generateContentStream(
       templateInitPrompt(project.name)
@@ -79,8 +83,29 @@ app.get("/api/template/:projectId", async (req, res) => {
       const chunkText = chunk.text ? chunk.text() : chunk; // Ensure `chunk.text()` exists
       streamContent += chunkText; // Append chunk to result
     }
+    const template = parseXML(streamContent);
+    // Save the generated template to the database
+    const createdTemplate = await prisma.file.createMany({
+      data: template.files.map(file => ({
+        projectId: project.id,
+        path: file.path,
+        content: file.content
+      }))
+    });
+    // Update project status to IN_PROGRESS
+    await prisma.project.update({
+      where: {
+        id: project.id,
+      },
+      data: {
+        name: template.title,
+        status: "IN_PROGRESS",
+      },
+    });
     res.json({
-      template: parseXML(streamContent),
+      projectId: project.id,
+      title: template.title,
+      template: createdTemplate,
       uiPrompt: getUIPrompt(),
     });
   } catch (error) {
@@ -119,38 +144,6 @@ app.post("/api/chat", sseMiddleware, async (req, res) => {
     );
     res.end();
   }
-});
-
-const validateToken = async (
-  req: Request,
-  res: Response,
-  next: Function
-): Promise<void> => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      res.status(401).json({ error: "Authorization token is required" });
-      return;
-    }
-
-    const { data: user, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      res.status(401).json({ error: "Invalid or expired token" });
-      return;
-    }
-
-    req.body.user = user;
-    next(); // Call next() to pass control to the next middleware or route handler
-  } catch (err) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-// Route to validate user session
-app.get("/api/user", validateToken, (req: Request, res: Response) => {
-  res.status(200).json({ user: req.body.user });
 });
 
 app.listen(PORT, () => {
