@@ -32,3 +32,13 @@ model File {
   projectId String
   project   Project  @relation(fields: [projectId], references: [id])
 }
+
+model User {
+  userId         String   @id @default(cuid())
+  username       String   @unique
+  email          String   @unique
+  password       String
+  profilePicture String?  
+  createdAt      DateTime @default(now())
+}
+
