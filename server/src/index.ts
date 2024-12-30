@@ -1,22 +1,22 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { chatSchema, promptSchema } from "@repo/common/zod";
-import prisma from "@repo/db/client";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import { modelConfig, PORT } from "./constants";
+import { PORT, STARTER_TEMPLATES } from "./constants";
 import { sseMiddleware } from "./middlewares/sseMiddleware";
-import { parseXML } from "./utils/parseXML";
-import { getSystemPrompt, getUIPrompt } from "./prompts/systemPrompt";
+import { enhancerPrompt } from "./prompts/enhancerPrompt";
+import { getTemplates, parseSelectedTemplate, starterTemplateSelectionPrompt } from "./prompts/starterTemplateSelection";
+import { getSystemPrompt } from "./prompts/systemPrompt";
+import { getUIPrompt } from "./prompts/uiPrompt";
+import { callLLM } from "./utils/callLLM";
+import type { GenerateContentStreamResult } from "@google/generative-ai";
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-app.post("/api/new", async (req, res) => {
+app.post("/api/template", async (req, res) => {
   const validation = promptSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -25,87 +25,37 @@ app.post("/api/new", async (req, res) => {
     return;
   }
   const { prompt } = validation.data;
-  try {
-    const newProject = await prisma.project.create({
-      data: {
-        name: prompt,
-        createdAt: new Date(),
-        status: "NEW",
-        userId: "cm59k02420000ff6m7t1a7ret"
-      },
-    });
-    res.json({
-      projectId: newProject.id,
-    });
-  } catch (error) {
-    res.status(500).json({
-      msg: "Failed to create new project",
-    });
-  }
-});
 
-app.get("/api/template/:projectId", async (req, res) => {
-  const model = genAI.getGenerativeModel(modelConfig);
-  const { projectId } = req.params;
   try {
-    const project = await prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project) {
-      throw new Error("Project not found");
+    // Enhance the prompt
+    const enhancedPrompt = await callLLM({
+      type: "regular",
+      prompt: enhancerPrompt(prompt)
+    }) as string;
+
+    // Select the template
+    const templateXML = await callLLM({
+      type: "regular",
+      prompt: enhancedPrompt,
+      systemPrompt: starterTemplateSelectionPrompt(STARTER_TEMPLATES)
+    }) as string;
+
+    const templateName = parseSelectedTemplate(templateXML);
+    if (!templateName) {
+      // Indicates that LLM hasn't generated any template name. It doesn't happen mostly. 
+      throw new Error("Error occurred while identifying a template");
     }
-    // IN_PROGRESS projects have already generated template
-    if (project.status === "IN_PROGRESS") {
-      const existingTemplate = await prisma.file.findMany({
-        where: {
-          projectId: project.id,
-        }
-      });
-      if (existingTemplate.length === 0) throw new Error("Template not found");
-      res.json({
-        projectId: project.id,
-        title: project.name,
-        template: existingTemplate,
-        uiPrompt: getUIPrompt(),
-      });
+    if (templateName === "blank") {
+      res.json({ template: "blank" });
       return;
     }
-    // Now handle content generation and send it via SSE
-    const result = await model.generateContentStream(
-      templateInitPrompt(project.name)
-    );
-    let streamContent = "";
-
-    // Process the stream chunks
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text ? chunk.text() : chunk; // Ensure `chunk.text()` exists
-      streamContent += chunkText; // Append chunk to result
+    const allFiles = await getTemplates(templateName);
+    if (!allFiles) {
+      // Indicates that LLM has returned an incorrect template name.
+      throw new Error("Error while getting the project files. Please try again!")
     }
-    const template = parseXML(streamContent);
-    // Save the generated template to the database
-    const createdTemplate = await prisma.file.createMany({
-      data: template.files.map(file => ({
-        projectId: project.id,
-        path: file.path,
-        content: file.content
-      }))
-    });
-    // Update project status to IN_PROGRESS
-    await prisma.project.update({
-      where: {
-        id: project.id,
-      },
-      data: {
-        name: template.title,
-        status: "IN_PROGRESS",
-      },
-    });
     res.json({
-      projectId: project.id,
-      title: template.title,
-      template: createdTemplate,
+      template: allFiles,
       uiPrompt: getUIPrompt(),
     });
   } catch (error) {
@@ -124,15 +74,13 @@ app.post("/api/chat", sseMiddleware, async (req, res) => {
     });
     return;
   }
-  const { messages } = validation.data;
-  const model = genAI.getGenerativeModel({
-    ...modelConfig,
-    systemInstruction: getSystemPrompt(),
-  });
   try {
-    const result = await model.generateContentStream({
-      contents: messages,
-    });
+    const result = await callLLM({
+      type: "stream",
+      messages: validation.data,
+      systemPrompt: getSystemPrompt()
+    }) as GenerateContentStreamResult;
+    
     for await (const chunk of result.stream) {
       const chunkText = chunk.text ? chunk.text() : chunk; // Ensure `chunk.text()` exists
       res.write(`data: ${chunkText}\n\n`);
