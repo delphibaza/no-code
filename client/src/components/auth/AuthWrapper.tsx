@@ -8,7 +8,7 @@ const AuthWrapper = () => {
 
   return (
     <div className="h-screen flex items-center justify-center">
-      <div className="flex w-full h-full  bg-white ">
+      <div className="flex w-full h-full bg-white ">
         <div className="bg-custom-gradient rounded-r-[220px] w-1/2 flex justify-center items-center">
           <div className="flex flex-col gap-8 items-center">
             <p className="text-white text-7xl">Welcome{buttonText == "Signin" && " Back"}!</p>
