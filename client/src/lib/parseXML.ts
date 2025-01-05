@@ -11,8 +11,13 @@ export function parseXML(content: string) {
     if (files) {
         for (const file of files) {
             const filePath = file.match(/<boltAction type="file" filePath="(.+?)">/)?.[1];
-            const fileContent = file.match(/<boltAction type="file" filePath=".+?">([\s\S]+?)<\/boltAction>/)?.[1];
+            let fileContent = file.match(/<boltAction type="file" filePath=".+?">([\s\S]+?)<\/boltAction>/)?.[1];
+
             if (filePath && fileContent) {
+                const needToRemove = ["```jsx", "```", "```javascript", "```typescript", "```tsx", "```ts", "```js", "```html", "```css"];
+                for (const remove of needToRemove) {
+                    fileContent = fileContent.replace(new RegExp(remove, "g"), "");
+                }
                 result.files.push({
                     path: filePath,
                     content: fileContent
