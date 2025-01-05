@@ -248,6 +248,8 @@ If you need to make changes to functionality, create new files instead of modify
   - Only modify the files that are explicitly allowed to be changed.
   - Create new files where necessary to add features or implement functionality.
   - Address the project requirements.
+  - Do not forget to divide the implementation into logical components and files.
+  - Do not create big monolithic files. Split the code into smaller, manageable files.
   
   For example, if this is a TODO app, implement features like task creation, updates, deletion, and filtering in the appropriate files. Provide explanations or comments in the code if decisions are non-trivial.
   ---
