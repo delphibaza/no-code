@@ -1,6 +1,8 @@
+import { buildHierarchy } from "@/lib/buildHierarchy";
+import { StreamingMessageParser } from "@/lib/StreamingMessageParser";
 import { Folders } from "@repo/common/types";
 import { ChevronRight, FileIcon, FolderIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CodeEditor } from "./CodeEditor";
 
 function FolderComponent({ name, children }: { name: string; children: React.ReactNode }) {
@@ -27,14 +29,14 @@ function FileComponent({
 }: {
     name: string;
     isSelected: boolean;
-    onClick: () => void;
+    onClick: (name: string) => void;
 }) {
     return (
         <div
             className={`flex rounded-sm items-center gap-x-1 px-1 py-1 text-sm cursor-pointer 
                 ${isSelected ? "bg-sky-200" : "hover:bg-gray-200"}`
             }
-            onClick={onClick}
+            onClick={() => onClick(name)}
         >
             <FileIcon className="h-4" />
             {name}
@@ -49,7 +51,7 @@ function RenderStructure({
 }: {
     files: Folders[];
     selectedFileName: string;
-    onFileClick: (name: string, content: string) => void;
+    onFileClick: (name: string) => void;
 }) {
     return (
         <div>
@@ -70,7 +72,7 @@ function RenderStructure({
                             key={file.name}
                             name={file.name}
                             isSelected={selectedFileName === file.name}
-                            onClick={() => onFileClick(file.name, file.content ?? "")}
+                            onClick={onFileClick}
                         />
                     );
                 }
@@ -78,13 +80,24 @@ function RenderStructure({
         </div>
     );
 }
-
-export function FileExplorer({ folders }: { folders: Folders[] }) {
-    const [currentFileContent, setCurrentFileContent] = useState<string>("");
+export function FileExplorer() {
+    const [folders, setFolders] = useState<Folders[]>([]);
     const [selectedFileName, setSelectedFileName] = useState<string>("");
 
-    const handleFileClick = (name: string, content: string) => {
-        setCurrentFileContent(content);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const filesFromState = StreamingMessageParser.filesMap.get("1234") ?? [];
+            setFolders(buildHierarchy(filesFromState));
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(interval);
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleFileClick = (name: string) => {
         setSelectedFileName(name);
     };
 
@@ -101,7 +114,7 @@ export function FileExplorer({ folders }: { folders: Folders[] }) {
                     onFileClick={handleFileClick}
                 />
             </div>
-            <CodeEditor code={currentFileContent} />
+            <CodeEditor code={folders[0]?.children?.[0]?.content ?? ""} />
         </div>
     );
 }

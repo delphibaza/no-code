@@ -185,64 +185,10 @@ export async function getTemplates(templateName: string) {
     filesToImport.files = filteredFiles;
     filesToImport.ignoreFile = ignoredFiles;
   }
-
-  let userMessage = ``;
   const templatePromptFile = files.filter((x) => x.path.startsWith('.bolt')).find((x) => x.name == 'prompt');
-
-  if (templatePromptFile) {
-    userMessage = `
-TEMPLATE INSTRUCTIONS:
-${templatePromptFile.content}
-
-IMPORTANT: Do not Forget to install the dependencies before running the app
----
-`;
-  }
-
-  if (filesToImport.ignoreFile.length > 0) {
-    userMessage =
-      userMessage +
-      `
-STRICT FILE ACCESS RULES - READ CAREFULLY:
-
-The following files are READ-ONLY and must never be modified:
-${filesToImport.ignoreFile.map((file) => `- ${file.path}`).join('\n')}
-
-Permitted actions:
-✓ Import these files as dependencies
-✓ Read from these files
-✓ Reference these files
-
-Strictly forbidden actions:
-❌ Modify any content within these files
-❌ Delete these files
-❌ Rename these files
-❌ Move these files
-❌ Create new versions of these files
-❌ Suggest changes to these files
-
-Any attempt to modify these protected files will result in immediate termination of the operation.
-
-If you need to make changes to functionality, create new files instead of modifying the protected ones listed above.
----
-`;
-  }
-
-  userMessage += `
-  ---
-  The starter template files have been imported successfully. Based on the original request, please proceed to generate the implementation code for the project. Use the imported files and structure them as needed, adhering to the following constraints:
-  - Only modify the files that are explicitly allowed to be changed.
-  - Create new files where necessary to add features or implement functionality.
-  - Address the project requirements.
-  - Do not forget to divide the implementation into logical components and files.
-  - Do not create big monolithic files. Split the code into smaller, manageable files.
-  
-  For example, if this is a TODO app, implement features like task creation, updates, deletion, and filtering in the appropriate files. Provide explanations or comments in the code if decisions are non-trivial.
-  ---
-  `;
 
   return {
     templateFiles: filesToImport.files,
-    userMessage,
+    templatePrompt: templatePromptFile,
   };
 }

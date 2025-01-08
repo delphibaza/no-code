@@ -6,14 +6,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getAssistantMsg(templateFiles: TemplateFiles) {
-  const assistantMessage = `
-  <boltArtifact id="imported-files" title="Importing Starter Files" type="bundled">
-  ${templateFiles.map((file) =>
-    `<boltAction type="file" filePath="${file.path}">
-${file.content}
-</boltAction>`).join('\n')}
-</boltArtifact>`;
-
-  return assistantMessage;
+export function getProjectFilesMsg(templateFiles: TemplateFiles) {
+  return `Project Files:
+The following is a list of all project files and their complete contents that are currently visible and accessible to you.
+${templateFiles.map(file => `
+  ${file.path}:
+  \`\`\`
+  ${file.content}
+  \`\`\`
+`).join('\n')}`;
 }
