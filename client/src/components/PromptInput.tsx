@@ -28,7 +28,7 @@ export function PromptInput() {
                 state: {
                     enhancedPrompt: result.enhancedPrompt,
                     templateFiles: result.templateFiles,
-                    userMessage: result.userMessage
+                    templatePrompt: result.templatePrompt
                 }
             });
         } catch (error) {

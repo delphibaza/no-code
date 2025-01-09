@@ -54,7 +54,7 @@ Instructions:
 6. Consider both technical requirements and tags
 7. If no perfect match exists, recommend the closest option
 
-Important: Provide only the selection tags in your response, no additional text. 
+Ultra-Important: Provide only the selection tags in your response, no additional text. 
 The template name you provide should be from the above provided available list only!
 `;
 
@@ -189,6 +189,6 @@ export async function getTemplates(templateName: string) {
 
   return {
     templateFiles: filesToImport.files,
-    templatePrompt: templatePromptFile,
+    templatePrompt: templatePromptFile?.content ?? '',
   };
 }

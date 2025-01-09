@@ -1,6 +1,6 @@
 import { buildHierarchy } from "@/lib/buildHierarchy";
 import { StreamingMessageParser } from "@/lib/StreamingMessageParser";
-import { Folders } from "@repo/common/types";
+import { File, Folders } from "@repo/common/types";
 import { ChevronRight, FileIcon, FolderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CodeEditor } from "./CodeEditor";
@@ -80,14 +80,44 @@ function RenderStructure({
         </div>
     );
 }
-export function FileExplorer() {
-    const [folders, setFolders] = useState<Folders[]>([]);
+function findFileContent(folders: Folders[], selectedFileName: string): string | undefined {
+    for (const item of folders) {
+        if (item.type === "file" && item.name === selectedFileName) {
+            return item.content; // Return the content if the file matches
+        }
+
+        if (item.type === "folder" && item.children) {
+            const result = findFileContent(item.children, selectedFileName); // Recursively search in children
+            if (result) {
+                return result; // Return the content if found in children
+            }
+        }
+    }
+    return undefined; // Return undefined if not found
+}
+export function FileExplorer({ templateFiles }: { templateFiles: File[] }) {
+    const [folders, setFolders] = useState<Folders[]>(buildHierarchy(templateFiles));
     const [selectedFileName, setSelectedFileName] = useState<string>("");
 
     useEffect(() => {
         const interval = setInterval(() => {
             const filesFromState = StreamingMessageParser.filesMap.get("1234") ?? [];
-            setFolders(buildHierarchy(filesFromState));
+            if (filesFromState.length === 0) {
+                return;
+            }
+            for (const file of filesFromState) {
+                const existingFileIndex = templateFiles.findIndex((f) => f.path === file.path);
+
+                if (existingFileIndex !== -1) {
+                    // Update content of the matching file
+                    templateFiles[existingFileIndex] = file;
+                } else {
+                    // Add new file
+                    templateFiles.push(file);
+                }
+            }
+            const hierarchicalFolders = buildHierarchy(templateFiles);
+            setFolders(hierarchicalFolders);
         }, 100);
 
         setTimeout(() => {
@@ -114,7 +144,7 @@ export function FileExplorer() {
                     onFileClick={handleFileClick}
                 />
             </div>
-            <CodeEditor code={folders[0]?.children?.[0]?.content ?? ""} />
+            <CodeEditor code={findFileContent(folders, selectedFileName) ?? ""} />
         </div>
     );
 }

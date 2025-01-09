@@ -1,5 +1,6 @@
 import type { GenerateContentStreamResult } from "@google/generative-ai";
 import { chatSchema, promptSchema } from "@repo/common/zod";
+import prisma from "@repo/db/client";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -9,7 +10,6 @@ import { enhancerPrompt } from "./prompts/enhancerPrompt";
 import { getTemplates, parseSelectedTemplate, starterTemplateSelectionPrompt } from "./prompts/starterTemplateSelection";
 import { getSystemPrompt } from "./prompts/systemPrompt";
 import { callLLM } from "./utils/callLLM";
-import prisma from "@repo/db/client";
 dotenv.config();
 
 const app = express();
@@ -120,6 +120,7 @@ app.post("/api/chat", sseMiddleware, async (req, res) => {
     }
     res.end();
   } catch (error) {
+    console.error("Failed to process chat", error);
     res.write(
       `data: ${JSON.stringify({ error: "Failed to process chat" })}\n\n`
     );

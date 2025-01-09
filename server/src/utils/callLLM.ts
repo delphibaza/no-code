@@ -1,4 +1,4 @@
-import { ChatMessages, ChatSchema } from "@repo/common/zod";
+import { ChatMessages } from "@repo/common/zod";
 import { baseModelConfig, genAIInstance } from "../constants";
 
 type CallLLMParams =
