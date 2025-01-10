@@ -1,11 +1,13 @@
 import { FileExplorer } from "@/components/FileExplorer";
+import { Input } from "@/components/Input";
+import { Workbench } from "@/components/Workbench";
 import { API_URL } from "@/lib/constants";
 import { StreamingMessageParser } from "@/lib/StreamingMessageParser";
-import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
-import type { TemplateFiles } from "@repo/common/types";
-import { ChatMessages } from "@repo/common/zod";
+import { chatHistoryMsg, projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import type { File } from "@repo/common/types";
+import { ChatMessage } from "@repo/common/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 import { SSE } from "sse.js";
@@ -33,24 +35,24 @@ export default function ProjectInfo() {
     const location = useLocation();
     const { enhancedPrompt, templateFiles, templatePrompt } = location.state as {
         enhancedPrompt: string,
-        templateFiles: TemplateFiles,
+        templateFiles: File[],
         templatePrompt: string,
     };
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        { role: 'user', parts: [{ text: projectFilesMsg(templateFiles) }] },
+        { role: 'user', parts: [{ text: templatePrompt }] },
+        { role: 'user', parts: [{ text: projectInstructionsMsg(enhancedPrompt) }] }
+    ]);
+    const rawResponse = useRef("");
 
     useEffect(() => {
         let source: SSE | null = null;
         let buffer = "";
 
         function streamCode() {
-            const reqBody: ChatMessages = [
-                { role: 'user', parts: [{ text: projectFilesMsg(templateFiles) }] },
-                { role: 'user', parts: [{ text: templatePrompt }] },
-                { role: 'user', parts: [{ text: projectInstructionsMsg(enhancedPrompt) }] }
-            ];
-
             source = new SSE(`${API_URL}/api/chat`, {
                 headers: { "Content-Type": "application/json" },
-                payload: JSON.stringify({ messages: reqBody })
+                payload: JSON.stringify({ messages: messages }),
             });
 
             if (!source) {
@@ -68,6 +70,7 @@ export default function ProjectInfo() {
                     if (loading) {
                         setLoading(false);
                     }
+                    rawResponse.current += buffer;
                     messageParser.parse("1234", buffer);
                 }
             };
@@ -93,11 +96,67 @@ export default function ProjectInfo() {
             </div>
         );
     }
+    function handleSubmit(input: string) {
+        const filesFromState = StreamingMessageParser.filesMap.get("1234") ?? [];
+        const updatedMessages: ChatMessage[] = [
+            {
+                role: "user",
+                parts: [{ text: projectFilesMsg(filesFromState) }]
+            },
+            {
+                role: "user",
+                parts: [{ text: chatHistoryMsg() }]
+            },
+            {
+                role: "user",
+                parts: [{
+                    text: `Previous Message #1:
+
+${templatePrompt}
+
+(Assistant response omitted)`
+                }]
+            },
+            {
+                role: "user",
+                parts: [{
+                    text: `Previous Message #2:
+
+${enhancedPrompt}
+
+(Assistant response below)`
+                }]
+            },
+            {
+                role: "user",
+                parts: [{
+                    text: `Assistant Response to Message #2:
+                    ${rawResponse}
+                    `
+                }]
+            },
+            {
+                role: "user",
+                parts: [{
+                    text: `Current Message:
+                    
+                    ${input}`
+                }]
+            }
+        ]
+        console.log(input);
+    }
 
     return (
-        <div>
+        <>
             <Toaster />
-            <FileExplorer templateFiles={templateFiles} />
-        </div>
+            <div className="flex w-full h-full justify-between p-10">
+                <div className="flex flex-col gap-y-5">
+                    <Workbench />
+                    <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} />
+                </div>
+                <FileExplorer templateFiles={templateFiles} />
+            </div>
+        </>
     );
 }
