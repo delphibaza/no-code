@@ -1,93 +1,32 @@
 import { FileExplorer } from "@/components/FileExplorer";
 import { Input } from "@/components/Input";
 import { Workbench } from "@/components/Workbench";
-import { API_URL } from "@/lib/constants";
+import { useChat } from "@/hooks/useChat";
 import { StreamingMessageParser } from "@/lib/StreamingMessageParser";
-import { chatHistoryMsg, projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import { chatHistoryMsg, projectFilesMsg } from "@/lib/utils";
 import type { File } from "@repo/common/types";
 import { ChatMessage } from "@repo/common/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import { useState } from "react";
+import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
-import { SSE } from "sse.js";
-
-const messageParser = new StreamingMessageParser({
-    callbacks: {
-        onArtifactOpen: (data) => {
-            // console.log("onArtifactOpen", data)
-        },
-        onArtifactClose: (data) => {
-            // console.log("onArtifactClose", data)
-        },
-        onActionOpen: (data) => {
-            // console.log(data);
-        },
-        onActionClose: (data) => {
-            // console.log("onActionClose", data)
-        },
-    },
-});
 
 export default function ProjectInfo() {
-    const [loading, setLoading] = useState(true);
-    const { projectId } = useParams();
+    const params = useParams();
     const location = useLocation();
     const { enhancedPrompt, templateFiles, templatePrompt } = location.state as {
         enhancedPrompt: string,
         templateFiles: File[],
         templatePrompt: string,
     };
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        { role: 'user', parts: [{ text: projectFilesMsg(templateFiles) }] },
-        { role: 'user', parts: [{ text: templatePrompt }] },
-        { role: 'user', parts: [{ text: projectInstructionsMsg(enhancedPrompt) }] }
-    ]);
-    const rawResponse = useRef("");
+    const [refresh, setRefresh] = useState(false);
 
-    useEffect(() => {
-        let source: SSE | null = null;
-        let buffer = "";
-
-        function streamCode() {
-            source = new SSE(`${API_URL}/api/chat`, {
-                headers: { "Content-Type": "application/json" },
-                payload: JSON.stringify({ messages: messages }),
-            });
-
-            if (!source) {
-                toast.error("Failed to establish connection with the server.");
-                setLoading(false);
-                return;
-            }
-
-            source.onmessage = (event) => {
-                const data = event.data;
-                if (data.trim() !== "") {
-                    const { chunk } = JSON.parse(data);
-                    buffer += chunk;
-
-                    if (loading) {
-                        setLoading(false);
-                    }
-                    rawResponse.current += buffer;
-                    messageParser.parse("1234", buffer);
-                }
-            };
-
-            source.onerror = () => {
-                toast.error("An error occurred while streaming code.");
-                setLoading(false);
-                source?.close();
-            };
-        }
-
-        if (projectId) streamCode();
-
-        return () => {
-            if (source) source.close();
-        };
-    }, []);
+    const { loading, rawResponse, setMessages } = useChat({
+        enhancedPrompt,
+        templateFiles,
+        templatePrompt,
+        projectId: params.projectId
+    });
 
     if (loading) {
         return (
@@ -101,50 +40,41 @@ export default function ProjectInfo() {
         const updatedMessages: ChatMessage[] = [
             {
                 role: "user",
-                parts: [{ text: projectFilesMsg(filesFromState) }]
+                content: projectFilesMsg(filesFromState)
             },
             {
                 role: "user",
-                parts: [{ text: chatHistoryMsg() }]
+                content: chatHistoryMsg()
             },
             {
                 role: "user",
-                parts: [{
-                    text: `Previous Message #1:
+                content: `Previous Message #1:
 
 ${templatePrompt}
 
 (Assistant response omitted)`
-                }]
             },
             {
                 role: "user",
-                parts: [{
-                    text: `Previous Message #2:
+                content: `Previous Message #2:
 
 ${enhancedPrompt}
 
 (Assistant response below)`
-                }]
             },
             {
                 role: "user",
-                parts: [{
-                    text: `Assistant Response to Message #2:
-                    ${rawResponse}
-                    `
-                }]
+                content: `Assistant Response to Message #2:
+${rawResponse.current}`
             },
             {
                 role: "user",
-                parts: [{
-                    text: `Current Message:
+                content: `Current Message:
                     
-                    ${input}`
-                }]
+${input}`
             }
         ]
-        console.log(input);
+        setMessages(updatedMessages)
     }
 
     return (
@@ -155,7 +85,7 @@ ${enhancedPrompt}
                     <Workbench />
                     <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} />
                 </div>
-                <FileExplorer templateFiles={templateFiles} />
+                <FileExplorer templateFiles={templateFiles} refresh={refresh} />
             </div>
         </>
     );
