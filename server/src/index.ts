@@ -16,6 +16,9 @@ const openai = createOpenAI({
   baseURL: "https://api-inference.huggingface.co/v1"
 });
 
+const coderModel = openai('Qwen/Qwen2.5-Coder-32B-Instruct');
+const backupModel = openai('mistralai/Mistral-Nemo-Instruct-2407');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -33,14 +36,14 @@ app.post("/api/template", async (req, res) => {
   try {
     // Enhance the prompt
     const { text: enhancedPrompt } = await generateText({
-      model: openai('Qwen/Qwen2.5-Coder-32B-Instruct'),
+      model: backupModel,
       system: enhancerPrompt(),
       prompt: prompt
     });
 
     // Select the template
     const { text: templateXML } = await generateText({
-      model: openai('Qwen/Qwen2.5-Coder-32B-Instruct'),
+      model: backupModel,
       system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
       prompt: enhancedPrompt
     });
@@ -78,6 +81,7 @@ app.post("/api/template", async (req, res) => {
       return;
     }
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       msg:
         error instanceof Error ? error.message : "Failed to generate template",
@@ -96,7 +100,7 @@ app.post("/api/chat", sseMiddleware, async (req, res) => {
   const { messages } = validation.data;
   try {
     const result = streamText({
-      model: openai('Qwen/Qwen2.5-Coder-32B-Instruct'),
+      model: backupModel,
       system: getSystemPrompt(),
       messages: messages,
       experimental_transform: smoothStream(),
@@ -108,7 +112,7 @@ app.post("/api/chat", sseMiddleware, async (req, res) => {
 
     for await (const chunk of result.textStream) {
       // Accumulate the chunk in the buffer
-      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      res.write(`${chunk}`);
     }
     res.end();
   } catch (error) {

@@ -36,10 +36,11 @@ Use it to:
  - Ensure suggestions are compatible with existing code
 
 IMPORTANT: Only provide files that include the implementation changes or modifications related to the project. Return only the files that differ from the originals provided to you.
-- Do not return unchanged files.
 - For example, If additional dependencies are required (beyond those in the provided package.json), include the updated package.json file with the new dependencies added.
 - For any extra styles, return only the modified CSS file.
-`;
+- Do not return unchanged files.
+- Provide the complete code for all the files that you return. 
+- Also, Give a brief explanation about your work (around 100 words).`;
 }
 
 export function chatHistoryMsg() {

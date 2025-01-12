@@ -1,13 +1,50 @@
-import { ActionType, BoltAction, BoltArtifactData, File, FileAction, MessageState, ShellAction, StreamingMessageParserOptions } from "@repo/common/types";
+import type { ActionType, BoltAction, BoltActionData, FileAction, ShellAction } from '@repo/common/types';
+import type { BoltArtifactData } from '@repo/common/types';
 
 const ARTIFACT_TAG_OPEN = '<boltArtifact';
 const ARTIFACT_TAG_CLOSE = '</boltArtifact>';
 const ARTIFACT_ACTION_TAG_OPEN = '<boltAction';
 const ARTIFACT_ACTION_TAG_CLOSE = '</boltAction>';
 
+export interface ArtifactCallbackData extends BoltArtifactData {
+    messageId: string;
+}
+export interface ActionCallbackData {
+    artifactId: string;
+    messageId: string;
+    actionId: string;
+    action: BoltAction;
+}
+export type ArtifactCallback = (data: ArtifactCallbackData) => void;
+export type ActionCallback = (data: ActionCallbackData) => void;
+
+export interface ParserCallbacks {
+    onArtifactOpen?: ArtifactCallback;
+    onArtifactClose?: ArtifactCallback;
+    onActionOpen?: ActionCallback;
+    onActionClose?: ActionCallback;
+}
+interface ElementFactoryProps {
+    messageId: string;
+}
+type ElementFactory = (props: ElementFactoryProps) => string;
+
+export interface StreamingMessageParserOptions {
+    callbacks?: ParserCallbacks;
+    artifactElement?: ElementFactory;
+}
+
+interface MessageState {
+    position: number;
+    insideArtifact: boolean;
+    insideAction: boolean;
+    currentArtifact?: BoltArtifactData;
+    currentAction: BoltActionData;
+    actionId: number;
+}
+
 export class StreamingMessageParser {
     #messages = new Map<string, MessageState>();
-    static readonly filesMap = new Map<string, File[]>(); // New Map to store files for each messageId
 
     constructor(private _options: StreamingMessageParserOptions = {}) { }
 
@@ -30,74 +67,50 @@ export class StreamingMessageParser {
         let i = state.position;
         let earlyBreak = false;
 
-        // Ensure the files array exists for the messageId
-        if (!StreamingMessageParser.filesMap.has(messageId)) {
-            StreamingMessageParser.filesMap.set(messageId, []);
-        }
-
         while (i < input.length) {
             if (state.insideArtifact) {
                 const currentArtifact = state.currentArtifact;
 
                 if (currentArtifact === undefined) {
-                    throw new Error(`Unreachable: Artifact not initialized`);
+                    throw new Error('Artifact not initialized');
                 }
 
                 if (state.insideAction) {
-                    const currentAction = state.currentAction;
-
-                    // Append content to the current file if action type is `file`
-                    if ('type' in currentAction && currentAction.type === 'file') {
-                        const filePath = (currentAction as FileAction).path;
-
-                        // Get or create the file object
-                        let currentFile = StreamingMessageParser.filesMap
-                            .get(messageId)
-                            ?.find(file => file.path === filePath);
-
-                        if (!currentFile) {
-                            currentFile = { path: filePath, content: '' };
-                            StreamingMessageParser.filesMap.get(messageId)?.push(currentFile);
-                        }
-                        // Append content to the file
-                        currentFile.content += input[i];
-                        // Remove the code block tags from the content
-                        const removableContent = ['```typescript', '```js', '```javascript', '```jsx', '```tsx', '```xml', '```'];
-                        for (const content of removableContent) {
-                            if (currentFile.content.includes(content)) {
-                                currentFile.content = currentFile.content.replace(content, '');
-                            }
-                        }
-                        // Add the remaining content to the file if the action closing tag is found
-                        const closeIndex = input.indexOf(ARTIFACT_ACTION_TAG_CLOSE, i);
-                        if (closeIndex !== -1) {
-                            currentFile.content += input.slice(i, closeIndex);
-                            for (const content of removableContent) {
-                                if (currentFile.content.includes(content)) {
-                                    currentFile.content = currentFile.content.replace(content, '');
-                                }
-                            }
-                        }
-                    }
-
                     const closeIndex = input.indexOf(ARTIFACT_ACTION_TAG_CLOSE, i);
 
+                    const currentAction = state.currentAction;
+
                     if (closeIndex !== -1) {
+                        currentAction.content += input.slice(i, closeIndex);
+
+                        let content = currentAction.content.trim();
+
+                        if ('type' in currentAction && currentAction.type === 'file') {
+                            content += '\n';
+                        }
+
+                        currentAction.content = content;
+
+                        this._options.callbacks?.onActionClose?.({
+                            artifactId: currentArtifact.id,
+                            messageId,
+
+                            /**
+                             * We decrement the id because it's been incremented already
+                             * when `onActionOpen` was emitted to make sure the ids are
+                             * the same.
+                             */
+                            actionId: String(state.actionId - 1),
+
+                            action: currentAction as BoltAction,
+                        });
+
                         state.insideAction = false;
                         state.currentAction = { content: '' };
 
                         i = closeIndex + ARTIFACT_ACTION_TAG_CLOSE.length;
-
-                        // Trigger the callback if present
-                        this._options.callbacks?.onActionClose?.({
-                            artifactId: currentArtifact.id,
-                            messageId,
-                            actionId: String(state.actionId - 1),
-                            action: currentAction as BoltAction,
-                        });
                     } else {
-                        i++;
-                        continue;
+                        break;
                     }
                 } else {
                     const actionOpenIndex = input.indexOf(ARTIFACT_ACTION_TAG_OPEN, i);
@@ -176,6 +189,10 @@ export class StreamingMessageParser {
 
                             this._options.callbacks?.onArtifactOpen?.({ messageId, ...currentArtifact });
 
+                            const artifactFactory = this._options.artifactElement ?? createArtifactElement;
+
+                            output += artifactFactory({ messageId });
+
                             i = openTagEnd + 1;
                         } else {
                             earlyBreak = true;
@@ -211,7 +228,6 @@ export class StreamingMessageParser {
 
     reset() {
         this.#messages.clear();
-        StreamingMessageParser.filesMap.clear();
     }
 
     #parseActionTag(input: string, actionOpenIndex: number, actionEndIndex: number) {
@@ -228,7 +244,7 @@ export class StreamingMessageParser {
             const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
 
             if (!filePath) {
-                console.log('File path not specified');
+                console.debug('File path not specified');
             }
 
             (actionAttributes as FileAction).path = filePath;
@@ -243,4 +259,19 @@ export class StreamingMessageParser {
         const match = tag.match(new RegExp(`${attributeName}="([^"]*)"`, 'i'));
         return match ? match[1] : undefined;
     }
+}
+
+const createArtifactElement: ElementFactory = (props) => {
+    const elementProps = [
+        'class="__boltArtifact__"',
+        ...Object.entries(props).map(([key, value]) => {
+            return `data-${camelToDashCase(key)}=${JSON.stringify(value)}`;
+        }),
+    ];
+
+    return `<div ${elementProps.join(' ')}></div>`;
+};
+
+function camelToDashCase(input: string) {
+    return input.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 }

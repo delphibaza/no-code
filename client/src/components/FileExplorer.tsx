@@ -1,5 +1,4 @@
 import { buildHierarchy } from "@/lib/buildHierarchy";
-import { StreamingMessageParser } from "@/lib/StreamingMessageParser";
 import { File, Folders } from "@repo/common/types";
 import { ChevronRight, FileIcon, FolderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -95,40 +94,27 @@ function findFileContent(folders: Folders[], selectedFileName: string): string |
     }
     return undefined; // Return undefined if not found
 }
-export function FileExplorer({ templateFiles, refresh }: { templateFiles: File[], refresh: boolean }) {
-    console.log(refresh)
+export function FileExplorer({ templateFiles }: { templateFiles: File[] }) {
     const [folders, setFolders] = useState<Folders[]>(buildHierarchy(templateFiles));
     const [selectedFileName, setSelectedFileName] = useState<string>("");
 
     useEffect(() => {
-        if (!refresh) {
-            return;
-        }
-        const interval = setInterval(() => {
-            const filesFromState = StreamingMessageParser.filesMap.get("1234") ?? [];
-            if (filesFromState.length === 0) {
-                return;
-            }
-            for (const file of filesFromState) {
-                const existingFileIndex = templateFiles.findIndex((f) => f.path === file.path);
+        // setInterval(() => {
+        //     for (const file of filesFromState) {
+        //         const existingFileIndex = templateFiles.findIndex((f) => f.path === file.path);
 
-                if (existingFileIndex !== -1) {
-                    // Update content of the matching file
-                    templateFiles[existingFileIndex] = file;
-                } else {
-                    // Add new file
-                    templateFiles.push(file);
-                }
-            }
-            const hierarchicalFolders = buildHierarchy(templateFiles);
-            setFolders(hierarchicalFolders);
-        }, 100);
+        //         if (existingFileIndex !== -1) {
+        //             // Update content of the matching file
+        //             templateFiles[existingFileIndex] = file;
+        //         } else {
+        //             // Add new file
+        //             templateFiles.push(file);
+        //         }
+        //     }
+        //     const hierarchicalFolders = buildHierarchy(templateFiles);
+        //     setFolders(hierarchicalFolders);
+        // }, 100);
 
-        setTimeout(() => {
-            clearInterval(interval);
-        }, 15000);
-
-        return () => clearInterval(interval);
     }, []);
 
     const handleFileClick = (name: string) => {
