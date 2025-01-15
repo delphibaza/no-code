@@ -1,4 +1,4 @@
-import { File } from "@repo/common/types";
+import { File, Folders } from "@repo/common/types";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -6,11 +6,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function findFileContent(folders: Folders[], selectedFileName: string): string | undefined {
+  for (const item of folders) {
+    if (item.type === "file" && item.name === selectedFileName) {
+      return item.content; // Return the content if the file matches
+    }
+
+    if (item.type === "folder" && item.children) {
+      const result = findFileContent(item.children, selectedFileName); // Recursively search in children
+      if (result) {
+        return result; // Return the content if found in children
+      }
+    }
+  }
+  return undefined; // Return undefined if not found
+}
+
 export function projectFilesMsg(files: File[]) {
   return `Project Files:
 The following is a list of all project files and their complete contents that are currently visible and accessible to you.
 ${files.map(file => `
-  ${file.path}:
+  ${file.filePath}:
   \`\`\`
   ${file.content}
   \`\`\`
@@ -36,12 +52,8 @@ Use it to:
  - Ensure suggestions are compatible with existing code
 
 IMPORTANT: Only provide files that include the implementation changes or modifications related to the project. Return only the files that differ from the originals provided to you.
-- For example, If additional dependencies are required (beyond those in the provided package.json), include the updated package.json file with the new dependencies added.
-- For any extra styles, return only the modified CSS file.
-- Do not return unchanged files.
-- Provide the complete code for all the files that you return. 
-- Also, Give a brief explanation about your work (around 100 words).`;
-}
+- For example, If additional dependencies are required (beyond those in the provided package.json), include the updated package.json file with the new dependencies added.`
+};
 
 export function chatHistoryMsg() {
   return `Below is the conversation history, including all previous messages along with the most recent assistant response. 

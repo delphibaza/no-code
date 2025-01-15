@@ -3,8 +3,8 @@ import { File, Folders } from "@repo/common/types";
 export function buildHierarchy(files: File[]): Folders[] {
     const root: Folders = { type: "folder", name: "root", children: [] };
 
-    files.forEach(({ path, content }) => {
-        const parts = path.split("/");
+    files.forEach(({ filePath, content }) => {
+        const parts = filePath.split("/");
         let currentFolder = root;
 
         parts.forEach((part, index) => {

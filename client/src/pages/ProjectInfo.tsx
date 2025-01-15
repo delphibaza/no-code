@@ -1,33 +1,36 @@
-import { FileExplorer } from "@/components/FileExplorer";
-import { Input } from "@/components/Input";
+import { TabsSwitch } from "@/components/TabsSwitch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
-import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+// import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
+import { parse } from "best-effort-json-parser";
+// import { Terminal } from "@/components/Terminal";
 
 export default function ProjectInfo() {
-    const params = useParams();
+    // const params = useParams();
     const location = useLocation();
     const { enhancedPrompt, templateFiles, templatePrompt } = location.state as {
         enhancedPrompt: string,
         templateFiles: File[],
         templatePrompt: string,
     };
+    const [files, setFiles] = useState<File[]>([]);
+    const [done, setDone] = useState(false);
+
     const { messages, input, handleInputChange, handleSubmit, isLoading, stop, error, reload, append } = useChat({
         api: `${API_URL}/api/chat`,
-        experimental_throttle: 25,
         onFinish: (message, { usage, finishReason }) => {
             // console.log('Finished streaming message:', message);
             // console.log('Token usage:', usage);
             // console.log('Finish reason:', finishReason);
+            setDone(true);
         },
         onError: error => {
             console.error('An error occurred:', error);
@@ -35,21 +38,60 @@ export default function ProjectInfo() {
         onResponse: response => {
             // console.log('Received HTTP response from server:', response);
         },
-        streamProtocol: "text",
         initialMessages: [
             { id: "1", role: 'user', content: projectFilesMsg(templateFiles) },
-            { id: "2", role: 'assistant', content: templatePrompt },
+            { id: "2", role: 'user', content: templatePrompt },
             // { id: "3", role: 'user', content: projectInstructionsMsg(enhancedPrompt) }
         ]
     });
-    const { parsedMessages, parseMessages } = useMessageParser();
 
     useEffect(() => {
-        parseMessages(messages, isLoading);
-    }, [messages, isLoading, parseMessages]);
-    useEffect(() => {
         append({ id: "3", role: 'user', content: projectInstructionsMsg(enhancedPrompt) })
-    }, [])
+    }, []);
+
+    useEffect(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.role !== "assistant") {
+            return;
+        }
+        const lastMessageJSON = lastMessage.content;
+        const startIndex = lastMessageJSON.indexOf('{');
+        if (startIndex === -1) {
+            return;
+        }
+        const trimmedJSON = lastMessageJSON.substring(startIndex);
+        const parsedData = parse(trimmedJSON);
+        if (!parsedData
+            || !parsedData.artifact
+            || !parsedData.artifact.actions
+            || !Array.isArray(parsedData.artifact.actions)
+            || parsedData.artifact.actions.length === 0
+        ) {
+            return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsedFiles = parsedData.artifact.actions.filter((action: any) =>
+            action?.type === 'file' &&
+            action?.filePath !== undefined &&
+            action?.content !== undefined
+        );
+        // Create a copy of templateFiles to avoid mutating the state directly
+        const updatedFiles = [...templateFiles];
+        if (parsedFiles.length > 0) {
+            for (const file of parsedFiles) {
+                const existingFileIndex = updatedFiles.findIndex((f) => f.filePath === file.filePath);
+                if (existingFileIndex !== -1) {
+                    // Update content of the matching file
+                    updatedFiles[existingFileIndex] = { filePath: file.filePath, content: file.content };
+                } else {
+                    // Add new file
+                    updatedFiles.push({ filePath: file.filePath, content: file.content });
+                }
+            }
+            setFiles(updatedFiles);
+        }
+    }, [messages, isLoading]);
+
     // if (isLoading) {
     //     return (
     //         <div className="min-h-screen w-full flex justify-center items-center">
@@ -103,15 +145,15 @@ export default function ProjectInfo() {
             <div className="flex w-full h-full justify-between p-10">
                 <div className="flex flex-col gap-y-5">
                     <Workbench />
-                    {error && (
+                    {/* {error && (
                         <>
                             <div>An error occurred.</div>
                             <button type="button" onClick={() => reload()}>
                                 Retry
                             </button>
                         </>
-                    )}
-                    {isLoading && (
+                    )} */}
+                    {/* {isLoading && (
                         <div>
                             <Loader2 className="w-5 h-5 animate-spin" />
                             <Button
@@ -121,7 +163,7 @@ export default function ProjectInfo() {
                                 Stop
                             </Button>
                         </div>
-                    )}
+                    )} */}
                     {/* <button onClick={() => reload()} disabled={isLoading}>Regenerate</button> */}
                     <form onSubmit={handleSubmit}>
                         <Textarea
@@ -134,7 +176,10 @@ export default function ProjectInfo() {
                     </form>
                     {/* <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} /> */}
                 </div>
-                <FileExplorer templateFiles={templateFiles} />
+                <div className="flex flex-col gap-y-5">
+                    <TabsSwitch files={files} done={done} />
+                    {/* <Terminal /> */}
+                </div>
             </div>
         </>
     );
