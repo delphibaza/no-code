@@ -53,10 +53,6 @@ const PreviewCode = ({ folders, done }: { folders: Folders[], done: boolean }) =
                     },
                 })
             );
-            const serverProcessExitCode = await serverProcess.exit;
-            if (serverProcessExitCode !== 0) {
-                throw new Error("Unable to start dev server");
-            }
             // Wait for `server-ready` event
             webContainer.on("server-ready", (port, url) => {
                 console.log(url);

@@ -6,15 +6,15 @@ import { API_URL } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
-// import { Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 import { parse } from "best-effort-json-parser";
-// import { Terminal } from "@/components/Terminal";
+import { Terminal } from "@/components/Terminal";
 
 export default function ProjectInfo() {
-    // const params = useParams();
+    const params = useParams();
     const location = useLocation();
     const { enhancedPrompt, templateFiles, templatePrompt } = location.state as {
         enhancedPrompt: string,
@@ -177,8 +177,8 @@ export default function ProjectInfo() {
                     {/* <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} /> */}
                 </div>
                 <div className="flex flex-col gap-y-5">
-                    <TabsSwitch files={files} done={done} />
-                    {/* <Terminal /> */}
+                    <TabsSwitch files={files} done={true} />
+                    <Terminal />
                 </div>
             </div>
         </>
