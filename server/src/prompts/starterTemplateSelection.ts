@@ -69,8 +69,8 @@ export const parseSelectedTemplate = (llmOutput: string): string | null => {
 
 const getGitHubRepoContent = async (
   repoName: string,
-  path: string = ''
-): Promise<{ name: string; path: string; content: string }[]> => {
+  filePath: string = ''
+): Promise<{ name: string; filePath: string; content: string }[]> => {
   const baseUrl = 'https://api.github.com';
   const token = process.env.GITHUB_ACCESS_TOKEN;
 
@@ -82,7 +82,7 @@ const getGitHubRepoContent = async (
     headers.Authorization = 'token ' + token;
   }
   try {
-    const response = await fetch(`${baseUrl}/repos/${repoName}/contents/${path}`, {
+    const response = await fetch(`${baseUrl}/repos/${repoName}/contents/${filePath}`, {
       headers: headers,
     });
 
@@ -102,7 +102,7 @@ const getGitHubRepoContent = async (
         return [
           {
             name: data.name,
-            path: data.path,
+            filePath: data.path,
             content,
           },
         ];
@@ -128,7 +128,7 @@ const getGitHubRepoContent = async (
           return [
             {
               name: item.name,
-              path: item.path,
+              filePath: item.path,
               content,
             },
           ];
@@ -159,17 +159,17 @@ export async function getTemplates(templateName: string) {
    * ignoring common unwanted files
    * exclude    .git
    */
-  filteredFiles = filteredFiles.filter((x) => x.path.startsWith('.git') == false);
+  filteredFiles = filteredFiles.filter((x) => x.filePath.startsWith('.git') == false);
 
   // exclude    lock files
   const commonLockFiles = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
   filteredFiles = filteredFiles.filter((x) => commonLockFiles.includes(x.name) == false);
 
   // exclude    .bolt
-  filteredFiles = filteredFiles.filter((x) => x.path.startsWith('.bolt') == false);
+  filteredFiles = filteredFiles.filter((x) => x.filePath.startsWith('.bolt') == false);
 
   // check for ignore file in .bolt folder
-  const templateIgnoreFile = files.find((x) => x.path.startsWith('.bolt') && x.name == 'ignore');
+  const templateIgnoreFile = files.find((x) => x.filePath.startsWith('.bolt') && x.name == 'ignore');
 
   const filesToImport = {
     files: filteredFiles,
@@ -180,12 +180,12 @@ export async function getTemplates(templateName: string) {
     // redacting files specified in ignore file
     const ignorePatterns = templateIgnoreFile.content.split('\n').map((x) => x.trim());
     const ig = ignore().add(ignorePatterns);
-    const ignoredFiles = filteredFiles.filter((x) => ig.ignores(x.path));
+    const ignoredFiles = filteredFiles.filter((x) => ig.ignores(x.filePath));
 
     filesToImport.files = filteredFiles;
     filesToImport.ignoreFile = ignoredFiles;
   }
-  const templatePromptFile = files.filter((x) => x.path.startsWith('.bolt')).find((x) => x.name == 'prompt');
+  const templatePromptFile = files.filter((x) => x.filePath.startsWith('.bolt')).find((x) => x.name == 'prompt');
 
   return {
     templateFiles: filesToImport.files,

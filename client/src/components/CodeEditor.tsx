@@ -12,11 +12,9 @@ export function CodeEditor({ code }: {
     return (
         <CodeMirror
             value={code}
-            height="75vh"
-            width="50vw"
+            height="65vh"
             style={{
-                fontSize: '12px',
-                borderRadius: '4px'
+                fontSize: '12px'
             }}
             theme={theme === 'dark' ? vscodeDark : vscodeLight}
             extensions={[javascript({ jsx: true, typescript: true })]}

@@ -15,6 +15,12 @@ export function Input({ placeholder, handleSubmit }: {
                 placeholder={placeholder}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault(); // Prevent adding a new line
+                        handleSubmit(input);
+                    }
+                }}
             />
             <Button onClick={() => handleSubmit(input)} size={"sm"} className="absolute bottom-2 right-2 flex items-center">
                 Send
