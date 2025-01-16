@@ -1,8 +1,8 @@
-import { memo, useEffect, useRef } from "react"
-import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { Terminal as XTerm } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
+import { memo, useEffect, useRef } from "react";
 
 export interface TerminalProps {
     className?: string;

@@ -2,8 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildHierarchy } from "@/lib/buildHierarchy";
 import { File } from "@repo/common/types";
 import { useState } from "react";
-import PreviewCode from "./PreviewCode";
 import { FileExplorer } from "./FileExplorer";
+import PreviewCode from "./PreviewCode";
 
 export function TabsSwitch({ files, done }: { files: File[], done: boolean }) {
     const [selectedFileName, setSelectedFileName] = useState<string>("");
