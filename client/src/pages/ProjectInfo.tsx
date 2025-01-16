@@ -4,11 +4,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
 import { API_URL } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import { useStore } from "@/store/useStore";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
 import { parse } from "best-effort-json-parser";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -21,7 +22,11 @@ export default function ProjectInfo() {
         templatePrompt: string,
     };
     const [files, setFiles] = useState<File[]>([]);
-    const [done, setDone] = useState(false);
+    const setStreamingDone = useStore((state) => state.setDoneStreaming);
+    const selectedFileName = useStore((state) => state.selectedFileName);
+    const setSelectedFileName = useStore((state) => state.setSelectedFileName);
+    const [streamingFileName, setStreamingFileName] = useState<string | null>(null);
+    const streamingNewFile = useRef(true);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, stop, error, reload, append } = useChat({
         api: `${API_URL}/api/chat`,
@@ -29,7 +34,7 @@ export default function ProjectInfo() {
             // console.log('Finished streaming message:', message);
             // console.log('Token usage:', usage);
             // console.log('Finish reason:', finishReason);
-            setDone(true);
+            setStreamingDone(true);
         },
         onError: error => {
             console.error('An error occurred:', error);
@@ -76,20 +81,34 @@ export default function ProjectInfo() {
         );
         // Create a copy of templateFiles to avoid mutating the state directly
         const updatedFiles = [...templateFiles];
+
         if (parsedFiles.length > 0) {
             for (const file of parsedFiles) {
                 const existingFileIndex = updatedFiles.findIndex((f) => f.filePath === file.filePath);
                 if (existingFileIndex !== -1) {
-                    // Update content of the matching file
                     updatedFiles[existingFileIndex] = { filePath: file.filePath, content: file.content };
                 } else {
-                    // Add new file
                     updatedFiles.push({ filePath: file.filePath, content: file.content });
+                }
+                const filePathParts = (file.filePath as string).split('/');
+                const newStreamingFileName = filePathParts.at(-1);
+                if (newStreamingFileName) {
+                    setStreamingFileName(newStreamingFileName);
+                    if (streamingNewFile.current) {
+                        setSelectedFileName(newStreamingFileName);
+                        streamingNewFile.current = false;
+                    }
                 }
             }
             setFiles(updatedFiles);
         }
-    }, [messages, isLoading]);
+    }, [messages]);
+
+    useEffect(() => {
+        if (streamingFileName && streamingFileName !== selectedFileName) {
+            setSelectedFileName(streamingFileName);
+        }
+    }, [streamingFileName]);
 
     // if (isLoading) {
     //     return (
@@ -175,7 +194,7 @@ export default function ProjectInfo() {
                     </form>
                     {/* <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} /> */}
                 </div>
-                <TabsSwitch files={files} done={done} />
+                <TabsSwitch files={files} />
             </div>
         </>
     );
