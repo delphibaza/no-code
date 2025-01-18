@@ -4,27 +4,16 @@ import { findFileContent } from "@/lib/utils";
 import { Folders } from "@repo/common/types";
 import { FolderComponent } from "./FolderComponent";
 import { FileComponent } from "./FileComponent";
+import { useStore } from "@/store/useStore";
 
-function RenderStructure({
-    files,
-    selectedFileName,
-    onFileClick,
-}: {
-    files: Folders[];
-    selectedFileName: string;
-    onFileClick: (name: string) => void;
-}) {
+function RenderStructure({ files }: { files: Folders[] }) {
     return (
         <div className="md:max-h-[55vh] overflow-y-auto">
             {files.map((file) => {
                 if (file.type === "folder") {
                     return (
                         <FolderComponent key={file.name} name={file.name}>
-                            <RenderStructure
-                                files={file.children ?? []}
-                                selectedFileName={selectedFileName}
-                                onFileClick={onFileClick}
-                            />
+                            <RenderStructure files={file.children ?? []} />
                         </FolderComponent>
                     );
                 } else {
@@ -32,8 +21,6 @@ function RenderStructure({
                         <FileComponent
                             key={file.name}
                             name={file.name}
-                            isSelected={selectedFileName === file.name}
-                            onClick={onFileClick}
                         />
                     );
                 }
@@ -42,12 +29,8 @@ function RenderStructure({
     );
 }
 
-export function FileExplorer({ folders, selectedFileName, handleFileClick }: {
-    folders: Folders[],
-    selectedFileName: string,
-    handleFileClick: (name: string) => void
-}
-) {
+export function FileExplorer({ folders }: { folders: Folders[] }) {
+    const selectedFileName = useStore((state) => state.selectedFileName);
     return (
         <div className="grid grid-cols-10 gap-x-2">
             <div className="col-span-2 bg-secondary rounded-sm flex flex-col px-1">
@@ -55,11 +38,7 @@ export function FileExplorer({ folders, selectedFileName, handleFileClick }: {
                     <FolderIcon className="h-4" />
                     Files
                 </div>
-                <RenderStructure
-                    files={folders}
-                    selectedFileName={selectedFileName}
-                    onFileClick={handleFileClick}
-                />
+                <RenderStructure files={folders} />
             </div>
             <div className="col-span-8">
                 <CodeEditor code={findFileContent(folders, selectedFileName) ?? ""} />

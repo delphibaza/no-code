@@ -5,6 +5,7 @@ import type { Terminal as XTerm } from "@xterm/xterm";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Terminal } from "./Terminal";
+import { useStore } from "@/store/useStore";
 
 function formatFilesToMountFn(folders: Folders[], result: Files = {}): Files {
     folders.forEach((item) => {
@@ -46,11 +47,13 @@ async function startShell(terminal: XTerm, webContainer: WebContainer) {
     return shellProcess;
 }
 
-const PreviewCode = ({ folders, done }: { folders: Folders[], done: boolean }) => {
+const PreviewCode = ({ folders }: { folders: Folders[] }) => {
     const [url, setUrl] = useState<string>("");
-    const [webContainer, setWebContainer] = useState<WebContainer | null>(null);
     const [terminal, setTerminal] = useState<XTerm | null>(null);
     const [shellProcess, setShellProcess] = useState<WebContainerProcess | null>(null);
+    const doneStreaming = useStore((state) => state.doneStreaming);
+    const webContainer = useStore((state) => state.webContainerInstance);
+    const setWebContainer = useStore((state) => state.setWebContainerInstance);
 
     async function installAndRunCont() {
         const formattedFiles = formatFilesToMountFn(folders);
@@ -93,7 +96,7 @@ const PreviewCode = ({ folders, done }: { folders: Folders[], done: boolean }) =
     }
 
     useEffect(() => {
-        if (!webContainer) {
+        if (!webContainer && doneStreaming) {
             getWebContainer().then((container) => {
                 setWebContainer(container);
                 console.log("container started");
@@ -102,16 +105,24 @@ const PreviewCode = ({ folders, done }: { folders: Folders[], done: boolean }) =
     }, []);
 
     useEffect(() => {
-        if (done && webContainer && terminal) {
+        if (doneStreaming && webContainer && terminal) {
             installAndRunCont();
         }
-    }, [done, webContainer, terminal]);
+    }, [doneStreaming, webContainer, terminal]);
 
     const handleTerminalResize = (cols: number, rows: number) => {
         if (shellProcess) {
             shellProcess.resize({ cols, rows });
         }
     };
+
+    if (!doneStreaming) {
+        return (
+            <div className="flex justify-center items-center text-sm h-full border-2 rounded-md shadow-sm">
+                No preview available!
+            </div>
+        )
+    }
 
     return (
         <div className="h-full w-full space-y-3">
