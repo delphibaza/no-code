@@ -15,7 +15,7 @@ export interface FileAction {
     type: 'file';
     filePath: string;
     content: string;
-    state: "creating" | "created" | "updating" | "updated"
+    state: "creating" | "created" | "updating" | "updated" | "mounted"
 }
 export interface ShellAction {
     type: 'shell';

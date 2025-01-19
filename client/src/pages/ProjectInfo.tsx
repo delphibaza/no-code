@@ -2,13 +2,13 @@ import { TabsSwitch } from "@/components/TabsSwitch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
+import { getWebContainer } from "@/config/webContainer";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
+import { buildHierarchy, formatFilesToMount } from "@/lib/formatterHelpers";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import type { File, FileAction, ShellAction } from "@repo/common/types";
-import type { WebContainer } from "@webcontainer/api";
-import type { Terminal as Xterm } from "@xterm/xterm";
+import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -23,8 +23,7 @@ export default function ProjectInfo() {
         templateFiles: File[],
         templatePrompt: string,
     };
-    const { terminal, setDoneStreaming, updateMessage, setSelectedFileName, selectedFileName, webContainerInstance, setWebContainerInstance, setIframeURL } = useStore();
-    const [streamingFileName, setStreamingFileName] = useState<string | null>(null);
+    const { setDoneStreaming, webContainerInstance, setWebContainerInstance } = useStore();
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, stop, error, reload, append } = useChat({
         api: `${API_URL}/api/chat`,
@@ -51,65 +50,21 @@ export default function ProjectInfo() {
         append({ id: "3", role: 'user', content: projectInstructionsMsg(enhancedPrompt) })
     }, []);
 
-    async function runCommand(webContainerInstance: WebContainer, terminal: Xterm, commands: string[]) {
-        const process = await webContainerInstance.spawn(commands[0], commands.slice(1));
-        process.output.pipeTo(
-            new WritableStream({
-                write(data) {
-                    terminal.write(data);
-                },
-            })
-        );
-        const exitCode = await process.exit;
-        return exitCode;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function parseActions(actions: any[]): (FileAction | ShellAction)[] {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return actions.map((action: any) => {
-            if (action.type === 'file') {
-                return {
-                    type: 'file',
-                    filePath: action.filePath || '',
-                    content: action.content || '',
-                } as FileAction;
-            } else if (action.type === 'shell') {
-                return {
-                    type: 'shell',
-                    command: action.command || '',
-                } as ShellAction;
+    useEffect(() => {
+        async function initializeWebContainer() {
+            if (webContainerInstance) {
+                return;
             }
-            return null;
-        })
-            .filter(action => action !== null)
-            .map((action, index, arr) => {
-                if (index !== arr.length - 1) {
-                    if (action.type === 'file') {
-                        return { ...action, state: isNewFile(action.filePath) ? 'created' : 'updated' }
-                    } else {
-                        return { ...action, state: 'streaming' }
-                    }
-                }
-                else {
-                    if (action.type === "file") {
-                        return { ...action, state: isNewFile(action.filePath) ? 'creating' : 'updating' }
-                    } else {
-                        return { ...action, state: 'streaming' }
-                    }
-                }
-            })
-    }
-
-    useEffect(() => {
-        useMessageParser()
-    }, [messages]);
-
-    useEffect(() => {
-        if (streamingFileName && streamingFileName !== selectedFileName) {
-            setSelectedFileName(streamingFileName);
+            const container = await getWebContainer();
+            const initialHierarchy = buildHierarchy(templateFiles);
+            const formattedFiles = formatFilesToMount(initialHierarchy);
+            await container.mount(formattedFiles)
+            setWebContainerInstance(container);
         }
-    }, [streamingFileName]);
+        initializeWebContainer();
+    }, [webContainerInstance]);
+
+    useMessageParser(messages, templateFiles);
 
     // if (isLoading) {
     //     return (

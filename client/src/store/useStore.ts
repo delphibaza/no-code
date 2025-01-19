@@ -11,7 +11,6 @@ interface StoreState {
     selectedFileName: string;
     setSelectedFileName: (name: string) => void;
     messages: Map<string, ParsedMessage>;
-    addMessage: (id: string, message: ParsedMessage) => void;
     updateMessage: (id: string, message: ParsedMessage) => void;
     terminal: XTerm | null,
     setTerminal: (terminal: XTerm) => void;
@@ -27,9 +26,6 @@ export const useStore = create<StoreState>((set) => ({
     selectedFileName: "",
     setSelectedFileName: (name) => set({ selectedFileName: name }),
     messages: new Map(),
-    addMessage: (id, message) => set((state) => ({
-        messages: new Map(state.messages).set(id, message)
-    })),
     updateMessage: (id, message) => set((state) => ({
         messages: new Map(state.messages).set(id, message)
     })),

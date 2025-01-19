@@ -1,8 +1,6 @@
-import { File, Folders, Directory, Files } from "@repo/common/types";
+import { File, Folders } from "@repo/common/types";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { WebContainer } from "@webcontainer/api";
-import type { Terminal as XTerm } from "@xterm/xterm";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -22,51 +20,6 @@ export function findFileContent(folders: Folders[], selectedFileName: string): s
     }
   }
   return undefined; // Return undefined if not found
-}
-
-export function formatFilesToMount(folders: Folders[], result: Files = {}): Files {
-  folders.forEach((item) => {
-    if (item.type === "file") {
-      result[item.name] = {
-        file: {
-          contents: item.content || "",
-        },
-      };
-    } else if (item.type === "folder") {
-      result[item.name] = {
-        directory: {},
-      };
-      formatFilesToMount(item.children || [], (result[item.name] as Directory).directory);
-    }
-  });
-  return result;
-}
-
-export async function startShell(terminal: XTerm, webContainer: WebContainer) {
-  const shellProcess = await webContainer.spawn('jsh', {
-    terminal: {
-      cols: terminal.cols,
-      rows: terminal.rows,
-    },
-  });
-  shellProcess.output.pipeTo(
-    new WritableStream({
-      write(data) {
-        terminal.write(data);
-      },
-    })
-  );
-
-  const input = shellProcess.input.getWriter();
-  terminal.onData((data) => {
-    input.write(data);
-  });
-
-  return shellProcess;
-}
-
-export function isNewFile(filePath: string, templateFiles: File[]) {
-  return templateFiles.every(file => file.filePath !== filePath);
 }
 
 export function projectFilesMsg(files: File[]) {
@@ -118,3 +71,5 @@ Please reference this context to inform your future responses and maintain conve
 }
 
 export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];
+
+export const devCommands = ['npm run dev', 'npm run start', 'npm start', 'yarn dev', 'yarn start', 'pnpm dev', 'pnpm start', 'pnpm run dev', 'pnpm run start'];

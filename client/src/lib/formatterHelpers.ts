@@ -1,4 +1,4 @@
-import { File, Folders } from "@repo/common/types";
+import { File, Folders, Directory, Files } from "@repo/common/types";
 
 export function buildHierarchy(files: File[]): Folders[] {
     const root: Folders = { type: "folder", name: "root", children: [] };
@@ -30,4 +30,22 @@ export function buildHierarchy(files: File[]): Folders[] {
     });
 
     return root.children || [];
+}
+
+export function formatFilesToMount(folders: Folders[], result: Files = {}): Files {
+    folders.forEach((item) => {
+        if (item.type === "file") {
+            result[item.name] = {
+                file: {
+                    contents: item.content || "",
+                },
+            };
+        } else if (item.type === "folder") {
+            result[item.name] = {
+                directory: {},
+            };
+            formatFilesToMount(item.children || [], (result[item.name] as Directory).directory);
+        }
+    });
+    return result;
 }

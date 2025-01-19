@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buildHierarchy } from "@/lib/buildHierarchy";
+import { buildHierarchy } from "@/lib/formatterHelpers";
 import { FileExplorer } from "./FileExplorer";
 import PreviewCode from "./PreviewCode";
 import { Terminal } from "./Terminal";
