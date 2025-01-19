@@ -8,7 +8,7 @@ import { useStore } from "@/store/useStore";
 
 function RenderStructure({ files }: { files: Folders[] }) {
     return (
-        <div className="md:max-h-[55vh] overflow-y-auto">
+        <div style={{ scrollbarWidth: "thin" }} className="md:max-h-[55vh] overflow-y-auto">
             {files.map((file) => {
                 if (file.type === "folder") {
                     return (

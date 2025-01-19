@@ -1,5 +1,7 @@
 import { WebContainer } from '@webcontainer/api';
 import { create } from 'zustand';
+import { ParsedMessage } from '@repo/common/types';
+import type { Terminal as XTerm } from "@xterm/xterm";
 
 interface StoreState {
     doneStreaming: boolean;
@@ -8,13 +10,31 @@ interface StoreState {
     setWebContainerInstance: (container: WebContainer | null) => void;
     selectedFileName: string;
     setSelectedFileName: (name: string) => void;
+    messages: Map<string, ParsedMessage>;
+    addMessage: (id: string, message: ParsedMessage) => void;
+    updateMessage: (id: string, message: ParsedMessage) => void;
+    terminal: XTerm | null,
+    setTerminal: (terminal: XTerm) => void;
+    iframeURL: string;
+    setIframeURL: (url: string) => void;
 }
 
 export const useStore = create<StoreState>((set) => ({
-    doneStreaming: true,
+    doneStreaming: false,
     setDoneStreaming: (done) => set({ doneStreaming: done }),
     webContainerInstance: null,
     setWebContainerInstance: (container) => set({ webContainerInstance: container }),
     selectedFileName: "",
-    setSelectedFileName: (name) => set({ selectedFileName: name })
+    setSelectedFileName: (name) => set({ selectedFileName: name }),
+    messages: new Map(),
+    addMessage: (id, message) => set((state) => ({
+        messages: new Map(state.messages).set(id, message)
+    })),
+    updateMessage: (id, message) => set((state) => ({
+        messages: new Map(state.messages).set(id, message)
+    })),
+    terminal: null,
+    setTerminal: (terminal) => set({ terminal: terminal }),
+    iframeURL: "",
+    setIframeURL: (url) => set({ iframeURL: url }),
 }));

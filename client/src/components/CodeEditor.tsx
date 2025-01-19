@@ -9,6 +9,7 @@ export function CodeEditor({ code }: {
     // setCode: React.Dispatch<React.SetStateAction<string>>
 }) {
     const { theme } = useTheme();
+
     return (
         <CodeMirror
             value={code}

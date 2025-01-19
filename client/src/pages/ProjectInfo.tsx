@@ -2,14 +2,16 @@ import { TabsSwitch } from "@/components/TabsSwitch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
+import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
-import type { File } from "@repo/common/types";
+import type { File, FileAction, ShellAction } from "@repo/common/types";
+import type { WebContainer } from "@webcontainer/api";
+import type { Terminal as Xterm } from "@xterm/xterm";
 import { useChat } from 'ai/react';
-import { parse } from "best-effort-json-parser";
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -21,12 +23,8 @@ export default function ProjectInfo() {
         templateFiles: File[],
         templatePrompt: string,
     };
-    const [files, setFiles] = useState<File[]>([]);
-    const setStreamingDone = useStore((state) => state.setDoneStreaming);
-    const selectedFileName = useStore((state) => state.selectedFileName);
-    const setSelectedFileName = useStore((state) => state.setSelectedFileName);
+    const { terminal, setDoneStreaming, updateMessage, setSelectedFileName, selectedFileName, webContainerInstance, setWebContainerInstance, setIframeURL } = useStore();
     const [streamingFileName, setStreamingFileName] = useState<string | null>(null);
-    const streamingNewFile = useRef(true);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, stop, error, reload, append } = useChat({
         api: `${API_URL}/api/chat`,
@@ -34,7 +32,7 @@ export default function ProjectInfo() {
             // console.log('Finished streaming message:', message);
             // console.log('Token usage:', usage);
             // console.log('Finish reason:', finishReason);
-            setStreamingDone(true);
+            setDoneStreaming(true);
         },
         onError: error => {
             console.error('An error occurred:', error);
@@ -53,55 +51,58 @@ export default function ProjectInfo() {
         append({ id: "3", role: 'user', content: projectInstructionsMsg(enhancedPrompt) })
     }, []);
 
-    useEffect(() => {
-        const lastMessage = messages[messages.length - 1];
-        if (lastMessage.role !== "assistant") {
-            return;
-        }
-        const lastMessageJSON = lastMessage.content;
-        const startIndex = lastMessageJSON.indexOf('{');
-        if (startIndex === -1) {
-            return;
-        }
-        const trimmedJSON = lastMessageJSON.substring(startIndex);
-        const parsedData = parse(trimmedJSON);
-        if (!parsedData
-            || !parsedData.artifact
-            || !parsedData.artifact.actions
-            || !Array.isArray(parsedData.artifact.actions)
-            || parsedData.artifact.actions.length === 0
-        ) {
-            return;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const parsedFiles = parsedData.artifact.actions.filter((action: any) =>
-            action?.type === 'file' &&
-            action?.filePath !== undefined &&
-            action?.content !== undefined
+    async function runCommand(webContainerInstance: WebContainer, terminal: Xterm, commands: string[]) {
+        const process = await webContainerInstance.spawn(commands[0], commands.slice(1));
+        process.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            })
         );
-        // Create a copy of templateFiles to avoid mutating the state directly
-        const updatedFiles = [...templateFiles];
+        const exitCode = await process.exit;
+        return exitCode;
+    }
 
-        if (parsedFiles.length > 0) {
-            for (const file of parsedFiles) {
-                const existingFileIndex = updatedFiles.findIndex((f) => f.filePath === file.filePath);
-                if (existingFileIndex !== -1) {
-                    updatedFiles[existingFileIndex] = { filePath: file.filePath, content: file.content };
-                } else {
-                    updatedFiles.push({ filePath: file.filePath, content: file.content });
-                }
-                const filePathParts = (file.filePath as string).split('/');
-                const newStreamingFileName = filePathParts.at(-1);
-                if (newStreamingFileName) {
-                    setStreamingFileName(newStreamingFileName);
-                    if (streamingNewFile.current) {
-                        setSelectedFileName(newStreamingFileName);
-                        streamingNewFile.current = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function parseActions(actions: any[]): (FileAction | ShellAction)[] {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return actions.map((action: any) => {
+            if (action.type === 'file') {
+                return {
+                    type: 'file',
+                    filePath: action.filePath || '',
+                    content: action.content || '',
+                } as FileAction;
+            } else if (action.type === 'shell') {
+                return {
+                    type: 'shell',
+                    command: action.command || '',
+                } as ShellAction;
+            }
+            return null;
+        })
+            .filter(action => action !== null)
+            .map((action, index, arr) => {
+                if (index !== arr.length - 1) {
+                    if (action.type === 'file') {
+                        return { ...action, state: isNewFile(action.filePath) ? 'created' : 'updated' }
+                    } else {
+                        return { ...action, state: 'streaming' }
                     }
                 }
-            }
-            setFiles(updatedFiles);
-        }
+                else {
+                    if (action.type === "file") {
+                        return { ...action, state: isNewFile(action.filePath) ? 'creating' : 'updating' }
+                    } else {
+                        return { ...action, state: 'streaming' }
+                    }
+                }
+            })
+    }
+
+    useEffect(() => {
+        useMessageParser()
     }, [messages]);
 
     useEffect(() => {
@@ -194,7 +195,7 @@ export default function ProjectInfo() {
                     </form>
                     {/* <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} /> */}
                 </div>
-                <TabsSwitch files={files} />
+                <TabsSwitch />
             </div>
         </>
     );

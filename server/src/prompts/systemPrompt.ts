@@ -132,7 +132,7 @@ ULTRA IMPORTANT: Do NOT be verbose and DO NOT explain anything unless the user i
 ULTRA IMPORTANT: Think first and reply with the artifact that contains all necessary steps to set up the project, files, shell commands to run. It is SUPER IMPORTANT to respond with this first.
 
 ## Context Generation
-Please generate the initial and ending contexts for each artifact. The initial context should describe the purpose and scope of the artifact, and the ending context should provide a summary of the actions performed, any additional information relevant to the user and some next steps.
+Please generate the initial and ending contexts for each artifact in simple markdown format. The initial context should describe the purpose and scope of the artifact, and the ending context should provide a summary of the actions performed, any additional information relevant to the user and some next steps.
 Please strictly follow the JSON structure/schema provided in the examples below. The response must be a valid JSON object. Do not include any other text in the response.
 Please give the commands to run the code in the "actions" section. Do not forget the order of commands to run the code.
 
@@ -181,7 +181,7 @@ Build a snake game
       },
       {
         "type": "shell",
-        "command": "npm install --save-dev vite"
+        "command": "npm install"
       },
       {
         "type": "file",
@@ -212,6 +212,10 @@ Make a bouncing ball with real gravity using React
         "type": "file",
         "filePath": "package.json",
         "content": "{\n  \"name\": \"bouncing-ball\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"react-spring\": \"^9.7.1\"\n  },\n  \"devDependencies\": {\n    \"@types/react\": \"^18.0.28\",\n    \"@types/react-dom\": \"^18.0.11\",\n    \"@vitejs/plugin-react\": \"^3.1.0\",\n    \"vite\": \"^4.2.0\"\n  }\n}"
+      },
+      {
+        "type": "shell",
+        "command": "npm run dev"
       },
       {
         "type": "file",
