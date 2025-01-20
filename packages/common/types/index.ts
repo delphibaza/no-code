@@ -10,19 +10,19 @@ export type Folders = {
 };
 export type HeadersInit = [string, string][] | Record<string, string> | Headers;
 export type ActionType = 'file' | 'shell';
-export interface BaseAction {
-    content: string;
-}
-export interface FileAction extends BaseAction {
+
+export interface FileAction {
     type: 'file';
     filePath: string;
+    content: string;
+    state: "creating" | "created" | "updating" | "updated" | "mounted"
 }
-export interface ShellAction extends BaseAction {
+export interface ShellAction {
     type: 'shell';
+    command: string;
+    state: "streaming" | "streamed" | "running" | "completed" | "error";
 }
-export interface Artifact {
-    id: string;
-    title: string;
+export interface ParsedMessage {
     initialContext: string;
     actions: (FileAction | ShellAction)[];
     endingContext: string;
