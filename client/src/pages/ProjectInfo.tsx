@@ -5,13 +5,13 @@ import { Workbench } from "@/components/Workbench";
 import { getWebContainer } from "@/config/webContainer";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { buildHierarchy, formatFilesToMount } from "@/lib/formatterHelpers";
+import { mountFiles } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -55,11 +55,13 @@ export default function ProjectInfo() {
             if (webContainerInstance) {
                 return;
             }
-            const container = await getWebContainer();
-            const initialHierarchy = buildHierarchy(templateFiles);
-            const formattedFiles = formatFilesToMount(initialHierarchy);
-            await container.mount(formattedFiles)
-            setWebContainerInstance(container);
+            try {
+                const container = await getWebContainer();
+                await mountFiles(templateFiles, container);
+                setWebContainerInstance(container);
+            } catch (error) {
+                console.error('An error occurred while initializing the web container:', error);
+            }
         }
         initializeWebContainer();
     }, [webContainerInstance]);
