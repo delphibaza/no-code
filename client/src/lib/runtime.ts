@@ -8,39 +8,27 @@ export function isNewFile(filePath: string, templateFiles: File[]) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseActions(actions: any[], templateFiles: File[]): (FileAction | ShellAction)[] {
+export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return actions.map((action: any) => {
         if (action.type === 'file') {
             return {
                 type: 'file',
                 filePath: action.filePath || '',
-                content: action.content || '',
+                content: action.content || ''
             }
         } else if (action.type === 'shell') {
             return {
                 type: 'shell',
-                command: action.command || '',
+                command: action.command || ''
             }
         }
         return null;
     })
         .filter(action => action !== null)
         .map((action, index, arr) => {
-            if (index !== arr.length - 1) {
-                if (action.type === 'file') {
-                    return { ...action, state: isNewFile(action.filePath, templateFiles) ? 'created' : 'updated' }
-                } else {
-                    return { ...action, state: 'streaming' }
-                }
-            }
-            else {
-                if (action.type === "file") {
-                    return { ...action, state: isNewFile(action.filePath, templateFiles) ? 'creating' : 'updating' }
-                } else {
-                    return { ...action, state: 'streaming' }
-                }
-            }
+            if (index !== arr.length - 1) return { ...action, state: 'streamed' }
+            else return { ...action, state: 'streaming' }
         }) as (FileAction | ShellAction)[];
 }
 

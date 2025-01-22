@@ -1,6 +1,6 @@
 import { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import { create } from 'zustand';
-import { ParsedMessage } from '@repo/common/types';
+import { FileAction, ParsedMessage } from '@repo/common/types';
 import type { Terminal as XTerm } from "@xterm/xterm";
 
 export interface StoreState {
@@ -17,10 +17,13 @@ export interface StoreState {
     shellProcess: WebContainerProcess | null;
     setShellProcess: (process: WebContainerProcess | null) => void;
     iframeURL: string;
+    getFiles: () => FileAction[];
     setIframeURL: (url: string) => void;
+    currentTab: 'code' | 'preview';
+    setCurrentTab: (tab: 'code' | 'preview') => void;
 }
 
-export const useStore = create<StoreState>((set) => ({
+export const useStore = create<StoreState>((set, get) => ({
     doneStreaming: false,
     setDoneStreaming: (done) => set({ doneStreaming: done }),
     webContainerInstance: null,
@@ -32,9 +35,21 @@ export const useStore = create<StoreState>((set) => ({
         messages: new Map(state.messages).set(id, message)
     })),
     terminal: null,
-    setTerminal: (terminal) => set({ terminal: terminal }),
+    setTerminal: (terminal) => set({ terminal }),
+    getFiles: () => {
+        const messages = get().messages;
+        if (messages.size === 0) return [];
+
+        // Get the last message's actions
+        const lastMessage = Array.from(messages.values()).at(-1);
+        if (!lastMessage) return [];
+
+        return lastMessage.actions.filter(action => action.type === 'file')
+    },
     shellProcess: null,
     setShellProcess: (process) => set({ shellProcess: process }),
     iframeURL: "",
     setIframeURL: (url) => set({ iframeURL: url }),
+    currentTab: 'code',
+    setCurrentTab: (tab) => set({ currentTab: tab })
 }));

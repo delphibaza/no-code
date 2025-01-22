@@ -11,13 +11,16 @@ export type Folders = {
 export type HeadersInit = [string, string][] | Record<string, string> | Headers;
 export type ActionType = 'file' | 'shell';
 
-export interface FileAction {
+interface BaseAction {
+    id: number;
+}
+export interface FileAction extends BaseAction {
     type: 'file';
     filePath: string;
     content: string;
-    state: "creating" | "created" | "updating" | "updated" | "mounting" | "mounted" | "error"
+    state: "streaming" | "streamed"
 }
-export interface ShellAction {
+export interface ShellAction extends BaseAction {
     type: 'shell';
     command: string;
     state: "streaming" | "streamed" | "running" | "completed" | "error";

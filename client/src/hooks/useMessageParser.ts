@@ -1,13 +1,15 @@
 import { parseActions } from "@/lib/runtime";
+import { actionExecutor } from "@/services/ActionExecutor";
 import { useStore } from "@/store/useStore";
-import { File, FileAction, ParsedMessage } from "@repo/common/types";
+import { FileAction, ParsedMessage, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-export function useMessageParser(messages: Message[], templateFiles: File[]) {
+export function useMessageParser(messages: Message[]) {
     const [streamingFileName, setStreamingFileName] = useState<string | null>(null);
+    const [lastStreamedAction, setLastStreamedAction] = useState<FileAction | ShellAction | null>(null);
     const {
         selectedFileName,
         setSelectedFileName,
@@ -42,11 +44,28 @@ export function useMessageParser(messages: Message[], templateFiles: File[]) {
 
                 const parsedMessage: ParsedMessage = {
                     initialContext: parsedData.artifact.initialContext || '',
-                    actions: parseActions(parsedData.artifact.actions || [], templateFiles),
+                    actions: parseActions(parsedData.artifact.actions || []),
                     endingContext: parsedData.artifact.endingContext || ''
                 };
-                const lastStreamedAction = parsedMessage.actions.at(-2);
-
+                if (!parsedMessage.endingContext) {
+                    const lastStreamedAction = parsedMessage.actions.at(-2);
+                    if (lastStreamedAction) {
+                        setLastStreamedAction({
+                            ...lastStreamedAction,
+                            id: parsedMessage.actions.length - 2
+                        });
+                    }
+                }
+                else {
+                    const lastStreamedAction = parsedMessage.actions.at(-1);
+                    if (lastStreamedAction) {
+                        setLastStreamedAction({
+                            ...lastStreamedAction,
+                            state: 'streamed',
+                            id: parsedMessage.actions.length - 1
+                        });
+                    }
+                }
                 updateMessage(lastMessage.id, parsedMessage);
 
                 const fileActions = parsedMessage.actions.filter((action): action is FileAction =>
@@ -75,6 +94,12 @@ export function useMessageParser(messages: Message[], templateFiles: File[]) {
             setSelectedFileName(streamingFileName);
         }
     }, [streamingFileName]);
+
+    useEffect(() => {
+        if (lastStreamedAction) {
+            actionExecutor.addAction(lastStreamedAction);
+        }
+    }, [lastStreamedAction?.id]);
 
     return;
 }

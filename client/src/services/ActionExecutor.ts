@@ -1,4 +1,4 @@
-import { mountFiles as mountFile, runCommand, startShell } from "@/lib/runtime";
+import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
 import { devCommands, installCommands } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import { FileAction, ShellAction } from "@repo/common/types";
@@ -9,12 +9,13 @@ interface Dependencies {
     getWebContainer: () => WebContainer | null;
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
-    setShellProcess: (process: WebContainerProcess | null) => void;
     setIframeURL: (url: string) => void;
+    setCurrentTab: (tab: 'code' | 'preview') => void;
 }
 // TODO: Update the state of the actions in the store
+// TODO: We need to wait for npm install to finish before running the dev command
 class ActionExecutor {
-    private actions = new Map<string, FileAction | ShellAction>();
+    private actions = new Map<number, FileAction | ShellAction>();
     private deps: Dependencies;
 
     constructor(dependencies: Dependencies) {
@@ -24,27 +25,16 @@ class ActionExecutor {
     async addAction(action: FileAction | ShellAction) {
         const webContainer = this.deps.getWebContainer();
         const terminal = this.deps.getTerminal();
+        const shellProcess = this.deps.getShellProcess();
 
-        if (!webContainer || !terminal) {
-            console.error('WebContainer or Terminal not found');
+        if (!webContainer || !terminal || !shellProcess) {
+            console.error('WebContainer or Terminal or Shell Process not found');
             return;
         }
 
         if (action.type === 'file') {
-            if (this.actions.has(action.filePath)) {
-                return;
-            }
-            this.actions.set(action.filePath, { ...action, state: 'mounting' });
             await this.handleFileAction(action, webContainer);
         } else if (action.type === 'shell') {
-            if (this.actions.has(action.command)) {
-                return;
-            }
-            for (const value of this.actions.values()) {
-                if (value.type === 'file' && value.state === 'mounting') {
-
-                }
-            }
             await this.handleShellAction(action, webContainer, terminal);
         }
     }
@@ -55,9 +45,7 @@ class ActionExecutor {
     ) {
         try {
             await mountFile({ filePath: action.filePath, content: action.content }, webContainer);
-            this.actions.set(action.filePath, { ...action, state: 'mounted' });
         } catch (error) {
-            this.actions.set(action.filePath, { ...action, state: 'error' });
             console.error('File action failed:', error);
             throw error;
         }
@@ -69,14 +57,7 @@ class ActionExecutor {
         terminal: Terminal
     ) {
         try {
-            const shellProcess = this.deps.getShellProcess();
-
-            if (!shellProcess) {
-                const newShellProcess = await startShell(terminal, webContainer);
-                this.deps.setShellProcess(newShellProcess);
-            }
-
-            this.actions.set(action.command, { ...action, state: 'running' });
+            this.actions.set(action.id, { ...action, state: 'running' });
 
             const commandArgs = action.command.trim().split(' ');
             const isInstallCommand = installCommands.some(cmd => cmd === action.command);
@@ -93,6 +74,8 @@ class ActionExecutor {
                 if (exitCode === null) {
                     webContainer.on('server-ready', (port, url) => {
                         this.deps.setIframeURL(url);
+                        this.deps.setCurrentTab('preview')
+                        this.actions.clear();
                     });
                 } else {
                     throw new Error(`Failed to run command: ${action.command}`);
@@ -102,7 +85,7 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.actions.set(action.command, { ...action, state: 'completed' });
+            this.actions.set(action.id, { ...action, state: 'completed' });
         } catch (error) {
             console.error('Command execution failed:', error);
             throw error;
@@ -114,6 +97,6 @@ export const actionExecutor = new ActionExecutor({
     getWebContainer: () => useStore.getState().webContainerInstance,
     getTerminal: () => useStore.getState().terminal,
     getShellProcess: () => useStore.getState().shellProcess,
-    setShellProcess: (process) => useStore.getState().setShellProcess(process),
-    setIframeURL: (url) => useStore.getState().setIframeURL(url)
+    setIframeURL: (url) => useStore.getState().setIframeURL(url),
+    setCurrentTab: (tab) => useStore.getState().setCurrentTab(tab)
 })

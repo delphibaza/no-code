@@ -5,7 +5,7 @@ import { Workbench } from "@/components/Workbench";
 import { getWebContainer } from "@/config/webContainer";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { mountFiles } from "@/lib/runtime";
+import { mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 import type { File } from "@repo/common/types";
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
@@ -23,7 +24,22 @@ export default function ProjectInfo() {
         templateFiles: File[],
         templatePrompt: string,
     };
-    const { setDoneStreaming, webContainerInstance, setWebContainerInstance } = useStore();
+    const { webContainerInstance,
+        terminal,
+        setDoneStreaming,
+        setWebContainerInstance,
+        shellProcess,
+        setShellProcess
+    } = useStore(
+        useShallow(state => ({
+            webContainerInstance: state.webContainerInstance,
+            terminal: state.terminal,
+            shellProcess: state.shellProcess,
+            setShellProcess: state.setShellProcess,
+            setDoneStreaming: state.setDoneStreaming,
+            setWebContainerInstance: state.setWebContainerInstance
+        }))
+    );
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, stop, error, reload, append } = useChat({
         api: `${API_URL}/api/chat`,
@@ -52,9 +68,6 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         async function initializeWebContainer() {
-            if (webContainerInstance) {
-                return;
-            }
             try {
                 const container = await getWebContainer();
                 await mountFiles(templateFiles, container);
@@ -63,10 +76,26 @@ export default function ProjectInfo() {
                 console.error('An error occurred while initializing the web container:', error);
             }
         }
-        initializeWebContainer();
+        if (!webContainerInstance) {
+            initializeWebContainer();
+        }
     }, [webContainerInstance]);
 
-    useMessageParser(messages, templateFiles);
+    useEffect(() => {
+        async function initializeShell() {
+            if (!webContainerInstance || !terminal || shellProcess) return;
+            try {
+                const shellProcess = await startShell(terminal, webContainerInstance);
+                setShellProcess(shellProcess);
+            } catch (error) {
+                console.error('Failed to initialize shell:', error);
+                setShellProcess(null);
+            }
+        }
+        initializeShell();
+    }, [webContainerInstance, terminal]);
+
+    useMessageParser(messages);
 
     // if (isLoading) {
     //     return (
