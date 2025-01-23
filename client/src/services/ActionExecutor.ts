@@ -1,7 +1,8 @@
 import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
-import { devCommands, installCommands } from "@/lib/utils";
+import { isDevCommand, isInstallCommand } from "@/lib/utils";
+import { useMessageStore } from "@/store/messageStore";
 import { useStore } from "@/store/useStore";
-import { FileAction, ShellAction } from "@repo/common/types";
+import { ActionState, FileAction, ShellAction } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
 
@@ -11,11 +12,11 @@ interface Dependencies {
     getShellProcess: () => WebContainerProcess | null;
     setIframeURL: (url: string) => void;
     setCurrentTab: (tab: 'code' | 'preview') => void;
+    updateAction: (actionId: number, action: ActionState) => void;
 }
 // TODO: Update the state of the actions in the store
 // TODO: We need to wait for npm install to finish before running the dev command
 class ActionExecutor {
-    private actions = new Map<number, FileAction | ShellAction>();
     private deps: Dependencies;
 
     constructor(dependencies: Dependencies) {
@@ -45,6 +46,7 @@ class ActionExecutor {
     ) {
         try {
             await mountFile({ filePath: action.filePath, content: action.content }, webContainer);
+            this.deps.updateAction(action.id, { ...action, state: 'created' })
         } catch (error) {
             console.error('File action failed:', error);
             throw error;
@@ -57,17 +59,14 @@ class ActionExecutor {
         terminal: Terminal
     ) {
         try {
-            this.actions.set(action.id, { ...action, state: 'running' });
-
+            this.deps.updateAction(action.id, { ...action, state: 'running' })
             const commandArgs = action.command.trim().split(' ');
-            const isInstallCommand = installCommands.some(cmd => cmd === action.command);
-            const isDevCommand = devCommands.some(cmd => cmd === action.command);
 
-            if (isInstallCommand) {
+            if (isInstallCommand(action.command)) {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error("Installation failed");
             }
-            else if (isDevCommand) {
+            else if (isDevCommand(action.command)) {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
                 // TODO: Add a check to see if the server is ready
                 // TODO: Update the state of the actions
@@ -75,7 +74,6 @@ class ActionExecutor {
                     webContainer.on('server-ready', (port, url) => {
                         this.deps.setIframeURL(url);
                         this.deps.setCurrentTab('preview')
-                        this.actions.clear();
                     });
                 } else {
                     throw new Error(`Failed to run command: ${action.command}`);
@@ -85,9 +83,9 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.actions.set(action.id, { ...action, state: 'completed' });
+            this.deps.updateAction(action.id, { ...action, state: 'completed' })
         } catch (error) {
-            console.error('Command execution failed:', error);
+            this.deps.updateAction(action.id, { ...action, state: 'error' })
             throw error;
         }
     }
@@ -98,5 +96,6 @@ export const actionExecutor = new ActionExecutor({
     getTerminal: () => useStore.getState().terminal,
     getShellProcess: () => useStore.getState().shellProcess,
     setIframeURL: (url) => useStore.getState().setIframeURL(url),
-    setCurrentTab: (tab) => useStore.getState().setCurrentTab(tab)
+    setCurrentTab: (tab) => useStore.getState().setCurrentTab(tab),
+    updateAction: (actionId, action) => useMessageStore.getState().updateActionStatus(actionId, action)
 })

@@ -10,7 +10,9 @@ export function Workbench() {
     )
 
     return (
-        <div className="w-[25vw] h-[75vh] bg-gray-100 rounded-md px-3 py-4">
+        <div style={{ scrollbarWidth: 'thin' }}
+            className="h-[75vh] overflow-y-auto bg-gray-100 rounded-lg px-4 py-4"
+        >
             {Array.from(messages).map(([id, message]) =>
                 <ArtifactCard
                     key={id}

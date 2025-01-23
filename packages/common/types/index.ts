@@ -18,7 +18,7 @@ export interface FileAction extends BaseAction {
     type: 'file';
     filePath: string;
     content: string;
-    state: "streaming" | "streamed"
+    state: "creating" | "created" | "updating" | "updated"
 }
 export interface ShellAction extends BaseAction {
     type: 'shell';
@@ -35,9 +35,19 @@ export interface ContentFile {
         contents: string;
     };
 }
-
 export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
-
 export type Files = Record<string, ContentFile | Directory>;
+
+export type ActionState = Omit<FileAction, 'id' | 'content'> | Omit<ShellAction, 'id'>;
+
+export type ActionHistory = ActionState & {
+    actionId: number;
+    timestamp: number;
+}
+
+export type MessageHistory = {
+    messageId: string;
+    actions: ActionHistory[];
+}
