@@ -19,7 +19,7 @@ export function TabsSwitch() {
     const folders = buildHierarchy(files);
 
     return (
-        <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'code' | 'preview')} className="w-[60vw]">
+        <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'code' | 'preview')} className="col-span-8">
             <TabsList className="bg-secondary rounded-3xl space-x-2 px-1">
                 <TabsTrigger className="rounded-2xl text-xs" value="code">Code</TabsTrigger>
                 <TabsTrigger className="rounded-2xl text-xs" value="preview">Preview</TabsTrigger>

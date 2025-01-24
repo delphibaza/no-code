@@ -1,7 +1,7 @@
-import { WebContainer, WebContainerProcess } from '@webcontainer/api';
-import { create } from 'zustand';
 import { FileAction, ParsedMessage } from '@repo/common/types';
+import { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import type { Terminal as XTerm } from "@xterm/xterm";
+import { create } from 'zustand';
 
 export interface StoreState {
     doneStreaming: boolean;

@@ -9,8 +9,7 @@ export function isNewFile(filePath: string, templateFiles: File[]) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return actions.map((action: any) => {
+    return actions.map((action) => {
         if (action.type === 'file') {
             return {
                 type: 'file',
@@ -24,12 +23,7 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
             }
         }
         return null;
-    })
-        .filter(action => action !== null)
-        .map((action, index, arr) => {
-            if (index !== arr.length - 1) return { ...action, state: 'streamed' }
-            else return { ...action, state: 'streaming' }
-        }) as (FileAction | ShellAction)[];
+    }).filter(action => action !== null) as (FileAction | ShellAction)[];
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {

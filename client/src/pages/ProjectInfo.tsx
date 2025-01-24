@@ -7,6 +7,7 @@ import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import { useMessageStore } from "@/store/messageStore";
 import { useStore } from "@/store/useStore";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
@@ -29,7 +30,7 @@ export default function ProjectInfo() {
         setDoneStreaming,
         setWebContainerInstance,
         shellProcess,
-        setShellProcess
+        setShellProcess,
     } = useStore(
         useShallow(state => ({
             webContainerInstance: state.webContainerInstance,
@@ -37,7 +38,13 @@ export default function ProjectInfo() {
             shellProcess: state.shellProcess,
             setShellProcess: state.setShellProcess,
             setDoneStreaming: state.setDoneStreaming,
+            updateMessage: state.updateMessage,
             setWebContainerInstance: state.setWebContainerInstance
+        }))
+    );
+    const { addAction } = useMessageStore(
+        useShallow(state => ({
+            addAction: state.addAction
         }))
     );
 
@@ -72,6 +79,13 @@ export default function ProjectInfo() {
                 const container = await getWebContainer();
                 await mountFiles(templateFiles, container);
                 setWebContainerInstance(container);
+                templateFiles.forEach(file => {
+                    addAction({
+                        type: 'file',
+                        filePath: file.filePath,
+                        state: 'created'
+                    });
+                });
             } catch (error) {
                 console.error('An error occurred while initializing the web container:', error);
             }
@@ -79,7 +93,7 @@ export default function ProjectInfo() {
         if (!webContainerInstance) {
             initializeWebContainer();
         }
-    }, [webContainerInstance]);
+    }, [webContainerInstance, templateFiles]);
 
     useEffect(() => {
         async function initializeShell() {
@@ -95,7 +109,7 @@ export default function ProjectInfo() {
         initializeShell();
     }, [webContainerInstance, terminal]);
 
-    useMessageParser(messages);
+    useMessageParser(messages, templateFiles);
 
     // if (isLoading) {
     //     return (
@@ -147,8 +161,8 @@ export default function ProjectInfo() {
     return (
         <>
             <Toaster />
-            <div className="flex w-full h-full justify-between p-10">
-                <div className="flex flex-col gap-y-5">
+            <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+                <div className="flex flex-col gap-y-5 col-span-4">
                     <Workbench />
                     {/* {error && (
                         <>

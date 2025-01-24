@@ -1,32 +1,30 @@
 import { parseActions } from "@/lib/runtime";
 import { actionExecutor } from "@/services/ActionExecutor";
 import { useStore } from "@/store/useStore";
-import { FileAction, ParsedMessage, ShellAction } from "@repo/common/types";
+import { File, FileAction, ParsedMessage, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-export function useMessageParser(messages: Message[]) {
+export function useMessageParser(messages: Message[], templateFiles: File[]) {
     const [streamingFileName, setStreamingFileName] = useState<string | null>(null);
     const [lastStreamedAction, setLastStreamedAction] = useState<FileAction | ShellAction | null>(null);
     const {
         selectedFileName,
         setSelectedFileName,
-        updateMessage,
     } = useStore(
         useShallow(state => ({
             selectedFileName: state.selectedFileName,
             setSelectedFileName: state.setSelectedFileName,
-            updateMessage: state.updateMessage,
         }))
-    )
+    );
 
     useEffect(() => {
         async function messageParser() {
             try {
-                const lastMessage = messages[messages.length - 1];
-                if (lastMessage.role !== "assistant") {
+                const lastMessage = messages.at(-1);
+                if (!lastMessage || lastMessage.role !== "assistant") {
                     return;
                 }
                 const lastMessageJSON = lastMessage.content;
@@ -61,12 +59,10 @@ export function useMessageParser(messages: Message[]) {
                     if (lastStreamedAction) {
                         setLastStreamedAction({
                             ...lastStreamedAction,
-                            state: 'streamed',
                             id: parsedMessage.actions.length - 1
                         });
                     }
                 }
-                updateMessage(lastMessage.id, parsedMessage);
 
                 const fileActions = parsedMessage.actions.filter((action): action is FileAction =>
                     !!(action.type === 'file' && action.filePath && action.content)

@@ -73,3 +73,11 @@ Please reference this context to inform your future responses and maintain conve
 export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];
 
 export const devCommands = ['npm run dev', 'npm run start', 'npm start', 'yarn dev', 'yarn start', 'pnpm dev', 'pnpm start', 'pnpm run dev', 'pnpm run start'];
+
+export function isInstallCommand(command: string) {
+  return installCommands.some(cmd => cmd === command)
+}
+
+export function isDevCommand(command: string) {
+  return devCommands.some(cmd => cmd === command)
+}
