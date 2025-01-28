@@ -7,7 +7,7 @@ import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
-import { useMessageStore } from "@/store/messageStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useStore } from "@/store/useStore";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
@@ -42,9 +42,9 @@ export default function ProjectInfo() {
             setWebContainerInstance: state.setWebContainerInstance
         }))
     );
-    const { addAction } = useMessageStore(
+    const { initializeFiles } = useProjectStore(
         useShallow(state => ({
-            addAction: state.addAction
+            initializeFiles: state.initializeFiles
         }))
     );
 
@@ -79,13 +79,7 @@ export default function ProjectInfo() {
                 const container = await getWebContainer();
                 await mountFiles(templateFiles, container);
                 setWebContainerInstance(container);
-                templateFiles.forEach(file => {
-                    addAction({
-                        type: 'file',
-                        filePath: file.filePath,
-                        state: 'created'
-                    });
-                });
+                initializeFiles(templateFiles);
             } catch (error) {
                 console.error('An error occurred while initializing the web container:', error);
             }
