@@ -1,24 +1,26 @@
 import { useShallow } from "zustand/react/shallow"
 import { ArtifactCard } from "./ArtifactCard"
-import { useMessageStore } from "@/store/messageStore"
+import { useProjectStore } from "@/store/projectStore";
 
 export function Workbench() {
-    const { getActions } = useMessageStore(
+    const { actions, messages } = useProjectStore(
         useShallow(state => ({
-            getActions: state.getActions
+            actions: state.actions,
+            messages: state.messages
         }))
-    )
-
+    );
+    
     return (
         <div style={{ scrollbarWidth: 'thin' }}
             className="h-[75vh] overflow-y-auto bg-gray-100 rounded-lg px-4 py-4"
         >
-            {getActions().map(action =>
+            {Array.from(messages.entries()).map(([messageId, message]) =>
                 <ArtifactCard
-                    key={action.id}
-                    parsedMsg={action}
+                    key={messageId}
+                    content={message.content}
+                    actions={actions.get(messageId) || []}
                 />
             )}
         </div>
-    )
+    );
 }

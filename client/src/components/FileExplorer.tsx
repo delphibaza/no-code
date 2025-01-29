@@ -4,7 +4,7 @@ import { findFileContent } from "@/lib/utils";
 import { Folders } from "@repo/common/types";
 import { FolderComponent } from "./FolderComponent";
 import { FileComponent } from "./FileComponent";
-import { useStore } from "@/store/useStore";
+import { useGeneralStore } from "@/store/generalStore";
 
 function RenderStructure({ files }: { files: Folders[] }) {
     return (
@@ -30,7 +30,7 @@ function RenderStructure({ files }: { files: Folders[] }) {
 }
 
 export function FileExplorer({ folders }: { folders: Folders[] }) {
-    const selectedFileName = useStore((state) => state.selectedFileName);
+    const selectedFileName = useGeneralStore((state) => state.selectedFileName);
     return (
         <div className="grid grid-cols-10 gap-x-2">
             <div className="col-span-2 bg-secondary rounded-sm flex flex-col px-1">

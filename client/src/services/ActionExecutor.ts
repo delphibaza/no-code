@@ -1,7 +1,7 @@
 import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
+import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { useStore } from "@/store/useStore";
 import { ActionState, FileAction, ShellAction } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
@@ -115,10 +115,10 @@ class ActionExecutor {
 }
 
 export const actionExecutor = new ActionExecutor({
-    getWebContainer: () => useStore.getState().webContainerInstance,
-    getTerminal: () => useStore.getState().terminal,
-    getShellProcess: () => useStore.getState().shellProcess,
-    setIframeURL: (url) => useStore.getState().setIframeURL(url),
-    setCurrentTab: (tab) => useStore.getState().setCurrentTab(tab),
+    getWebContainer: () => useGeneralStore.getState().webContainerInstance,
+    getTerminal: () => useGeneralStore.getState().terminal,
+    getShellProcess: () => useGeneralStore.getState().shellProcess,
+    setIframeURL: (url) => useGeneralStore.getState().setIframeURL(url),
+    setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
     updateActionStatus: (actionId, action) => useProjectStore.getState().updateActionStatus(actionId, action)
-})
+});      

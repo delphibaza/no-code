@@ -2,7 +2,7 @@ import { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { create } from 'zustand';
 
-export interface StoreState {
+export interface GeneralStoreState {
     doneStreaming: boolean;
     setDoneStreaming: (done: boolean) => void;
     webContainerInstance: WebContainer | null;
@@ -19,7 +19,7 @@ export interface StoreState {
     setCurrentTab: (tab: 'code' | 'preview') => void;
 }
 
-export const useStore = create<StoreState>((set) => ({
+export const useGeneralStore = create<GeneralStoreState>((set) => ({
     doneStreaming: false,
     setDoneStreaming: (done) => set({ doneStreaming: done }),
     webContainerInstance: null,

@@ -13,19 +13,22 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
         if (action.type === 'file') {
             return {
                 type: 'file',
-                id: crypto.randomUUID(),
                 filePath: action.filePath || '',
                 content: action.content || ''
             }
         } else if (action.type === 'shell') {
             return {
                 type: 'shell',
-                id: crypto.randomUUID(),
                 command: action.command || ''
             }
         }
         return null;
-    }).filter(action => action !== null) as (FileAction | ShellAction)[];
+    })
+    .filter(action => action !== null)
+    .filter(action => action.type === 'file'
+            ? !!(action.type === 'file' && action.filePath && action.content)
+            : !!(action.type === 'shell' && action.command)
+    ) as (FileAction | ShellAction)[];
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {

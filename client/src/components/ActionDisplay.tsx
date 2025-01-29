@@ -1,8 +1,8 @@
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
-import { ShellAction, FileAction } from "@repo/common/types";
+import { FileActionState, ShellActionState } from "@repo/common/types";
 import { Check, Loader2 } from "lucide-react";
 
-export function ShellActionDisplay({ action }: { action: ShellAction }) {
+export function ShellActionDisplay({ action }: { action: ShellActionState }) {
     return <div className="flex flex-col gap-y-2">
         <div className="flex items-center gap-x-2">
             {
@@ -24,13 +24,13 @@ export function ShellActionDisplay({ action }: { action: ShellAction }) {
     </div>
 }
 
-export function FileActionDisplay({ action, isNew }: { action: FileAction, isNew: boolean }) {
+export function FileActionDisplay({ action }: { action: FileActionState }) {
     return <div className="flex items-center gap-x-2">
         {
-            action.state === 'streaming'
+            action.state === 'creating'
                 ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                 : <Check className="h-4 w-4 text-green-500" />
         }
-        <div>{isNew ? 'Create ' : 'Update '} {action.filePath}</div>
+        <div>{action.state === 'creating' ? 'Create ' : 'Update '} {action.filePath}</div>
     </div>
 }

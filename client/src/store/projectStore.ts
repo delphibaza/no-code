@@ -1,14 +1,9 @@
-import { ActionState, File, ParsedFiles } from '@repo/common/types';
+import { ActionState, File, ParsedFiles, Message } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-// TODO: add messages actions
+
 interface ProjectState {
-    messages: {
-        id: string;
-        timestamp: number;
-        role: 'user' | 'assistant';
-        content: string;
-    }[];
+    messages: Map<string, Message>;
     // ParsedMessage with only files
     currentMessage: ParsedFiles | null;
     currentMessageId: string | null;
@@ -18,6 +13,7 @@ interface ProjectState {
     selectedFile: string | null;
 
     // Actions
+    upsertMessage: (messageId: string, message: Message) => void;
     addAction: (messageId: string, action: ActionState) => void;
     updateActionStatus: (actionId: string, status: ActionState) => void;
     updateFile: (filePath: string, content: string) => void;
@@ -34,6 +30,14 @@ export const useProjectStore = create<ProjectState>()(
             actions: new Map(),
             lastModified: Date.now(),
             selectedFile: null,
+            messages: new Map(),
+
+            upsertMessage: (messageId, message) =>
+                set((state) => {
+                    const messages = new Map(state.messages);
+                    messages.set(messageId, message);
+                    return { messages };
+                }),
 
             updateFile: (filePath, content) =>
                 set((state) => {
@@ -74,12 +78,7 @@ export const useProjectStore = create<ProjectState>()(
                 set((state) => {
                     const actions = new Map(state.actions);
                     const currentMessage = actions.get(messageId);
-                    if (!currentMessage) {
-                        return {
-                            actions: state.actions
-                        };
-                    }
-                    const newActions = [...currentMessage, action];
+                    const newActions = currentMessage ? [...currentMessage, action] : [action];
                     actions.set(messageId, newActions);
                     return {
                         actions: actions,
@@ -110,8 +109,9 @@ export const useProjectStore = create<ProjectState>()(
 
             initializeFiles: (templateFiles) =>
                 set(() => {
+                    const messageId = crypto.randomUUID();
                     const fileActions = templateFiles.map(file => ({
-                        id: crypto.randomUUID(),
+                        id: messageId + file.filePath,
                         timestamp: Date.now(),
                         type: 'file' as const,
                         filePath: file.filePath,
@@ -124,7 +124,7 @@ export const useProjectStore = create<ProjectState>()(
                             files: fileActions,
                             endingContext: ''
                         },
-                        currentMessageId: crypto.randomUUID(),
+                        currentMessageId: messageId,
                         lastModified: Date.now(),
                     };
                 })

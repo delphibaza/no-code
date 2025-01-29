@@ -1,9 +1,9 @@
 import { Loader2 } from "lucide-react";
-import { useStore } from "@/store/useStore";
+import { useGeneralStore } from "@/store/generalStore";
 
 const PreviewCode = () => {
-    const doneStreaming = useStore((state) => state.doneStreaming);
-    const url = useStore((state) => state.iframeURL);
+    const doneStreaming = useGeneralStore((state) => state.doneStreaming);
+    const url = useGeneralStore((state) => state.iframeURL);
 
     // const handleTerminalResize = (cols: number, rows: number) => {
     //     if (shellProcess) {

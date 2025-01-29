@@ -1,14 +1,14 @@
-import { isNewFile } from "@/lib/runtime";
-import { ParsedMessage } from "@repo/common/types";
+import { ActionState } from "@repo/common/types";
 import { Check } from "lucide-react";
 import { FileActionDisplay, ShellActionDisplay } from "./ActionDisplay";
+import { parse } from "best-effort-json-parser";
 
-export function ArtifactCard({ parsedMsg }: { parsedMsg: ParsedMessage }) {
-    const { initialContext, actions, endingContext } = parsedMsg;
+export function ArtifactCard({ content, actions }: { content: string, actions: ActionState[] }) {
+    const { artifact } = parse(content);
     return (
         <div className="flex flex-col gap-y-4 text-sm">
             <div>
-                {initialContext}
+                {artifact?.initialContext ?? ''}
             </div>
             <div className="flex flex-col gap-y-3 bg-primary-foreground rounded-md px-4 py-4">
                 <div className="flex items-center gap-x-2">
@@ -16,12 +16,12 @@ export function ArtifactCard({ parsedMsg }: { parsedMsg: ParsedMessage }) {
                     Create initial files
                 </div>
                 {actions.map(action => action.type === 'file'
-                    ? <FileActionDisplay key={action.id} action={action} isNew={isNewFile(action.filePath, actions.filter(a => a.type === 'file'))} />
+                    ? <FileActionDisplay key={action.id} action={action} />
                     : <ShellActionDisplay key={action.id} action={action} />
                 )}
             </div>
             <div>
-                {endingContext}
+                {artifact?.endingContext ?? ''}
             </div>
         </div>
     )

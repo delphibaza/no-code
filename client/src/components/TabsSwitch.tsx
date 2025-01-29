@@ -3,19 +3,24 @@ import { buildHierarchy } from "@/lib/formatterHelpers";
 import { FileExplorer } from "./FileExplorer";
 import PreviewCode from "./PreviewCode";
 import { Terminal } from "./Terminal";
-import { useStore } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
+import { useGeneralStore } from "@/store/generalStore";
+import { useProjectStore } from "@/store/projectStore";
 
 export function TabsSwitch() {
-    const { setTerminal, getFiles, currentTab, setCurrentTab } = useStore(
+    const { setTerminal, currentTab, setCurrentTab } = useGeneralStore(
         useShallow(state => ({
             setTerminal: state.setTerminal,
-            getFiles: state.getFiles,
             currentTab: state.currentTab,
             setCurrentTab: state.setCurrentTab
         }))
     );
-    const files = getFiles();
+    const { currentMessage } = useProjectStore(
+        useShallow(state => ({
+            currentMessage: state.currentMessage,
+        }))
+    );
+    const files = currentMessage?.files ?? [];
     const folders = buildHierarchy(files);
 
     return (

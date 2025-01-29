@@ -8,7 +8,7 @@ import { API_URL } from "@/lib/constants";
 import { mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useProjectStore } from "@/store/projectStore";
-import { useStore } from "@/store/useStore";
+import { useGeneralStore } from "@/store/generalStore";
 import type { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
@@ -31,14 +31,13 @@ export default function ProjectInfo() {
         setWebContainerInstance,
         shellProcess,
         setShellProcess,
-    } = useStore(
+    } = useGeneralStore(
         useShallow(state => ({
             webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
             shellProcess: state.shellProcess,
             setShellProcess: state.setShellProcess,
             setDoneStreaming: state.setDoneStreaming,
-            updateMessage: state.updateMessage,
             setWebContainerInstance: state.setWebContainerInstance
         }))
     );
