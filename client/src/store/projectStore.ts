@@ -1,49 +1,65 @@
-import { File } from '@repo/common/types';
+import { ActionState, File, ParsedFiles } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-
-interface FileContent {
-    content: string;
-    lastModified: number;
-}
-
+// TODO: add messages actions
 interface ProjectState {
-    files: Map<string, FileContent>;
+    messages: {
+        id: string;
+        timestamp: number;
+        role: 'user' | 'assistant';
+        content: string;
+    }[];
+    // ParsedMessage with only files
+    currentMessage: ParsedFiles | null;
+    currentMessageId: string | null;
+    // messageId, actions
+    actions: Map<string, ActionState[]>;
     lastModified: number;
     selectedFile: string | null;
 
     // Actions
+    addAction: (messageId: string, action: ActionState) => void;
+    updateActionStatus: (actionId: string, status: ActionState) => void;
     updateFile: (filePath: string, content: string) => void;
-    deleteFile: (filePath: string) => void;
     setSelectedFile: (filePath: string | null) => void;
     initializeFiles: (templateFiles: File[]) => void;
+    updateCurrentMessage: (message: ParsedFiles) => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
     devtools(
         (set) => ({
-            files: new Map(),
+            currentMessage: null,
+            currentMessageId: null,
+            actions: new Map(),
             lastModified: Date.now(),
             selectedFile: null,
 
             updateFile: (filePath, content) =>
                 set((state) => {
-                    const newFiles = new Map(state.files);
-                    newFiles.set(filePath, {
-                        content,
-                        lastModified: Date.now()
-                    })
+                    if (!state.currentMessageId) {
+                        return {
+                            currentMessage: null
+                        };
+                    }
+                    const currentMessage = state.currentMessage;
+                    if (!currentMessage) {
+                        return {
+                            currentMessage: null
+                        };
+                    }
+                    const newFiles = currentMessage.files.map(file =>
+                        file.filePath === filePath ? {
+                            ...file,
+                            content: content,
+                            timestamp: Date.now()
+                        } : file
+                    );
                     return {
-                        files: newFiles,
-                        lastModified: Date.now()
-                    };
-                }),
-            deleteFile: (filePath: string) =>
-                set((state) => {
-                    const newFiles = new Map(state.files);
-                    newFiles.delete(filePath);
-                    return {
-                        files: newFiles,
+                        currentMessage: {
+                            ...currentMessage,
+                            files: newFiles
+                        },
                         lastModified: Date.now()
                     };
                 }),
@@ -51,17 +67,64 @@ export const useProjectStore = create<ProjectState>()(
             setSelectedFile: (filePath) =>
                 set({ selectedFile: filePath }),
 
+            updateCurrentMessage: (message) =>
+                set({ currentMessage: message }),
+
+            addAction: (messageId, action) =>
+                set((state) => {
+                    const actions = new Map(state.actions);
+                    const currentMessage = actions.get(messageId);
+                    if (!currentMessage) {
+                        return {
+                            actions: state.actions
+                        };
+                    }
+                    const newActions = [...currentMessage, action];
+                    actions.set(messageId, newActions);
+                    return {
+                        actions: actions,
+                        lastModified: Date.now()
+                    };
+                }),
+
+            updateActionStatus: (actionId, status) =>
+                set((state) => {
+                    const actions = new Map(state.actions);
+                    if (!state.currentMessageId) {
+                        return {
+                            actions: state.actions
+                        };
+                    }
+                    const currentMessage = actions.get(state.currentMessageId);
+                    if (!currentMessage) {
+                        return {
+                            actions: state.actions
+                        };
+                    }
+                    const newActions = currentMessage.map(action =>
+                        action.id === actionId ? { ...action, state: status } : action
+                    ) as ActionState[];
+                    actions.set(state.currentMessageId, newActions);
+                    return { actions };
+                }),
+
             initializeFiles: (templateFiles) =>
                 set(() => {
-                    const initialFiles = new Map<string, FileContent>();
-                    templateFiles.forEach(file => {
-                        initialFiles.set(file.filePath, {
-                            content: file.content,
-                            lastModified: Date.now()
-                        })
-                    })
+                    const fileActions = templateFiles.map(file => ({
+                        id: crypto.randomUUID(),
+                        timestamp: Date.now(),
+                        type: 'file' as const,
+                        filePath: file.filePath,
+                        content: file.content,
+                    }));
+
                     return {
-                        files: initialFiles,
+                        currentMessage: {
+                            initialContext: '',
+                            files: fileActions,
+                            endingContext: ''
+                        },
+                        currentMessageId: crypto.randomUUID(),
                         lastModified: Date.now(),
                     };
                 })

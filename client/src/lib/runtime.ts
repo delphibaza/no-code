@@ -9,16 +9,18 @@ export function isNewFile(filePath: string, templateFiles: File[]) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
-    return actions.map((action) => {
+    return actions.map(action => {
         if (action.type === 'file') {
             return {
                 type: 'file',
+                id: crypto.randomUUID(),
                 filePath: action.filePath || '',
                 content: action.content || ''
             }
         } else if (action.type === 'shell') {
             return {
                 type: 'shell',
+                id: crypto.randomUUID(),
                 command: action.command || ''
             }
         }

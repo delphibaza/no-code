@@ -1,11 +1,11 @@
-import { useStore } from "@/store/useStore"
 import { useShallow } from "zustand/react/shallow"
 import { ArtifactCard } from "./ArtifactCard"
+import { useMessageStore } from "@/store/messageStore"
 
 export function Workbench() {
-    const { messages } = useStore(
+    const { getActions } = useMessageStore(
         useShallow(state => ({
-            messages: state.messages
+            getActions: state.getActions
         }))
     )
 
@@ -13,10 +13,10 @@ export function Workbench() {
         <div style={{ scrollbarWidth: 'thin' }}
             className="h-[75vh] overflow-y-auto bg-gray-100 rounded-lg px-4 py-4"
         >
-            {Array.from(messages).map(([id, message]) =>
+            {getActions().map(action =>
                 <ArtifactCard
-                    key={id}
-                    parsedMsg={message}
+                    key={action.id}
+                    parsedMsg={action}
                 />
             )}
         </div>

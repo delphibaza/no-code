@@ -11,23 +11,39 @@ export type Folders = {
 export type HeadersInit = [string, string][] | Record<string, string> | Headers;
 export type ActionType = 'file' | 'shell';
 
-interface BaseAction {
-    id: number;
+export interface BaseAction {
+    id: string;
+    timestamp: number;
 }
 export interface FileAction extends BaseAction {
     type: 'file';
     filePath: string;
     content: string;
-    state: "creating" | "created" | "updating" | "updated"
 }
 export interface ShellAction extends BaseAction {
     type: 'shell';
     command: string;
-    state: "streaming" | "streamed" | "running" | "completed" | "error";
 }
+export type FileState = "creating" | "created" | "updating" | "updated";
+export type ShellState = "streaming" | "streamed" | "running" | "completed" | "error";
+export type FileActionState = BaseAction & {
+    type: 'file';
+    filePath: string;
+    state: FileState;
+}
+export type ShellActionState = BaseAction & {
+    type: 'shell';
+    state: ShellState;
+}
+export type ActionState = FileActionState | ShellActionState;
 export interface ParsedMessage {
     initialContext: string;
     actions: (FileAction | ShellAction)[];
+    endingContext: string;
+}
+export interface ParsedFiles {
+    initialContext: string;
+    files: FileAction[];
     endingContext: string;
 }
 export interface ContentFile {
@@ -39,15 +55,3 @@ export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
 export type Files = Record<string, ContentFile | Directory>;
-
-export type ActionState = Omit<FileAction, 'id' | 'content'> | Omit<ShellAction, 'id'>;
-
-export type ActionHistory = ActionState & {
-    actionId: number;
-    timestamp: number;
-}
-
-export type MessageHistory = {
-    messageId: string;
-    actions: ActionHistory[];
-}
