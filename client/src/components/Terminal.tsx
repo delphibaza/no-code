@@ -17,7 +17,6 @@ export const Terminal = memo(({ className, onTerminalReady, onTerminalResize, re
 
     useEffect(() => {
         const element = terminalElementRef.current!;
-
         const fitAddon = new FitAddon();
         const webLinksAddon = new WebLinksAddon();
 

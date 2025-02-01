@@ -9,7 +9,7 @@ export function PromptInput() {
 
     async function handleSubmit(input: string) {
         try {
-            const response = await fetch(`${API_URL}/api/template`, {
+            const response = await fetch(`${API_URL}/api/new`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -20,13 +20,7 @@ export function PromptInput() {
             if (!response.ok) {
                 throw new Error(result.msg);
             }
-            navigate(`/project/${result.projectId}`, {
-                state: {
-                    enhancedPrompt: result.enhancedPrompt,
-                    templateFiles: result.templateFiles,
-                    templatePrompt: result.templatePrompt
-                }
-            });
+            navigate(`/project/${result.projectId}`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Error while getting files"
             toast.error(errorMessage)

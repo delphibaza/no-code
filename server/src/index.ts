@@ -22,7 +22,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post("/api/template", async (req, res) => {
+app.post('/api/new', async (req, res) => {
   const validation = promptSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -31,8 +31,37 @@ app.post("/api/template", async (req, res) => {
     return;
   }
   const { prompt } = validation.data;
-
   try {
+    const newProject = await prisma.project.create({
+      data: {
+        name: prompt,
+        status: "NEW",
+        userId: "cm59k02420000ff6m7t1a7ret"
+      }
+    });
+    res.json({
+      projectId: newProject.id
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      msg: error instanceof Error ? error.message : "Failed to create project",
+    });
+  }
+});
+
+app.get('/api/template/:projectId', async (req, res) => {
+  const { projectId } = req.params;
+  try {
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId
+      }
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    const { name: prompt } = project;
     // Enhance the prompt
     const { text: enhancedPrompt } = await generateText({
       model: coderModel,
@@ -52,19 +81,11 @@ app.post("/api/template", async (req, res) => {
       // Indicates that LLM hasn't generated any template name. It doesn't happen mostly. 
       throw new Error("Error occurred while identifying a template");
     }
-    const newProject = await prisma.project.create({
-      data: {
-        name: prompt,
-        status: "NEW",
-        userId: "cm59k02420000ff6m7t1a7ret"
-      }
-    });
     if (templateName !== "blank") {
       const temResp = await getTemplates(templateName);
       if (temResp) {
         const { templateFiles, templatePrompt } = temResp;
         res.json({
-          projectId: newProject.id,
           enhancedPrompt,
           templateFiles,
           templatePrompt
@@ -73,8 +94,6 @@ app.post("/api/template", async (req, res) => {
       }
     } else {
       res.json({
-        projectId: newProject.id,
-        projectName: newProject.name,
         enhancedPrompt
       });
       return;
@@ -82,13 +101,12 @@ app.post("/api/template", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      msg:
-        error instanceof Error ? error.message : "Failed to generate template",
+      msg: error instanceof Error ? error.message : "Failed to generate template",
     });
   }
 });
 
-app.post("/api/chat", async (req, res) => {
+app.post('/api/chat', async (req, res) => {
   const validation = chatSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({

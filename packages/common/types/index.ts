@@ -10,9 +10,10 @@ export type Folders = {
 };
 export type HeadersInit = [string, string][] | Record<string, string> | Headers;
 export type ActionType = 'file' | 'shell';
-export type Message = {
+export type MessageHistory = {
+    id: string;
     timestamp: number;
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'data';
     content: string;
 }
 export interface BaseAction {
@@ -29,7 +30,7 @@ export interface ShellAction extends BaseAction {
     command: string;
 }
 export type FileState = "creating" | "created" | "updating" | "updated";
-export type ShellState = "running" | "completed" | "error";
+export type ShellState = "queued" | "running" | "completed" | "error";
 export type FileActionState = BaseAction & {
     type: 'file';
     filePath: string;
@@ -37,8 +38,8 @@ export type FileActionState = BaseAction & {
 }
 export type ShellActionState = BaseAction & {
     type: 'shell';
-    state: ShellState;
     command: string;
+    state: ShellState;
 }
 export type ActionState = FileActionState | ShellActionState;
 export interface ParsedMessage {

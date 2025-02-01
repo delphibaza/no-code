@@ -12,7 +12,7 @@ interface Dependencies {
     getShellProcess: () => WebContainerProcess | null;
     setIframeURL: (url: string) => void;
     setCurrentTab: (tab: 'code' | 'preview') => void;
-    updateActionStatus: (actionId: string, status: ActionState) => void;
+    updateActionStatus: (actionId: string, status: ActionState['state']) => void;
 }
 class ActionExecutor {
     private actionQueue: Array<FileAction | ShellAction> = [];
@@ -45,6 +45,8 @@ class ActionExecutor {
                 const shellProcess = this.deps.getShellProcess();
 
                 if (!webContainer || !terminal || !shellProcess) {
+                    // push the action back to the queue
+                    this.actionQueue.push(action);
                     console.error('WebContainer or Terminal or Shell Process not found');
                     return;
                 }
@@ -83,7 +85,7 @@ class ActionExecutor {
         terminal: Terminal
     ) {
         try {
-            this.deps.updateActionStatus(action.id, { ...action, state: 'running' });
+            this.deps.updateActionStatus(action.id, 'running');
             const commandArgs = action.command.trim().split(' ');
 
             if (isInstallCommand(action.command)) {
@@ -106,9 +108,9 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.deps.updateActionStatus(action.id, { ...action, state: 'completed' })
+            this.deps.updateActionStatus(action.id, 'completed')  
         } catch (error) {
-            this.deps.updateActionStatus(action.id, { ...action, state: 'error' })
+            this.deps.updateActionStatus(action.id, 'error')
             throw error;
         }
     }
@@ -120,5 +122,5 @@ export const actionExecutor = new ActionExecutor({
     getShellProcess: () => useGeneralStore.getState().shellProcess,
     setIframeURL: (url) => useGeneralStore.getState().setIframeURL(url),
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
-    updateActionStatus: (actionId, action) => useProjectStore.getState().updateActionStatus(actionId, action)
+    updateActionStatus: (actionId, status) => useProjectStore.getState().updateActionStatus(actionId, status)
 });      

@@ -1,9 +1,10 @@
-import { ActionState, File, ParsedFiles, Message } from '@repo/common/types';
+import { ActionState, File, ParsedFiles, MessageHistory } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 interface ProjectState {
-    messages: Map<string, Message>;
+    // messageId, message with json string
+    messageHistory: MessageHistory[];
     // ParsedMessage with only files
     currentMessage: ParsedFiles | null;
     currentMessageId: string | null;
@@ -13,9 +14,10 @@ interface ProjectState {
     selectedFile: string | null;
 
     // Actions
-    upsertMessage: (messageId: string, message: Message) => void;
+    upsertMessage: (message: MessageHistory) => void;
+    setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
-    updateActionStatus: (actionId: string, status: ActionState) => void;
+    updateActionStatus: (actionId: string, status: ActionState['state']) => void;
     updateFile: (filePath: string, content: string) => void;
     setSelectedFile: (filePath: string | null) => void;
     initializeFiles: (templateFiles: File[]) => void;
@@ -30,14 +32,22 @@ export const useProjectStore = create<ProjectState>()(
             actions: new Map(),
             lastModified: Date.now(),
             selectedFile: null,
-            messages: new Map(),
+            messageHistory: [],
 
-            upsertMessage: (messageId, message) =>
+            upsertMessage: (message) =>
                 set((state) => {
-                    const messages = new Map(state.messages);
-                    messages.set(messageId, message);
-                    return { messages };
+                    const messages = [...state.messageHistory];
+                    const index = messages.findIndex(m => m.id === message.id);
+                    if (index !== -1) {
+                        messages[index] = message;
+                    } else {
+                        messages.push(message);
+                    }
+                    return { messageHistory: messages };
                 }),
+
+            setCurrentMessageId: (messageId) =>
+                set({ currentMessageId: messageId }),
 
             updateFile: (filePath, content) =>
                 set((state) => {
@@ -109,9 +119,8 @@ export const useProjectStore = create<ProjectState>()(
 
             initializeFiles: (templateFiles) =>
                 set(() => {
-                    const messageId = crypto.randomUUID();
-                    const fileActions = templateFiles.map(file => ({
-                        id: messageId + file.filePath,
+                    const fileActions = templateFiles.map((file, index) => ({
+                        id: index.toString(),
                         timestamp: Date.now(),
                         type: 'file' as const,
                         filePath: file.filePath,
@@ -124,7 +133,6 @@ export const useProjectStore = create<ProjectState>()(
                             files: fileActions,
                             endingContext: ''
                         },
-                        currentMessageId: messageId,
                         lastModified: Date.now(),
                     };
                 })
