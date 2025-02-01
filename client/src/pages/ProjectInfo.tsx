@@ -34,7 +34,13 @@ export default function ProjectInfo() {
             setWebContainerInstance: state.setWebContainerInstance
         }))
     );
-    const { initializeFiles, messageHistory, currentProject, upsertMessage, setCurrentMessageId, currentMessageId } = useProjectStore(
+    const { initializeFiles,
+        messageHistory,
+        currentProject,
+        upsertMessage,
+        setCurrentMessageId,
+        currentMessageId
+    } = useProjectStore(
         useShallow(state => ({
             initializeFiles: state.initializeFiles,
             messageHistory: state.messageHistory,
