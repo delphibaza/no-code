@@ -1,91 +1,143 @@
 import { isNewFile, parseActions } from "@/lib/runtime";
 import { actionExecutor } from "@/services/ActionExecutor";
+import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { useStore } from "@/store/useStore";
-import { File, FileAction, ParsedFiles, ParsedMessage, ShellAction } from "@repo/common/types";
+import { FileAction, ParsedMessage, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-export function useMessageParser(messages: Message[], templateFiles: File[]) {
+export function useMessageParser(messages: Message[]) {
     const [streamingAction, setStreamingAction] = useState<FileAction | ShellAction | null>(null);
     const [lastStreamedAction, setLastStreamedAction] = useState<FileAction | ShellAction | null>(null);
-    const {
-        selectedFileName,
-        setSelectedFileName,
-    } = useStore(
+    const { selectedFileName, setSelectedFileName } = useGeneralStore(
         useShallow(state => ({
             selectedFileName: state.selectedFileName,
             setSelectedFileName: state.setSelectedFileName,
         }))
     );
-    const { addAction, updateActionStatus, currentMessageId, updateCurrentMessage } = useProjectStore(
+    const { upsertMessage,
+        addAction,
+        updateActionStatus,
+        currentMessageId,
+        updateCurrentMessage,
+        currentMessage
+    } = useProjectStore(
         useShallow(state => ({
+            upsertMessage: state.upsertMessage,
             currentMessageId: state.currentMessageId,
+            currentMessage: state.currentMessage,
             updateCurrentMessage: state.updateCurrentMessage,
             addAction: state.addAction,
             updateActionStatus: state.updateActionStatus,
         }))
     );
 
+    const parseMessage = (message: Message) => {
+        try {
+            const startIndex = message.content.indexOf('{');
+            if (startIndex === -1) return null;
+
+            const trimmedJSON = message.content.slice(startIndex);
+            const parsedData = parse(trimmedJSON);
+
+            if (!parsedData?.artifact) return null;
+
+            return {
+                initialContext: parsedData.artifact.initialContext ?? '',
+                actions: parseActions(parsedData.artifact.actions ?? []),
+                endingContext: parsedData.artifact.endingContext ?? ''
+            };
+        } catch (error) {
+            console.error('Failed to parse message:', error);
+            return null;
+        }
+    };
+
+    const updateStore = (parsedMessage: ParsedMessage,
+        filteredActions: (FileAction | ShellAction)[]
+    ) => {
+        if (!currentMessage) {
+            return;
+        }
+        const updatedFiles = [...currentMessage.files];
+        const parsedFiles = filteredActions.filter(action => action.type === 'file');
+
+        for (const parsedFile of parsedFiles) {
+            const existingFileIndex = currentMessage.files.findIndex(existingFile =>
+                existingFile.filePath === parsedFile.filePath
+            );
+            if (existingFileIndex !== -1) {
+                updatedFiles[existingFileIndex].content = parsedFile.content;
+            } else {
+                updatedFiles.push(parsedFile);
+            }
+        }
+        updateCurrentMessage({
+            initialContext: parsedMessage.initialContext,
+            files: updatedFiles,
+            endingContext: parsedMessage.endingContext
+        });
+    }
+
+    const handleLastStreamedAction = (
+        endingContext: string | undefined,
+        validActions: (FileAction | ShellAction)[]
+    ) => {
+        if (!endingContext) {
+            const lastStreamedAction = validActions.at(-2);
+            if (lastStreamedAction) {
+                setLastStreamedAction({
+                    ...lastStreamedAction,
+                    id: (validActions.length - 2).toString()
+                });
+            }
+        }
+        else {
+            const lastStreamedAction = validActions.at(-1);
+            if (lastStreamedAction) {
+                setLastStreamedAction({
+                    ...lastStreamedAction,
+                    id: (validActions.length - 1).toString()
+                });
+            }
+        }
+    }
+
+    const handleStreamingAction = (validActions: (FileAction | ShellAction)[]) => {
+        if (validActions.length > 0) {
+            const streamingAction = validActions.at(-1);
+            if (streamingAction) {
+                setStreamingAction({
+                    ...streamingAction,
+                    id: (validActions.length - 1).toString()
+                });
+            }
+        }
+    }
+
     useEffect(() => {
         async function messageParser() {
             try {
                 const lastMessage = messages.at(-1);
-                if (!lastMessage || lastMessage.role !== "assistant" || currentMessageId) {
+                if (!lastMessage || lastMessage.role !== "assistant" || !currentMessageId || !currentMessage) {
                     return;
                 }
-                const lastMessageJSON = lastMessage.content;
-                const startIndex = lastMessageJSON.indexOf('{');
-                if (startIndex === -1) {
+                upsertMessage({
+                    id: currentMessageId,
+                    role: 'assistant' as const,
+                    content: lastMessage.content,
+                    timestamp: Date.now()
+                });
+                const parsedMessage = parseMessage(lastMessage);
+                if (!parsedMessage) {
                     return;
                 }
-
-                const trimmedJSON = lastMessageJSON.substring(startIndex);
-                const parsedData = parse(trimmedJSON);
-
-                if (!parsedData || !parsedData.artifact) {
-                    return;
-                }
-
-                const parsedMessage: ParsedMessage = {
-                    initialContext: parsedData.artifact.initialContext || '',
-                    actions: parseActions(parsedData.artifact.actions || []),
-                    endingContext: parsedData.artifact.endingContext || ''
-                };
-                const filteredActions = parsedMessage.actions.filter(action =>
-                    action.type === 'file'
-                        ? !!(action.type === 'file' && action.filePath && action.content)
-                        : !!(action.type === 'shell' && action.command)
-                );
-                // TODO: merge this with the files in the template
-                const parsedFiles: ParsedFiles = {
-                    ...parsedMessage,
-                    files: filteredActions.filter(action => action.type === 'file') as FileAction[]
-                };
-
-                updateCurrentMessage(parsedFiles);
-
-                if (filteredActions.length > 0) {
-                    const lastFile = filteredActions.at(-1);
-                    if (lastFile) {
-                        setStreamingAction(lastFile);
-                    }
-                }
-
-                if (!parsedMessage.endingContext) {
-                    const lastStreamedAction = parsedMessage.actions.at(-2);
-                    if (lastStreamedAction) {
-                        setLastStreamedAction(lastStreamedAction);
-                    }
-                }
-                else {
-                    const lastStreamedAction = parsedMessage.actions.at(-1);
-                    if (lastStreamedAction) {
-                        setLastStreamedAction(lastStreamedAction);
-                    }
-                }
+                const validActions = parsedMessage.actions;
+                updateStore(parsedMessage, validActions);
+                handleStreamingAction(validActions);
+                handleLastStreamedAction(parsedMessage?.endingContext, validActions);
             } catch (error) {
                 console.error('An error occurred while parsing the message:', error as Error);
             }
@@ -94,28 +146,21 @@ export function useMessageParser(messages: Message[], templateFiles: File[]) {
     }, [messages]);
 
     useEffect(() => {
-        if (streamingAction && currentMessageId) {
-            if (streamingAction.type === 'file') {
-                addAction(currentMessageId, {
-                    ...streamingAction,
-                    state: isNewFile(streamingAction.filePath, templateFiles) ? 'creating' : 'updating'
-                });
-            } else if (streamingAction.type === 'shell') {
-                addAction(currentMessageId, {
-                    ...streamingAction,
-                    state: 'running'
-                });
-            }
-        }
-    }, [streamingAction?.id]);
-
-    useEffect(() => {
-        if (!streamingAction) {
+        if (!streamingAction || !currentMessageId || !currentMessage) {
             return;
         }
+        if (streamingAction.type === 'file') {
+            addAction(currentMessageId, {
+                id: streamingAction.id,
+                timestamp: streamingAction.timestamp,
+                type: 'file',
+                filePath: streamingAction.filePath,
+                state: isNewFile(streamingAction.filePath, currentMessage.files) ? 'creating' : 'updating'
+            });
+        }
         if (streamingAction.type === 'file' && streamingAction.filePath !== selectedFileName) {
-            const filePathParts = streamingAction.filePath.split('/');
-            const currentStreamingFileName = filePathParts.at(-1);
+            // Get the file name from the file path
+            const currentStreamingFileName = streamingAction.filePath.split('/').at(-1);
             if (currentStreamingFileName) {
                 setSelectedFileName(currentStreamingFileName);
             }
@@ -123,20 +168,19 @@ export function useMessageParser(messages: Message[], templateFiles: File[]) {
     }, [streamingAction?.id]);
 
     useEffect(() => {
-        if (streamingAction && streamingAction.type === 'file') {
-            updateActionStatus(streamingAction.id, {
-                ...streamingAction,
-                state: isNewFile(streamingAction.filePath, templateFiles) ? 'creating' : 'updating'
-            });
-        }
-    }, [streamingAction]);
-
-    useEffect(() => {
-        if (lastStreamedAction) {
+        if (lastStreamedAction && currentMessageId && currentMessage) {
             if (lastStreamedAction.type === 'file') {
-                updateActionStatus(lastStreamedAction.id, {
-                    ...lastStreamedAction,
-                    state: isNewFile(lastStreamedAction.filePath, templateFiles) ? 'created' : 'updated'
+                updateActionStatus(
+                    lastStreamedAction.id,
+                    isNewFile(lastStreamedAction.filePath, currentMessage.files) ? 'created' : 'updated'
+                );
+            } else if (lastStreamedAction.type === 'shell') {
+                addAction(currentMessageId, {
+                    id: lastStreamedAction.id,
+                    timestamp: lastStreamedAction.timestamp,
+                    type: 'shell',
+                    state: 'queued',
+                    command: lastStreamedAction.command
                 });
             }
             actionExecutor.addAction(lastStreamedAction);

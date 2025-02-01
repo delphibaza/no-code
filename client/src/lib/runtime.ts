@@ -1,7 +1,8 @@
-import { File, FileAction, ShellAction } from "@repo/common/types";
+import { File, FileAction, ShellAction, MessageHistory } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
+import { chatHistoryMsg, projectFilesMsg } from "./utils";
 
 export function isNewFile(filePath: string, templateFiles: File[]) {
     return templateFiles.every(file => file.filePath !== filePath);
@@ -13,19 +14,22 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
         if (action.type === 'file') {
             return {
                 type: 'file',
-                id: crypto.randomUUID(),
                 filePath: action.filePath || '',
                 content: action.content || ''
             }
         } else if (action.type === 'shell') {
             return {
                 type: 'shell',
-                id: crypto.randomUUID(),
                 command: action.command || ''
             }
         }
         return null;
-    }).filter(action => action !== null) as (FileAction | ShellAction)[];
+    })
+        .filter(action => action !== null)
+        .filter(action => action.type === 'file'
+            ? !!(action.type === 'file' && action.filePath && action.content)
+            : !!(action.type === 'shell' && action.command)
+        ) as (FileAction | ShellAction)[];
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {
@@ -55,6 +59,35 @@ export async function mountFiles(files: File | File[], webContainerInstance: Web
     const hierarchy = buildHierarchy(filesArray);
     const formattedFiles = formatFilesToMount(hierarchy);
     await webContainerInstance.mount(formattedFiles);
+}
+
+export function constructMessages(currentInput: string,
+    currentMessageId: string,
+    projectFiles: File[],
+    messageHistory: MessageHistory[]
+) {
+    const payload: MessageHistory[] = [];
+    payload.push({ id: crypto.randomUUID(), role: 'user', content: projectFilesMsg(projectFiles), timestamp: Date.now() });
+    payload.push({ id: crypto.randomUUID(), role: 'user', content: chatHistoryMsg(), timestamp: Date.now() });
+    let currentIndex = 0;
+    for (const message of messageHistory) {
+        const nextMessage = messageHistory[currentIndex + 1];
+        if (message.id === currentMessageId) {
+            const upperMessage = `Assistant Response to Message #${currentIndex}`;
+            payload.push({ ...message, content: `${upperMessage}\n ${message.content}` });
+        } else if (nextMessage?.id === currentMessageId) {
+            const upperMessage = `Previous Message #${currentIndex + 1}`
+            const lowerMessage = `(Assistant response below)`
+            payload.push({ ...message, role: 'user', content: `${upperMessage}\n ${message.content} \n ${lowerMessage}` });
+        } else if (message.role !== 'assistant') {
+            const upperMessage = `Previous Message #${currentIndex + 1}`
+            const lowerMessage = `(Assistant response omitted)`
+            payload.push({ ...message, role: 'user', content: `${upperMessage}\n ${message.content} \n ${lowerMessage}` });
+        }
+        currentIndex++;
+    }
+    payload.push({ id: crypto.randomUUID(), role: 'user', content: `Current Message : ${currentInput}`, timestamp: Date.now() });
+    return payload;
 }
 
 export async function runCommand(

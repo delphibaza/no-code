@@ -1,14 +1,10 @@
-import { ActionState, File, ParsedFiles } from '@repo/common/types';
+import { ActionState, File, ParsedFiles, MessageHistory } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-// TODO: add messages actions
+
 interface ProjectState {
-    messages: {
-        id: string;
-        timestamp: number;
-        role: 'user' | 'assistant';
-        content: string;
-    }[];
+    // messageId, message with json string
+    messageHistory: MessageHistory[];
     // ParsedMessage with only files
     currentMessage: ParsedFiles | null;
     currentMessageId: string | null;
@@ -18,8 +14,10 @@ interface ProjectState {
     selectedFile: string | null;
 
     // Actions
+    upsertMessage: (message: MessageHistory) => void;
+    setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
-    updateActionStatus: (actionId: string, status: ActionState) => void;
+    updateActionStatus: (actionId: string, status: ActionState['state']) => void;
     updateFile: (filePath: string, content: string) => void;
     setSelectedFile: (filePath: string | null) => void;
     initializeFiles: (templateFiles: File[]) => void;
@@ -34,6 +32,22 @@ export const useProjectStore = create<ProjectState>()(
             actions: new Map(),
             lastModified: Date.now(),
             selectedFile: null,
+            messageHistory: [],
+
+            upsertMessage: (message) =>
+                set((state) => {
+                    const messages = [...state.messageHistory];
+                    const index = messages.findIndex(m => m.id === message.id);
+                    if (index !== -1) {
+                        messages[index] = message;
+                    } else {
+                        messages.push(message);
+                    }
+                    return { messageHistory: messages };
+                }),
+
+            setCurrentMessageId: (messageId) =>
+                set({ currentMessageId: messageId }),
 
             updateFile: (filePath, content) =>
                 set((state) => {
@@ -74,12 +88,7 @@ export const useProjectStore = create<ProjectState>()(
                 set((state) => {
                     const actions = new Map(state.actions);
                     const currentMessage = actions.get(messageId);
-                    if (!currentMessage) {
-                        return {
-                            actions: state.actions
-                        };
-                    }
-                    const newActions = [...currentMessage, action];
+                    const newActions = currentMessage ? [...currentMessage, action] : [action];
                     actions.set(messageId, newActions);
                     return {
                         actions: actions,
@@ -110,8 +119,8 @@ export const useProjectStore = create<ProjectState>()(
 
             initializeFiles: (templateFiles) =>
                 set(() => {
-                    const fileActions = templateFiles.map(file => ({
-                        id: crypto.randomUUID(),
+                    const fileActions = templateFiles.map((file, index) => ({
+                        id: index.toString(),
                         timestamp: Date.now(),
                         type: 'file' as const,
                         filePath: file.filePath,
@@ -124,7 +133,6 @@ export const useProjectStore = create<ProjectState>()(
                             files: fileActions,
                             endingContext: ''
                         },
-                        currentMessageId: crypto.randomUUID(),
                         lastModified: Date.now(),
                     };
                 })

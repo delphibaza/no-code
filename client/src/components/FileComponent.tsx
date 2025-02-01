@@ -1,9 +1,9 @@
-import { useStore } from "@/store/useStore";
+import { useGeneralStore } from "@/store/generalStore";
 import { FileIcon } from "lucide-react";
 
 export function FileComponent({ name }: { name: string }) {
-    const isSelected = useStore((state) => state.selectedFileName) === name;
-    const setSelectedFileName = useStore((state) => state.setSelectedFileName);
+    const isSelected = useGeneralStore((state) => state.selectedFileName) === name;
+    const setSelectedFileName = useGeneralStore((state) => state.setSelectedFileName);
 
     return (
         <div

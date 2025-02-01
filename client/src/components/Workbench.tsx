@@ -1,24 +1,32 @@
 import { useShallow } from "zustand/react/shallow"
-import { ArtifactCard } from "./ArtifactCard"
-import { useMessageStore } from "@/store/messageStore"
+import { useProjectStore } from "@/store/projectStore";
+import { AssistantResponse } from "./AssistantResponse";
+import { UserMessage } from "./UserMessage";
 
 export function Workbench() {
-    const { getActions } = useMessageStore(
+    const { actions, messageHistory } = useProjectStore(
         useShallow(state => ({
-            getActions: state.getActions
+            actions: state.actions,
+            messageHistory: state.messageHistory
         }))
-    )
-
+    );
+    const filteredMessageHistory = messageHistory.filter(
+        message => message.role === 'user' || message.role === 'assistant'
+    );
     return (
-        <div style={{ scrollbarWidth: 'thin' }}
-            className="h-[75vh] overflow-y-auto bg-gray-100 rounded-lg px-4 py-4"
-        >
-            {getActions().map(action =>
-                <ArtifactCard
-                    key={action.id}
-                    parsedMsg={action}
-                />
+        <div style={{ scrollbarWidth: 'thin' }} className="h-[75vh] overflow-y-auto space-y-3">
+            {filteredMessageHistory.map((message) =>
+                message.role === 'user'
+                    ? <UserMessage
+                        key={message.id}
+                        content={message.content}
+                    />
+                    : <AssistantResponse
+                        key={message.id}
+                        content={message.content}
+                        actions={actions.get(message.id) || []}
+                    />
             )}
         </div>
-    )
+    );
 }

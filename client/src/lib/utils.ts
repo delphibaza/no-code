@@ -31,7 +31,7 @@ ${files.map(file => `
   ${file.content}
   \`\`\`
 `)}`;
-}
+};
 
 export function projectInstructionsMsg(enhancedPrompt: string) {
   return `Current Message:
@@ -68,7 +68,7 @@ Example: "npm run dev" for Node.js, "python app.py" for Python.`
 export function chatHistoryMsg() {
   return `Below is the conversation history, including all previous messages along with the most recent assistant response. 
 Please reference this context to inform your future responses and maintain conversation continuity.`
-}
+};
 
 export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];
 
