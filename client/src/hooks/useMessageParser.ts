@@ -8,7 +8,7 @@ import { parse } from "best-effort-json-parser";
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-export function useMessageParser(messages: Message[]) {
+export function useMessageParser() {
     const [streamingAction, setStreamingAction] = useState<FileAction | ShellAction | null>(null);
     const [lastStreamedAction, setLastStreamedAction] = useState<FileAction | ShellAction | null>(null);
     const { selectedFileName, setSelectedFileName } = useGeneralStore(
@@ -117,33 +117,29 @@ export function useMessageParser(messages: Message[]) {
         }
     }
 
-    useEffect(() => {
-        async function messageParser() {
-            try {
-                const lastMessage = messages.at(-1);
-                if (!lastMessage || lastMessage.role !== "assistant" || !currentMessageId || !currentMessage) {
-                    return;
-                }
-                upsertMessage({
-                    id: currentMessageId,
-                    role: 'assistant' as const,
-                    content: lastMessage.content,
-                    timestamp: Date.now()
-                });
-                const parsedMessage = parseMessage(lastMessage);
-                if (!parsedMessage) {
-                    return;
-                }
-                const validActions = parsedMessage.actions;
-                updateStore(parsedMessage, validActions);
-                handleStreamingAction(validActions);
-                handleLastStreamedAction(parsedMessage?.endingContext, validActions);
-            } catch (error) {
-                console.error('An error occurred while parsing the message:', error as Error);
-            }
+    function handleNewMessage(message: Message) {
+        if (message.role !== 'assistant' || !currentMessageId || !currentMessage) {
+            return;
         }
-        messageParser()
-    }, [messages]);
+        try {
+            upsertMessage({
+                id: currentMessageId,
+                role: 'assistant' as const,
+                content: message.content,
+                timestamp: Date.now()
+            });
+            const parsedMessage = parseMessage(message);
+            if (!parsedMessage) {
+                return;
+            }
+            const validActions = parsedMessage.actions;
+            updateStore(parsedMessage, validActions);
+            handleStreamingAction(validActions);
+            handleLastStreamedAction(parsedMessage?.endingContext, validActions);
+        } catch (error) {
+            console.error('An error occurred while parsing the message:', error as Error);
+        }
+    }
 
     useEffect(() => {
         if (!streamingAction || !currentMessageId || !currentMessage) {
@@ -187,5 +183,5 @@ export function useMessageParser(messages: Message[]) {
         }
     }, [lastStreamedAction?.id]);
 
-    return;
+    return handleNewMessage;
 }

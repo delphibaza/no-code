@@ -50,7 +50,6 @@ export default function ProjectInfo() {
             currentMessageId: state.currentMessageId
         }))
     );
-
     const { messages, input, setInput, handleInputChange, isLoading, stop, error, reload, setMessages } = useChat({
         api: `${API_URL}/api/chat`,
         // onFinish: (message, { usage, finishReason }) => {
@@ -114,7 +113,14 @@ export default function ProjectInfo() {
         initializeShell();
     }, [webContainerInstance, terminal]);
 
-    useMessageParser(messages);
+    const handleNewMessage = useMessageParser();
+
+    useEffect(() => {
+        if (messages.length === 0) return;
+        const message = messages.at(-1);
+        if (!message) return;
+        handleNewMessage(message);
+    }, [messages]);
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();

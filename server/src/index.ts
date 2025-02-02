@@ -9,14 +9,18 @@ import { MAX_TOKENS, STARTER_TEMPLATES } from "./constants";
 import { enhancerPrompt } from "./prompts/enhancerPrompt";
 import { getTemplates, parseSelectedTemplate, starterTemplateSelectionPrompt } from "./prompts/starterTemplateSelection";
 import { getSystemPrompt } from "./prompts/systemPrompt";
+import { reactViteTemplate } from './cache/bolt-vite-react';
 dotenv.config();
 
-const openai = createOpenAI({
-  baseURL: "https://api-inference.huggingface.co/v1"
+const openaiHF = createOpenAI({
+  baseURL: "https://api-inference.huggingface.co/v1",
+  apiKey: process.env.HF_API_KEY
 });
-
-const coderModel = openai('Qwen/Qwen2.5-Coder-32B-Instruct');
-const backupModel = openai('mistralai/Mistral-Nemo-Instruct-2407');
+const openai = createOpenAI({
+  baseURL: "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1"
+});
+const coderModel = openai('DeepSeek-R1-Distill-Llama-70B');
+const qwenModel = openaiHF('Qwen/Qwen2.5-Coder-32B-Instruct');
 
 const app = express();
 app.use(cors());
@@ -64,14 +68,14 @@ app.get('/api/template/:projectId', async (req, res) => {
     const { name: prompt } = project;
     // Enhance the prompt
     const { text: enhancedPrompt } = await generateText({
-      model: coderModel,
+      model: qwenModel,
       system: enhancerPrompt(),
       prompt: prompt
     });
 
     // Select the template
     const { text: templateXML } = await generateText({
-      model: coderModel,
+      model: qwenModel,
       system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
       prompt: enhancedPrompt
     });
@@ -81,7 +85,16 @@ app.get('/api/template/:projectId', async (req, res) => {
       // Indicates that LLM hasn't generated any template name. It doesn't happen mostly. 
       throw new Error("Error occurred while identifying a template");
     }
-    if (templateName !== "blank") {
+    if (templateName === 'bolt-vite-react') {
+      // If the template is bolt-vite-react, then we need to fetch the template files and prompt
+      const { templateFiles, templatePrompt } = reactViteTemplate;
+      res.json({
+        enhancedPrompt,
+        templateFiles,
+        templatePrompt
+      });
+      return;
+    } else if (templateName !== "blank") {
       const temResp = await getTemplates(templateName);
       if (temResp) {
         const { templateFiles, templatePrompt } = temResp;
@@ -123,11 +136,19 @@ app.post('/api/chat', async (req, res) => {
         messages: messages,
         experimental_transform: smoothStream(),
         maxTokens: MAX_TOKENS,
-        // onFinish({ text, finishReason, usage, response }) {
+        providerOptions: {
+          openai: {
+            reasoningEffort: 'low',
+          }
+        },
+        // onFinish({ text, finishReason, usage, response, reasoning }) {
         // your own logic, e.g. for saving the chat history or recording usage
         // const messages = response.messages; // messages that were generated
       });
-      result.mergeIntoDataStream(dataStreamWriter);
+      result.mergeIntoDataStream(dataStreamWriter, {
+        sendReasoning: true,
+        sendUsage: true,
+      });
     },
     onError: error => {
       // Error messages are masked by default for security reasons.
