@@ -11,6 +11,7 @@ interface Dependencies {
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
     setIframeURL: (url: string) => void;
+    iframeURL: string;
     setCurrentTab: (tab: 'code' | 'preview') => void;
     updateActionStatus: (actionId: string, status: ActionState['state']) => void;
 }
@@ -94,12 +95,17 @@ class ActionExecutor {
             }
             else if (isDevCommand(action.command)) {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
-                // TODO: Add a check to see if the server is ready
                 if (exitCode === null) {
-                    webContainer.on('server-ready', (port, url) => {
-                        this.deps.setIframeURL(url);
+                    if (!this.deps.iframeURL) {
+                        webContainer.on('server-ready', (port, url) => {
+                            console.log('Server ready:', url);
+                            this.deps.setIframeURL(url);
+                            this.deps.setCurrentTab('preview')
+                        });
+                    } else {
+                        console.log('previewing:', this.deps.iframeURL);
                         this.deps.setCurrentTab('preview')
-                    });
+                    }
                 } else {
                     throw new Error(`Failed to run command: ${action.command}`);
                 }
@@ -108,7 +114,7 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.deps.updateActionStatus(action.id, 'completed')  
+            this.deps.updateActionStatus(action.id, 'completed')
         } catch (error) {
             this.deps.updateActionStatus(action.id, 'error')
             throw error;
@@ -120,6 +126,7 @@ export const actionExecutor = new ActionExecutor({
     getWebContainer: () => useGeneralStore.getState().webContainerInstance,
     getTerminal: () => useGeneralStore.getState().terminal,
     getShellProcess: () => useGeneralStore.getState().shellProcess,
+    iframeURL: useGeneralStore.getState().iframeURL,
     setIframeURL: (url) => useGeneralStore.getState().setIframeURL(url),
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
     updateActionStatus: (actionId, status) => useProjectStore.getState().updateActionStatus(actionId, status)

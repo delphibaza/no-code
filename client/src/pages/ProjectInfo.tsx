@@ -9,6 +9,7 @@ import { constructMessages, mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
+import { File } from "@repo/common/types";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -22,29 +23,27 @@ export default function ProjectInfo() {
         terminal,
         setDoneStreaming,
         setWebContainerInstance,
-        shellProcess,
         setShellProcess,
     } = useGeneralStore(
         useShallow(state => ({
             webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
-            shellProcess: state.shellProcess,
             setShellProcess: state.setShellProcess,
             setDoneStreaming: state.setDoneStreaming,
             setWebContainerInstance: state.setWebContainerInstance
         }))
     );
-    const { initializeFiles,
-        messageHistory,
-        currentProject,
+    const { messageHistory,
+        projectFiles,
+        currentMessageId,
+        updateProjectFiles,
         upsertMessage,
         setCurrentMessageId,
-        currentMessageId
     } = useProjectStore(
         useShallow(state => ({
-            initializeFiles: state.initializeFiles,
             messageHistory: state.messageHistory,
-            currentProject: state.currentMessage,
+            projectFiles: state.projectFiles,
+            updateProjectFiles: state.updateProjectFiles,
             upsertMessage: state.upsertMessage,
             setCurrentMessageId: state.setCurrentMessageId,
             currentMessageId: state.currentMessageId
@@ -86,8 +85,13 @@ export default function ProjectInfo() {
                 // Store template files in store
                 setCurrentMessageId(crypto.randomUUID());
                 upsertMessage({ id: crypto.randomUUID(), role: 'data', content: templatePrompt, timestamp: Date.now() });
-                upsertMessage({ id: crypto.randomUUID(), role: 'user', content: enhancedPrompt, timestamp: Date.now() });
-                initializeFiles(templateFiles);
+                updateProjectFiles((templateFiles as File[]).map(file => ({
+                    id: crypto.randomUUID(),
+                    type: 'file',
+                    timestamp: Date.now(),
+                    filePath: file.filePath,
+                    content: file.content
+                })));
                 const container = await getWebContainer();
                 await mountFiles(templateFiles, container);
                 setWebContainerInstance(container);
@@ -101,10 +105,10 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         async function initializeShell() {
-            if (!webContainerInstance || !terminal || shellProcess) return;
+            if (!webContainerInstance || !terminal) return;
             try {
-                const shellProcess = await startShell(terminal, webContainerInstance);
-                setShellProcess(shellProcess);
+                const process = await startShell(terminal, webContainerInstance);
+                setShellProcess(process);
             } catch (error) {
                 console.error('Failed to initialize shell:', error);
                 setShellProcess(null);
@@ -125,8 +129,8 @@ export default function ProjectInfo() {
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         upsertMessage({ id: crypto.randomUUID(), role: 'user', content: input, timestamp: Date.now() });
-        if (!currentMessageId || !currentProject) return;
-        const newMessages = constructMessages(input, currentMessageId, currentProject.files, messageHistory);
+        if (!currentMessageId || !projectFiles.length) return;
+        const newMessages = constructMessages(input, currentMessageId, projectFiles, messageHistory);
         setMessages(newMessages);
         reload();
         setCurrentMessageId(crypto.randomUUID());

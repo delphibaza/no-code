@@ -1,12 +1,11 @@
-import { ActionState, File, ParsedFiles, MessageHistory } from '@repo/common/types';
+import { ActionState, MessageHistory, FileAction } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 interface ProjectState {
     // messageId, message with json string
     messageHistory: MessageHistory[];
-    // ParsedMessage with only files
-    currentMessage: ParsedFiles | null;
+    projectFiles: FileAction[];
     currentMessageId: string | null;
     // messageId, actions
     actions: Map<string, ActionState[]>;
@@ -17,17 +16,17 @@ interface ProjectState {
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
+    getActionStatus: (actionId: string) => ActionState['state'] | null;
     updateActionStatus: (actionId: string, status: ActionState['state']) => void;
     updateFile: (filePath: string, content: string) => void;
     setSelectedFile: (filePath: string | null) => void;
-    initializeFiles: (templateFiles: File[]) => void;
-    updateCurrentMessage: (message: ParsedFiles) => void;
+    updateProjectFiles: (files: FileAction[]) => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
     devtools(
-        (set) => ({
-            currentMessage: null,
+        (set, get) => ({
+            projectFiles: [],
             currentMessageId: null,
             actions: new Map(),
             lastModified: Date.now(),
@@ -56,13 +55,7 @@ export const useProjectStore = create<ProjectState>()(
                             currentMessage: null
                         };
                     }
-                    const currentMessage = state.currentMessage;
-                    if (!currentMessage) {
-                        return {
-                            currentMessage: null
-                        };
-                    }
-                    const newFiles = currentMessage.files.map(file =>
+                    const newFiles = state.projectFiles.map(file =>
                         file.filePath === filePath ? {
                             ...file,
                             content: content,
@@ -70,10 +63,7 @@ export const useProjectStore = create<ProjectState>()(
                         } : file
                     );
                     return {
-                        currentMessage: {
-                            ...currentMessage,
-                            files: newFiles
-                        },
+                        projectFiles: newFiles,
                         lastModified: Date.now()
                     };
                 }),
@@ -81,8 +71,8 @@ export const useProjectStore = create<ProjectState>()(
             setSelectedFile: (filePath) =>
                 set({ selectedFile: filePath }),
 
-            updateCurrentMessage: (message) =>
-                set({ currentMessage: message }),
+            updateProjectFiles: (files) =>
+                set({ projectFiles: files }),
 
             addAction: (messageId, action) =>
                 set((state) => {
@@ -95,6 +85,16 @@ export const useProjectStore = create<ProjectState>()(
                         lastModified: Date.now()
                     };
                 }),
+
+            getActionStatus: (actionId: string) => {
+                const currentMessageId = get().currentMessageId;
+                if (!currentMessageId) return null;
+
+                return get().actions
+                    .get(currentMessageId)
+                    ?.find(action => action.id === actionId)
+                    ?.state ?? null;
+            },
 
             updateActionStatus: (actionId, status) =>
                 set((state) => {
@@ -116,26 +116,6 @@ export const useProjectStore = create<ProjectState>()(
                     actions.set(state.currentMessageId, newActions);
                     return { actions };
                 }),
-
-            initializeFiles: (templateFiles) =>
-                set(() => {
-                    const fileActions = templateFiles.map((file, index) => ({
-                        id: index.toString(),
-                        timestamp: Date.now(),
-                        type: 'file' as const,
-                        filePath: file.filePath,
-                        content: file.content,
-                    }));
-
-                    return {
-                        currentMessage: {
-                            initialContext: '',
-                            files: fileActions,
-                            endingContext: ''
-                        },
-                        lastModified: Date.now(),
-                    };
-                })
         }),
         { name: 'project-store' }
     )

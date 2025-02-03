@@ -15,16 +15,19 @@ export function TabsSwitch() {
             setCurrentTab: state.setCurrentTab
         }))
     );
-    const { currentMessage } = useProjectStore(
+    const { projectFiles } = useProjectStore(
         useShallow(state => ({
-            currentMessage: state.currentMessage,
+            projectFiles: state.projectFiles,
         }))
     );
-    const files = currentMessage?.files ?? [];
-    const folders = buildHierarchy(files);
+    const folders = buildHierarchy(projectFiles);
 
     return (
-        <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'code' | 'preview')} className="col-span-8">
+        <Tabs
+            value={currentTab}
+            onValueChange={(value) => setCurrentTab(value as 'code' | 'preview')}
+            className="col-span-8"
+        >
             <TabsList className="bg-secondary rounded-3xl space-x-2 px-1">
                 <TabsTrigger className="rounded-2xl text-xs" value="code">Code</TabsTrigger>
                 <TabsTrigger className="rounded-2xl text-xs" value="preview">Preview</TabsTrigger>

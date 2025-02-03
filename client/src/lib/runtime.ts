@@ -33,13 +33,13 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {
-    const shellProcess = await webContainer.spawn('jsh', {
+    const process = await webContainer.spawn('/bin/jsh', {
         terminal: {
-            cols: terminal.cols,
-            rows: terminal.rows,
+            cols: terminal.cols ?? 80,
+            rows: terminal.rows ?? 15,
         },
     });
-    shellProcess.output.pipeTo(
+    process.output.pipeTo(
         new WritableStream({
             write(data) {
                 terminal.write(data);
@@ -47,12 +47,12 @@ export async function startShell(terminal: XTerm, webContainer: WebContainer) {
         })
     );
 
-    const input = shellProcess.input.getWriter();
+    const input = process.input.getWriter();
     terminal.onData((data) => {
         input.write(data);
     });
 
-    return shellProcess;
+    return process;
 }
 export async function mountFiles(files: File | File[], webContainerInstance: WebContainer) {
     const filesArray = Array.isArray(files) ? files : [files];

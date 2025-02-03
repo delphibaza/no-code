@@ -2,7 +2,7 @@ import { isNewFile, parseActions } from "@/lib/runtime";
 import { actionExecutor } from "@/services/ActionExecutor";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { FileAction, ParsedMessage, ShellAction } from "@repo/common/types";
+import { FileAction, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useState } from "react";
@@ -20,15 +20,17 @@ export function useMessageParser() {
     const { upsertMessage,
         addAction,
         updateActionStatus,
+        updateProjectFiles,
+        getActionStatus,
         currentMessageId,
-        updateCurrentMessage,
-        currentMessage
+        projectFiles
     } = useProjectStore(
         useShallow(state => ({
             upsertMessage: state.upsertMessage,
             currentMessageId: state.currentMessageId,
-            currentMessage: state.currentMessage,
-            updateCurrentMessage: state.updateCurrentMessage,
+            projectFiles: state.projectFiles,
+            getActionStatus: state.getActionStatus,
+            updateProjectFiles: state.updateProjectFiles,
             addAction: state.addAction,
             updateActionStatus: state.updateActionStatus,
         }))
@@ -45,9 +47,8 @@ export function useMessageParser() {
             if (!parsedData?.artifact) return null;
 
             return {
-                initialContext: parsedData.artifact.initialContext ?? '',
                 actions: parseActions(parsedData.artifact.actions ?? []),
-                endingContext: parsedData.artifact.endingContext ?? ''
+                actionsStreamed: !!(parsedData.artifact.endingContext)
             };
         } catch (error) {
             console.error('Failed to parse message:', error);
@@ -55,17 +56,12 @@ export function useMessageParser() {
         }
     };
 
-    const updateStore = (parsedMessage: ParsedMessage,
-        filteredActions: (FileAction | ShellAction)[]
-    ) => {
-        if (!currentMessage) {
-            return;
-        }
-        const updatedFiles = [...currentMessage.files];
+    const updateStore = (filteredActions: (FileAction | ShellAction)[]) => {
+        const updatedFiles = [...projectFiles];
         const parsedFiles = filteredActions.filter(action => action.type === 'file');
 
         for (const parsedFile of parsedFiles) {
-            const existingFileIndex = currentMessage.files.findIndex(existingFile =>
+            const existingFileIndex = projectFiles.findIndex(existingFile =>
                 existingFile.filePath === parsedFile.filePath
             );
             if (existingFileIndex !== -1) {
@@ -74,18 +70,14 @@ export function useMessageParser() {
                 updatedFiles.push(parsedFile);
             }
         }
-        updateCurrentMessage({
-            initialContext: parsedMessage.initialContext,
-            files: updatedFiles,
-            endingContext: parsedMessage.endingContext
-        });
+        updateProjectFiles(updatedFiles);
     }
 
     const handleLastStreamedAction = (
-        endingContext: string | undefined,
+        actionsStreamed: boolean,
         validActions: (FileAction | ShellAction)[]
     ) => {
-        if (!endingContext) {
+        if (!actionsStreamed) {
             const lastStreamedAction = validActions.at(-2);
             if (lastStreamedAction) {
                 setLastStreamedAction({
@@ -118,7 +110,7 @@ export function useMessageParser() {
     }
 
     function handleNewMessage(message: Message) {
-        if (message.role !== 'assistant' || !currentMessageId || !currentMessage) {
+        if (message.role !== 'assistant' || !currentMessageId) {
             return;
         }
         try {
@@ -126,6 +118,7 @@ export function useMessageParser() {
                 id: currentMessageId,
                 role: 'assistant' as const,
                 content: message.content,
+                reasoning: message.reasoning,
                 timestamp: Date.now()
             });
             const parsedMessage = parseMessage(message);
@@ -133,16 +126,16 @@ export function useMessageParser() {
                 return;
             }
             const validActions = parsedMessage.actions;
-            updateStore(parsedMessage, validActions);
+            updateStore(validActions);
             handleStreamingAction(validActions);
-            handleLastStreamedAction(parsedMessage?.endingContext, validActions);
+            handleLastStreamedAction(parsedMessage.actionsStreamed, validActions);
         } catch (error) {
             console.error('An error occurred while parsing the message:', error as Error);
         }
     }
 
     useEffect(() => {
-        if (!streamingAction || !currentMessageId || !currentMessage) {
+        if (!streamingAction || !currentMessageId || projectFiles.length === 0) {
             return;
         }
         if (streamingAction.type === 'file') {
@@ -151,7 +144,7 @@ export function useMessageParser() {
                 timestamp: streamingAction.timestamp,
                 type: 'file',
                 filePath: streamingAction.filePath,
-                state: isNewFile(streamingAction.filePath, currentMessage.files) ? 'creating' : 'updating'
+                state: isNewFile(streamingAction.filePath, projectFiles) ? 'creating' : 'updating'
             });
         }
         if (streamingAction.type === 'file' && streamingAction.filePath !== selectedFileName) {
@@ -164,11 +157,14 @@ export function useMessageParser() {
     }, [streamingAction?.id]);
 
     useEffect(() => {
-        if (lastStreamedAction && currentMessageId && currentMessage) {
+        if (lastStreamedAction && currentMessageId && projectFiles.length > 0) {
             if (lastStreamedAction.type === 'file') {
+                const prevStatus = getActionStatus(lastStreamedAction.id);
                 updateActionStatus(
                     lastStreamedAction.id,
-                    isNewFile(lastStreamedAction.filePath, currentMessage.files) ? 'created' : 'updated'
+                    prevStatus === 'creating' || prevStatus === 'created'
+                        ? 'created'
+                        : 'updated'
                 );
             } else if (lastStreamedAction.type === 'shell') {
                 addAction(currentMessageId, {
