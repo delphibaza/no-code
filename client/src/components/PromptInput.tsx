@@ -3,9 +3,16 @@ import { PromptSchema } from "@repo/common/zod";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { Input } from "./Input";
+import { useProjectStore } from "@/store/projectStore";
+import { useShallow } from "zustand/react/shallow";
 
 export function PromptInput() {
     const navigate = useNavigate();
+    const { upsertMessage } = useProjectStore(
+        useShallow(state => ({
+            upsertMessage: state.upsertMessage,
+        }))
+    );
 
     async function handleSubmit(input: string) {
         try {
@@ -20,6 +27,12 @@ export function PromptInput() {
             if (!response.ok) {
                 throw new Error(result.msg);
             }
+            upsertMessage({
+                id: crypto.randomUUID(),
+                role: 'user',
+                timestamp: Date.now(),
+                content: input
+            });
             navigate(`/project/${result.projectId}`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Error while getting files"

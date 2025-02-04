@@ -39,12 +39,10 @@ export const Terminal = memo(({ className, onTerminalReady, onTerminalResize, re
         });
 
         resizeObserver.observe(element);
-
         onTerminalReady?.(terminal);
 
         return () => {
             resizeObserver.disconnect();
-            terminal.dispose();
         };
     }, []);
 

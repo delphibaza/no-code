@@ -12,20 +12,20 @@ export interface StarterTemplate {
 }
 export const STARTER_TEMPLATES: StarterTemplate[] = [
     {
+        name: 'bolt-vite-react',
+        label: 'React + Vite + TypeScript',
+        description: 'React starter template powered by Vite for fast development experience',
+        githubRepo: 'thecodacus/bolt-vite-react-ts-template',
+        tags: ['react', 'vite', 'typescript', 'frontend'],
+        icon: 'i-bolt:react',
+    },
+    {
         name: 'bolt-nextjs-shadcn',
         label: 'Next.js with shadcn/ui',
         description: 'Next.js starter fullstack template integrated with shadcn/ui components and styling system',
         githubRepo: 'thecodacus/bolt-nextjs-shadcn-template',
         tags: ['nextjs', 'typescript', 'shadcn', 'tailwind'],
         icon: 'i-bolt:nextjs',
-    },
-    {
-        name: 'bolt-vite-react',
-        label: 'React + Vite + TypeScript',
-        description: 'React starter template powered by Vite for fast development experience',
-        githubRepo: 'thecodacus/bolt-vite-react-ts-template',
-        tags: ['react', 'vite', 'frontend'],
-        icon: 'i-bolt:react',
     },
     {
         name: 'bolt-node',
@@ -73,14 +73,6 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
         githubRepo: 'bolt-sveltekit-template',
         tags: ['svelte', 'sveltekit', 'typescript'],
         icon: 'i-bolt:svelte',
-    },
-    {
-        name: 'bolt-vite-ts',
-        label: 'Vite + TypeScript',
-        description: 'Vite starter template with TypeScript configuration for type-safe development',
-        githubRepo: 'thecodacus/bolt-vite-ts-template',
-        tags: ['vite', 'typescript', 'minimal'],
-        icon: 'i-bolt:typescript',
     },
     {
         name: 'bolt-qwik-ts',

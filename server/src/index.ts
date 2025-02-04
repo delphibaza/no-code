@@ -1,26 +1,40 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { chatSchema, promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
-import { generateText, pipeDataStreamToResponse, smoothStream, streamText } from 'ai';
+import {
+  extractReasoningMiddleware,
+  generateText,
+  pipeDataStreamToResponse,
+  smoothStream,
+  streamText,
+  wrapLanguageModel
+} from 'ai';
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { reactViteTemplate } from './cache/bolt-vite-react';
 import { MAX_TOKENS, STARTER_TEMPLATES } from "./constants";
 import { enhancerPrompt } from "./prompts/enhancerPrompt";
 import { getTemplates, parseSelectedTemplate, starterTemplateSelectionPrompt } from "./prompts/starterTemplateSelection";
 import { getSystemPrompt } from "./prompts/systemPrompt";
-import { reactViteTemplate } from './cache/bolt-vite-react';
 dotenv.config();
 
 const openaiHF = createOpenAI({
   baseURL: "https://api-inference.huggingface.co/v1",
   apiKey: process.env.HF_API_KEY
 });
-const openai = createOpenAI({
+const openaiOVH = createOpenAI({
   baseURL: "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1"
 });
-const coderModel = openai('DeepSeek-R1-Distill-Llama-70B');
-const qwenModel = openaiHF('Qwen/Qwen2.5-Coder-32B-Instruct');
+
+const hfR1Model = openaiHF('deepseek-ai/DeepSeek-R1-Distill-Qwen-32B');
+const ovhR1Model = openaiOVH('DeepSeek-R1-Distill-Llama-70B');
+
+const coderModel = wrapLanguageModel({
+  model: ovhR1Model,
+  middleware: extractReasoningMiddleware({ tagName: 'think' }),
+});
+const queenModel = openaiHF('Qwen/Qwen2.5-Coder-32B-Instruct');
 
 const app = express();
 app.use(cors());
@@ -68,14 +82,14 @@ app.get('/api/template/:projectId', async (req, res) => {
     const { name: prompt } = project;
     // Enhance the prompt
     const { text: enhancedPrompt } = await generateText({
-      model: qwenModel,
+      model: queenModel,
       system: enhancerPrompt(),
       prompt: prompt
     });
 
     // Select the template
     const { text: templateXML } = await generateText({
-      model: qwenModel,
+      model: queenModel,
       system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
       prompt: enhancedPrompt
     });
@@ -131,7 +145,7 @@ app.post('/api/chat', async (req, res) => {
   pipeDataStreamToResponse(res, {
     execute: async dataStreamWriter => {
       const result = streamText({
-        model: coderModel,
+        model: queenModel,
         system: getSystemPrompt(),
         messages: messages,
         experimental_transform: smoothStream(),

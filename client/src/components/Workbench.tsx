@@ -23,6 +23,7 @@ export function Workbench() {
                     />
                     : <AssistantResponse
                         key={message.id}
+                        reasoning={message?.reasoning}
                         content={message.content}
                         actions={actions.get(message.id) || []}
                     />

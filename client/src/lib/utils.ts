@@ -33,41 +33,65 @@ ${files.map(file => `
 `)}`;
 };
 
-export function projectInstructionsMsg(enhancedPrompt: string) {
-  return `Current Message:
+export const projectInstructionsMsg = (enhancedPrompt: string) => `
+⚠️ STRICT IMPLEMENTATION REQUIREMENTS
 
+1. ORDER OF OPERATIONS
+   FOLLOW THIS SEQUENCE:
+   1. Update dependencies only if needed
+   2. Run install command
+   3. Make file changes
+   4. Start application
+
+2. DEPENDENCY MANAGEMENT
+   - IF adding dependencies:
+     1. Update dependency manifest first
+     2. Run package manager install command
+   - IF NO new dependencies:
+     - Still run install command first
+
+3. CODE QUALITY
+   - NO placeholder/commented code
+   - NO incomplete implementations
+   - NO TODO comments
+   - MUST provide full, working code
+   - NO example/template code
+
+4. FILE MODIFICATIONS
+   - Return ONLY modified/new files
+   - Include COMPLETE file contents
+   - NO partial updates
+   - Each file must be production-ready
+
+5. EXECUTION SEQUENCE
+   Step 1: Dependencies
+   - Run appropriate install command (Ex: npm install, yarn install, pnpm install, etc.)
+   
+   Step 2: Development
+   - Start development server (Ex: npm run dev, yarn dev, pnpm dev, etc.)
+
+YOUR CURRENT TASK:
 ${enhancedPrompt}
 
-Here is a list of all files that have been modified since the start of the conversation.
-This information serves as the true contents of these files! The contents include the full file contents.
+VALIDATION CHECKLIST:
+✓ Complete, working code (no placeholders)
+✓ Dependencies updated before install
+✓ npm install runs first
+✓ All file changes after install
+✓ Dev server starts last
+✓ No TODO/example code
+✓ Full implementation included
+✓ Follow the same language as the original code for a particular file. (Ex: If the original code is in TypeScript, the updated code must also be in TypeScript)
 
-Use it to:
- - Understand the latest file modifications
- - Ensure your suggestions build upon the most recent version of the files
- - Make informed decisions about changes
- - Ensure suggestions are compatible with existing code
+Don'ts:
+✗ Don't merge commands, run them separately. 
+Ex: Don't run 'npm install && npm run dev'. Instead, run 'npm install' first, then 'npm run dev'.
 
-Important Instructions for Implementation:
-
-1. File Inclusions and Modifications
-- Include Only Modified Files : When providing files, include only those that have been modified or added compared to the original project files.
-Package Management Updates :
-If additional dependencies are required (beyond those already listed in the provided package management file), include the updated package management file with the new dependencies as the first action. This ensures dependencies can be installed quickly.
-For example, if you're using Node.js, update the package.json file with new dependencies. If you're using Python, update the requirements.txt file, etc.
-
-2. Correct Sequence of Commands :
-Ensure that commands are provided in the correct order. For example:
-If you update the package management file (e.g., package.json for Node.js, requirements.txt for Python), the next command should be an install command specific to your environment.
-Example: "npm install" for Node.js, "pip install -r requirements.txt" for Python.
-- Providing the install command before updating the package management file will not work correctly.
-- Even if the package management file is not updated, you should still provide the appropriate install command as the first action.
-- After providing all the necessary files and ensuring dependencies are installed, provide the command to start the application.
-Example: "npm run dev" for Node.js, "python app.py" for Python.`
-};
+Treat these as strict requirements. Any deviation will result in rejection.`;
 
 export function chatHistoryMsg() {
   return `Below is the conversation history, including all previous messages along with the most recent assistant response. 
-Please reference this context to inform your future responses and maintain conversation continuity.`
+Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated.`
 };
 
 export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];
