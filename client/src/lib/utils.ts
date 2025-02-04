@@ -38,10 +38,10 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => `
 
 1. ORDER OF OPERATIONS
    FOLLOW THIS SEQUENCE:
-   1. Update dependency manifest
-   2. Install dependencies
+   1. Update dependencies only if needed
+   2. Run install command
    3. Make file changes
-   4. Start development server
+   4. Start application
 
 2. DEPENDENCY MANAGEMENT
    - IF adding dependencies:
@@ -51,34 +51,43 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => `
      - Still run install command first
 
 3. CODE QUALITY
-   - NO placeholder implementations
-   - NO partial solutions
-   - COMPLETE, working code only
-   - Production-ready implementations
+   - NO placeholder/commented code
+   - NO incomplete implementations
+   - NO TODO comments
+   - MUST provide full, working code
+   - NO example/template code
 
-4. FILE CHANGES
-   - Return ONLY modified files
+4. FILE MODIFICATIONS
+   - Return ONLY modified/new files
    - Include COMPLETE file contents
    - NO partial updates
-   - NO template code
+   - Each file must be production-ready
 
 5. EXECUTION SEQUENCE
    Step 1: Dependencies
-   - Run appropriate install command (Ex: npm install, yarn install, pnpm install)
+   - Run appropriate install command (Ex: npm install, yarn install, pnpm install, etc.)
    
    Step 2: Development
-   - Start development server (Ex: npm run dev, yarn dev, pnpm dev)
+   - Start development server (Ex: npm run dev, yarn dev, pnpm dev, etc.)
 
 YOUR CURRENT TASK:
 ${enhancedPrompt}
 
-VALIDATION:
-✓ Manifest updated before install
-✓ Dependencies installed first
-✓ Complete file changes provided
-✓ Server start command included
+VALIDATION CHECKLIST:
+✓ Complete, working code (no placeholders)
+✓ Dependencies updated before install
+✓ npm install runs first
+✓ All file changes after install
+✓ Dev server starts last
+✓ No TODO/example code
+✓ Full implementation included
+✓ Follow the same language as the original code for a particular file. (Ex: If the original code is in TypeScript, the updated code must also be in TypeScript)
 
-These requirements are mandatory.`;
+Don'ts:
+✗ Don't merge commands, run them separately. 
+Ex: Don't run 'npm install && npm run dev'. Instead, run 'npm install' first, then 'npm run dev'.
+
+Treat these as strict requirements. Any deviation will result in rejection.`;
 
 export function chatHistoryMsg() {
   return `Below is the conversation history, including all previous messages along with the most recent assistant response. 

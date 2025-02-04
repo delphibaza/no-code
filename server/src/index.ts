@@ -31,7 +31,7 @@ const hfR1Model = openaiHF('deepseek-ai/DeepSeek-R1-Distill-Qwen-32B');
 const ovhR1Model = openaiOVH('DeepSeek-R1-Distill-Llama-70B');
 
 const coderModel = wrapLanguageModel({
-  model: hfR1Model,
+  model: ovhR1Model,
   middleware: extractReasoningMiddleware({ tagName: 'think' }),
 });
 const queenModel = openaiHF('Qwen/Qwen2.5-Coder-32B-Instruct');
@@ -145,7 +145,7 @@ app.post('/api/chat', async (req, res) => {
   pipeDataStreamToResponse(res, {
     execute: async dataStreamWriter => {
       const result = streamText({
-        model: coderModel,
+        model: queenModel,
         system: getSystemPrompt(),
         messages: messages,
         experimental_transform: smoothStream(),

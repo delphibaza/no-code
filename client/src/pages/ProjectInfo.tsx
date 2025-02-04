@@ -62,9 +62,8 @@ export default function ProjectInfo() {
             console.error('An error occurred:', error);
         },
         // onResponse: response => {
-        onResponse: () => {
-            // console.log('Received HTTP response from server:', response);
-        }
+        // console.log('Received HTTP response from server:', response);
+        // }
     });
 
     useEffect(() => {

@@ -98,12 +98,10 @@ class ActionExecutor {
                 if (exitCode === null) {
                     if (!this.deps.iframeURL) {
                         webContainer.on('server-ready', (port, url) => {
-                            console.log('Server ready:', url);
                             this.deps.setIframeURL(url);
                             this.deps.setCurrentTab('preview')
                         });
                     } else {
-                        console.log('previewing:', this.deps.iframeURL);
                         this.deps.setCurrentTab('preview')
                     }
                 } else {
