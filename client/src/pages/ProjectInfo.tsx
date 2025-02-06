@@ -21,7 +21,6 @@ export default function ProjectInfo() {
     const params = useParams();
     const { webContainerInstance,
         terminal,
-        setDoneStreaming,
         setWebContainerInstance,
         setShellProcess,
     } = useGeneralStore(
@@ -29,7 +28,6 @@ export default function ProjectInfo() {
             webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
             setShellProcess: state.setShellProcess,
-            setDoneStreaming: state.setDoneStreaming,
             setWebContainerInstance: state.setWebContainerInstance
         }))
     );
@@ -51,12 +49,12 @@ export default function ProjectInfo() {
     );
     const { messages, input, setInput, handleInputChange, isLoading, stop, error, reload, setMessages } = useChat({
         api: `${API_URL}/api/chat`,
+        experimental_throttle: 100,
         // onFinish: (message, { usage, finishReason }) => {
         onFinish: () => {
             // console.log('Finished streaming message:', message);
             // console.log('Token usage:', usage);
             // console.log('Finish reason:', finishReason);
-            setDoneStreaming(true);
         },
         onError: error => {
             console.error('An error occurred:', error);

@@ -1,4 +1,5 @@
 import { isNewFile, parseActions } from "@/lib/runtime";
+import { removeTrailingNewlines } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
@@ -36,14 +37,9 @@ export function useMessageParser() {
         }))
     );
 
-    const parseMessage = (message: Message) => {
+    const parseMessage = (content: string) => {
         try {
-            const startIndex = message.content.indexOf('{');
-            if (startIndex === -1) return null;
-
-            const trimmedJSON = message.content.slice(startIndex);
-            const parsedData = parse(trimmedJSON);
-
+            const parsedData = parse(content);
             if (!parsedData?.artifact) return null;
 
             return {
@@ -113,15 +109,18 @@ export function useMessageParser() {
         if (message.role !== 'assistant' || !currentMessageId) {
             return;
         }
+        const startIndex = message.content.indexOf('{');
+        if (startIndex === -1) return;
+        const trimmedJSON = removeTrailingNewlines(message.content.slice(startIndex));
         try {
             upsertMessage({
                 id: currentMessageId,
                 role: 'assistant' as const,
-                content: message.content,
+                content: trimmedJSON,
                 reasoning: message.reasoning,
                 timestamp: Date.now()
             });
-            const parsedMessage = parseMessage(message);
+            const parsedMessage = parseMessage(trimmedJSON);
             if (!parsedMessage) {
                 return;
             }

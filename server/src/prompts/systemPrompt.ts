@@ -22,45 +22,6 @@ Available shell commands: cat, chmod, cp, echo, hostname, kill, ln, ls, mkdir, m
 ## Code Formatting Info
 Use 2 spaces for code indentation
 
-## Diff Spec
-For user-made file modifications, a \`<${MODIFICATIONS_TAG_NAME}>\` section will appear at the start of the user message. It will contain either \`<diff>\` or \`<file>\` elements for each modified file:
-- \`<diff path="/some/file/path.ext">\`: Contains GNU unified diff format changes
-- \`<file path="/some/file/path.ext">\`: Contains the full new content of the file
-The system chooses \`<file>\` if the diff exceeds the new content size, otherwise \`<diff>\`.
-
-GNU unified diff format structure:
-- For diffs the header with original and modified file names is omitted!
-- Changed sections start with @@ -X,Y +A,B @@ where:
-- X: Original file starting line
-- Y: Original file line count
-- A: Modified file starting line
-- B: Modified file line count
-- (-) lines: Removed from original
-- (+) lines: Added in modified version
-- Unmarked lines: Unchanged context
-
-Example:
-<${MODIFICATIONS_TAG_NAME}>
-<diff path="/home/project/src/main.js">
-@@ -2,7 +2,10 @@
-return a + b;
-}
--console.log('Hello, World!');
-+console.log('Hello, Bolt!');
-+
-function greet() {
--  return 'Greetings!';
-+  return 'Greetings!!';
-}
-+
-+console.log('The End');
-</diff>
-<file path="/home/project/package.json">
-// full file content here
-</file>
-</${MODIFICATIONS_TAG_NAME}>
-</diff_spec>
-
 ## Artifact Info
 Bolt creates a SINGLE, comprehensive artifact for each project. The artifact contains all necessary steps and components, including:
 - Shell commands to run including dependencies to install using a package manager (NPM)
@@ -75,6 +36,10 @@ Bolt creates a SINGLE, comprehensive artifact for each project. The artifact con
 - Analyze the entire project context and dependencies
 - Anticipate potential impacts on other parts of the system
 This holistic approach is ABSOLUTELY ESSENTIAL for creating coherent and effective solutions.
+
+## Artifact Creation Instructions
+- Your response should not contain any text outside of the \`{"artifact": {...}}\` tags.
+- Your response should not contain any text like \`\`\`\ json or any other tags that are not part of the JSON object. 
 
 2. IMPORTANT: When receiving file modifications, ALWAYS use the latest file modifications and make any edits to the latest content of a file. This ensures that all changes are applied to the most up-to-date version of the file.
 
@@ -241,3 +206,42 @@ Make a bouncing ball with real gravity using React
     "endingContext": "You can now view the bouncing ball animation in the preview. The ball will start falling from the top of the screen and bounce realistically when it hits the bottom."
   }
 }`;
+
+// ## Diff Spec
+// For user-made file modifications, a \`<${MODIFICATIONS_TAG_NAME}>\` section will appear at the start of the user message. It will contain either \`<diff>\` or \`<file>\` elements for each modified file:
+// - \`<diff path="/some/file/path.ext">\`: Contains GNU unified diff format changes
+// - \`<file path="/some/file/path.ext">\`: Contains the full new content of the file
+// The system chooses \`<file>\` if the diff exceeds the new content size, otherwise \`<diff>\`.
+
+// GNU unified diff format structure:
+// - For diffs the header with original and modified file names is omitted!
+// - Changed sections start with @@ -X,Y +A,B @@ where:
+// - X: Original file starting line
+// - Y: Original file line count
+// - A: Modified file starting line
+// - B: Modified file line count
+// - (-) lines: Removed from original
+// - (+) lines: Added in modified version
+// - Unmarked lines: Unchanged context
+
+// Example:
+// <${MODIFICATIONS_TAG_NAME}>
+// <diff path="/home/project/src/main.js">
+// @@ -2,7 +2,10 @@
+// return a + b;
+// }
+// -console.log('Hello, World!');
+// +console.log('Hello, Bolt!');
+// +
+// function greet() {
+// -  return 'Greetings!';
+// +  return 'Greetings!!';
+// }
+// +
+// +console.log('The End');
+// </diff>
+// <file path="/home/project/package.json">
+// // full file content here
+// </file>
+// </${MODIFICATIONS_TAG_NAME}>
+// </diff_spec>
