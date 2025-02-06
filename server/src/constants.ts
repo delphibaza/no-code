@@ -25,7 +25,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
         label: 'Next.js with shadcn/ui',
         description: 'Next.js starter fullstack template integrated with shadcn/ui components and styling system',
         githubRepo: 'thecodacus/bolt-nextjs-shadcn-template',
-        tags: ['nextjs', 'typescript', 'shadcn', 'tailwind'],
+        tags: ['nextjs', 'next', 'next.js', 'typescript', 'shadcn', 'tailwind'],
         icon: 'i-bolt:nextjs',
     },
     {

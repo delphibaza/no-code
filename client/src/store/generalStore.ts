@@ -3,8 +3,6 @@ import type { Terminal as XTerm } from "@xterm/xterm";
 import { create } from 'zustand';
 
 export interface GeneralStoreState {
-    doneStreaming: boolean;
-    setDoneStreaming: (done: boolean) => void;
     webContainerInstance: WebContainer | null;
     setWebContainerInstance: (container: WebContainer | null) => void;
     selectedFileName: string;
@@ -20,8 +18,6 @@ export interface GeneralStoreState {
 }
 
 export const useGeneralStore = create<GeneralStoreState>((set) => ({
-    doneStreaming: false,
-    setDoneStreaming: (done) => set({ doneStreaming: done }),
     webContainerInstance: null,
     setWebContainerInstance: (container) => set({ webContainerInstance: container }),
     selectedFileName: "",

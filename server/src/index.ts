@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 import { chatSchema, promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import {
@@ -20,27 +21,54 @@ import { promises as fs } from 'fs';
 import path from 'path';
 dotenv.config();
 
-const openaiHF = createOpenAI({
-  baseURL: "https://api-inference.huggingface.co/v1",
-  apiKey: process.env.HF_API_KEY
-});
 const openaiOVH = createOpenAI({
-  baseURL: "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1"
+  baseURL: "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1",
+  apiKey: process.env.OVH_API_KEY,
 });
 
-const hfR1Model = openaiHF('deepseek-ai/DeepSeek-R1-Distill-Qwen-32B');
+const openaiChutes = createOpenAI({
+  baseURL: 'https://chutes-qwen-qwen2-5-72b-instruct.chutes.ai/v1',
+  apiKey: process.env.CHUTES_API_KEY,
+});
+
+const openaiChutes2 = createOpenAI({
+  baseURL: 'https://chutes-deepseek-ai-deepseek-r1-distill-llama-70b.chutes.ai/v1',
+  apiKey: process.env.CHUTES_API_KEY,
+});
+
+const openaiOpenRouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+const openaiGROQ = createOpenAI({
+  baseURL: 'https://api.groq.com/openai/v1',
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+const openaiTargon = createOpenAI({
+  baseURL: 'https://api.targon.com/v1',
+  apiKey: process.env.TARGON_API_KEY,
+});
+
+const google2FlashModel = google('gemini-2.0-flash-001');
+const queenVLPlusModel = openaiOpenRouter('qwen/qwen-vl-plus:free');
+const queenModel = openaiChutes('Qwen/Qwen2.5-72B-Instruct');
+const llamaModel = openaiGROQ('llama-3.3-70b-specdec');
+
 const ovhR1Model = openaiOVH('DeepSeek-R1-Distill-Llama-70B');
+const chutesR1Model = openaiChutes2('deepseek-ai/DeepSeek-R1-Distill-Llama-70B');
+const targonR1Model = openaiTargon('deepseek-ai/DeepSeek-R1-Distill-Llama-70B');
 
 const coderModel = wrapLanguageModel({
-  model: ovhR1Model,
+  model: chutesR1Model,
   middleware: extractReasoningMiddleware({ tagName: 'think' }),
 });
-const queenModel = openaiHF('Qwen/Qwen2.5-Coder-32B-Instruct');
 
 const app = express();
 app.use(cors());
 app.use(express.json({
-  limit: '1MB'
+  limit: '10MB'
 }));
 
 app.post('/api/new', async (req, res) => {
@@ -82,13 +110,13 @@ app.get('/api/template/:projectId', async (req, res) => {
     }
     // Enhance the prompt
     const { text: enhancedPrompt } = await generateText({
-      model: queenModel,
+      model: llamaModel,
       system: enhancerPrompt(),
       prompt: project.name
     });
     // Select the template
     const { text: templateXML } = await generateText({
-      model: queenModel,
+      model: llamaModel,
       system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
       prompt: enhancedPrompt
     });
@@ -116,7 +144,10 @@ app.get('/api/template/:projectId', async (req, res) => {
         };
       });
 
-    res.json(templateData);
+    res.json({
+      enhancedPrompt,
+      ...templateData
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -137,16 +168,11 @@ app.post('/api/chat', async (req, res) => {
   pipeDataStreamToResponse(res, {
     execute: async dataStreamWriter => {
       const result = streamText({
-        model: coderModel,
+        model: google2FlashModel,
         system: getSystemPrompt(),
         messages: messages,
         experimental_transform: smoothStream(),
         maxTokens: MAX_TOKENS,
-        providerOptions: {
-          openai: {
-            reasoningEffort: 'low',
-          }
-        },
         // onFinish({ text, finishReason, usage, response, reasoning }) {
         // your own logic, e.g. for saving the chat history or recording usage
         // const messages = response.messages; // messages that were generated

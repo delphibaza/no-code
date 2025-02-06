@@ -7,13 +7,13 @@ export function FolderComponent({ name, children }: { name: string; children: Re
     return (
         <div>
             <div
-                className="flex items-center gap-x-1 mb-1 px-1 py-1 text-sm cursor-pointer rounded-sm hover:bg-gray-300"
+                className="flex items-center gap-x-1 px-1 py-1 text-sm cursor-pointer hover:bg-gray-200"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <ChevronRight className={`h-4 transform ${isOpen ? "rotate-90" : ""}`} />
                 {name}
             </div>
-            {isOpen && <div className="pl-3">{children}</div>}
+            {isOpen && <div className="pl-2">{children}</div>}
         </div>
     );
 }
