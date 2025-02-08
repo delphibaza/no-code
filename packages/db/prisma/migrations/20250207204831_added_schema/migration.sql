@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('USER', 'ASSISTANT');
+CREATE TYPE "Role" AS ENUM ('user', 'assistant');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -21,6 +21,17 @@ CREATE TABLE "Project" (
     "userId" TEXT NOT NULL,
 
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "File" (
+    "id" TEXT NOT NULL,
+    "filePath" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "projectId" TEXT NOT NULL,
+
+    CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -51,6 +62,9 @@ CREATE INDEX "Message_role_idx" ON "Message"("role");
 
 -- AddForeignKey
 ALTER TABLE "Project" ADD CONSTRAINT "Project_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "File" ADD CONSTRAINT "File_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
