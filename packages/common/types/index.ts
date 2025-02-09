@@ -5,6 +5,7 @@ export type File = {
 export type Folders = {
     type: "folder" | "file",
     name: string,
+    filePath?: string,
     children?: Folders[],
     content?: string
 };

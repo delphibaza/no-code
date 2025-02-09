@@ -2,16 +2,13 @@ import { TabsSwitch } from "@/components/TabsSwitch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
-import { getWebContainer } from "@/config/webContainer";
+import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { constructMessages, mountFiles, startShell } from "@/lib/runtime";
-import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
-import { actionExecutor } from "@/services/ActionExecutor";
+import { constructMessages, startShell } from "@/lib/runtime";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { Artifact, ExistingProject, File, FileAction, NewProject, ShellAction } from "@repo/common/types";
-import { Message, useChat } from 'ai/react';
+import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
@@ -22,32 +19,26 @@ export default function ProjectInfo() {
     const params = useParams();
     const { webContainerInstance,
         terminal,
-        setWebContainerInstance,
         setShellProcess,
     } = useGeneralStore(
         useShallow(state => ({
             webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
             setShellProcess: state.setShellProcess,
-            setWebContainerInstance: state.setWebContainerInstance
         }))
     );
     const { messageHistory,
         projectFiles,
         currentMessageId,
         ignorePatterns,
-        updateProjectFiles,
         upsertMessage,
-        addAction,
         setCurrentMessageId,
     } = useProjectStore(
         useShallow(state => ({
             messageHistory: state.messageHistory,
             projectFiles: state.projectFiles,
             ignorePatterns: state.ignorePatterns,
-            updateProjectFiles: state.updateProjectFiles,
             upsertMessage: state.upsertMessage,
-            addAction: state.addAction,
             setCurrentMessageId: state.setCurrentMessageId,
             currentMessageId: state.currentMessageId
         }))
@@ -60,123 +51,21 @@ export default function ProjectInfo() {
         sendExtraMessageFields: true,
         experimental_throttle: 100,
         // onFinish: (message, { usage, finishReason }) => {
-        onFinish: () => {
-            // console.log('Finished streaming message:', message);
-            // console.log('Token usage:', usage);
-            // console.log('Finish reason:', finishReason);
-        },
+        // console.log('Finished streaming message:', message);
+        // console.log('Token usage:', usage);
+        // console.log('Finish reason:', finishReason);
+        // },
         onError: error => {
             console.error('An error occurred:', error);
             toast.error('There was an error processing your request');
-        },
-        // onResponse: response => {
-        // console.log('Received HTTP response from server:', response);
-        // }
+        }
     });
 
+    const { initializeProject } = useInitProject(setMessages, reload);
+
     useEffect(() => {
-        async function initializeProject() {
-            try {
-                const container = await getWebContainer();
-                setWebContainerInstance(container);
-                const response = await fetch(`${API_URL}/api/project/${params.projectId}`);
-                const result = await response.json();
-                if (!response.ok) {
-                    throw new Error(result.msg);
-                }
-                let files: File[] = [];
-                if (result.type === 'existing') {
-                    const { messages, projectFiles } = result as ExistingProject;
-                    let index = 0;
-                    messages.forEach(message => {
-                        if (message.role === 'user') {
-                            // For user messages, content is always { text: string }
-                            const userContent = message.content as { text: string };
-                            upsertMessage({
-                                id: message.id,
-                                role: message.role,
-                                content: userContent.text,
-                                timestamp: new Date(message.createdAt).getTime()
-                            });
-                        } else if (message.role === 'assistant') {
-                            // For assistant messages, content is always Artifact
-                            const isLastMessage = index === messages.length - 1;
-                            const assistantContent = message.content as { artifact: Artifact };
-                            upsertMessage({
-                                id: message.id,
-                                role: message.role,
-                                content: JSON.stringify(assistantContent),
-                                timestamp: new Date(message.createdAt).getTime()
-                            });
-                            assistantContent.artifact.actions.forEach(action => {
-                                const currentAction: FileAction | ShellAction = {
-                                    id: crypto.randomUUID(),
-                                    timestamp: Date.now(),
-                                    ...action
-                                };
-                                if (currentAction.type === 'file') {
-                                    addAction(message.id, {
-                                        id: currentAction.id,
-                                        type: 'file',
-                                        filePath: currentAction.filePath,
-                                        timestamp: Date.now(),
-                                        state: 'created',
-                                    });
-                                } else if (action.type === 'shell') {
-                                    addAction(message.id, {
-                                        id: currentAction.id,
-                                        type: 'shell',
-                                        command: currentAction.command,
-                                        timestamp: Date.now(),
-                                        state: isLastMessage ? 'queued' : 'completed',
-                                    });
-                                    if (isLastMessage) {
-                                        setCurrentMessageId(message.id);
-                                        actionExecutor.addAction(currentAction);
-                                    }
-                                }
-                            });
-                        }
-                        index++;
-                    });
-                    files = [...projectFiles];
-                    updateProjectFiles(projectFiles.map(file => ({
-                        type: 'file',
-                        ...file,
-                    })));
-                } else {
-                    const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } = result as NewProject;
-                    const messages = [
-                        { id: '1', role: 'user', content: projectFilesMsg(templateFiles, ignorePatterns) },
-                        ...(templatePrompt
-                            ? [
-                                { id: '2', role: 'user', content: templatePrompt },
-                                { id: '3', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }
-                            ]
-                            : [{ id: '2', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }]
-                        )
-                    ];
-                    setMessages(messages as Message[]);
-                    reload();
-                    // Store template files in store
-                    setCurrentMessageId(crypto.randomUUID());
-                    upsertMessage({ id: crypto.randomUUID(), role: 'data', content: templatePrompt, timestamp: Date.now() });
-                    updateProjectFiles((templateFiles as File[]).map(file => ({
-                        id: crypto.randomUUID(),
-                        type: 'file',
-                        timestamp: Date.now(),
-                        filePath: file.filePath,
-                        content: file.content
-                    })));
-                    files = [...templateFiles];
-                }
-                await mountFiles(files, container);
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : "Error while initializing project"
-                toast.error(errorMessage)
-            }
-        }
-        initializeProject();
+        if (!params.projectId) return;
+        initializeProject(params.projectId);
     }, [params.projectId]);
 
     useEffect(() => {
@@ -197,9 +86,10 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         if (messages.length === 0) return;
-        const message = messages.at(-1);
-        if (!message) return;
-        handleNewMessage(message);
+        const recentMessage = messages.at(-1);
+        if (recentMessage) {
+            handleNewMessage(recentMessage);
+        }
     }, [messages]);
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

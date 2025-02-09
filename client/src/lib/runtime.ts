@@ -1,4 +1,4 @@
-import { File, FileAction, ShellAction, MessageHistory } from "@repo/common/types";
+import { File, FileAction, ShellAction, MessageHistory, ExistingProject, Artifact } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
@@ -96,6 +96,30 @@ export function constructMessages(
         timestamp: Date.now()
     });
     return payload;
+}
+
+export function getImportArtifact(messages: ExistingProject['messages']) {
+    const recentAssistantMessage = messages.findLastIndex(m => m.role === 'assistant');
+    const startCommand = (messages[recentAssistantMessage].content as { artifact: Artifact })
+        .artifact.actions.find(action => action.type === 'shell')?.command ?? 'npm run dev';
+    const currentActions: (Pick<ShellAction, 'type' | 'command'>)[] = [
+        {
+            type: 'shell',
+            command: 'npm install',
+        },
+        {
+            type: 'shell',
+            command: startCommand,
+        }
+    ];
+    const artifact: Artifact = {
+        id: crypto.randomUUID(),
+        title: 'Importing Project',
+        initialContext: "I'm setting up your project. This may take a moment as I set everything up. Once it's ready, you'll be able to explore and interact with your code.",
+        actions: currentActions,
+        endingContext: "I've successfully imported your project. I'm ready to assist you with analyzing and improving your code."
+    };
+    return { artifact, currentActions };
 }
 
 export async function runCommand(
