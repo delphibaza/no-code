@@ -61,13 +61,15 @@ export async function mountFiles(files: File | File[], webContainerInstance: Web
     await webContainerInstance.mount(formattedFiles);
 }
 
-export function constructMessages(currentInput: string,
+export function constructMessages(
+    currentInput: string,
     currentMessageId: string,
     projectFiles: File[],
-    messageHistory: MessageHistory[]
+    messageHistory: MessageHistory[],
+    ignorePatterns: string[]
 ) {
     const payload: MessageHistory[] = [];
-    payload.push({ id: crypto.randomUUID(), role: 'user', content: projectFilesMsg(projectFiles), timestamp: Date.now() });
+    payload.push({ id: crypto.randomUUID(), role: 'user', content: projectFilesMsg(projectFiles, ignorePatterns), timestamp: Date.now() });
     payload.push({ id: crypto.randomUUID(), role: 'user', content: chatHistoryMsg(), timestamp: Date.now() });
     let currentIndex = 0;
     for (const message of messageHistory) {
