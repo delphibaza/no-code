@@ -7,9 +7,10 @@ import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { constructMessages, mountFiles, startShell } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import { actionExecutor } from "@/services/ActionExecutor";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { File } from "@repo/common/types";
+import { Artifact, ExistingProject, File, FileAction, NewProject, ShellAction } from "@repo/common/types";
 import { Message, useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -34,15 +35,19 @@ export default function ProjectInfo() {
     const { messageHistory,
         projectFiles,
         currentMessageId,
+        ignorePatterns,
         updateProjectFiles,
         upsertMessage,
+        addAction,
         setCurrentMessageId,
     } = useProjectStore(
         useShallow(state => ({
             messageHistory: state.messageHistory,
             projectFiles: state.projectFiles,
+            ignorePatterns: state.ignorePatterns,
             updateProjectFiles: state.updateProjectFiles,
             upsertMessage: state.upsertMessage,
+            addAction: state.addAction,
             setCurrentMessageId: state.setCurrentMessageId,
             currentMessageId: state.currentMessageId
         }))
@@ -72,16 +77,75 @@ export default function ProjectInfo() {
     useEffect(() => {
         async function initializeProject() {
             try {
+                const container = await getWebContainer();
+                setWebContainerInstance(container);
                 const response = await fetch(`${API_URL}/api/project/${params.projectId}`);
                 const result = await response.json();
                 if (!response.ok) {
                     throw new Error(result.msg);
                 }
+                let files: File[] = [];
                 if (result.type === 'existing') {
-                    // const { messages } = result;
-
+                    const { messages, projectFiles } = result as ExistingProject;
+                    let index = 0;
+                    messages.forEach(message => {
+                        if (message.role === 'user') {
+                            // For user messages, content is always { text: string }
+                            const userContent = message.content as { text: string };
+                            upsertMessage({
+                                id: message.id,
+                                role: message.role,
+                                content: userContent.text,
+                                timestamp: new Date(message.createdAt).getTime()
+                            });
+                        } else if (message.role === 'assistant') {
+                            // For assistant messages, content is always Artifact
+                            const isLastMessage = index === messages.length - 1;
+                            const assistantContent = message.content as { artifact: Artifact };
+                            upsertMessage({
+                                id: message.id,
+                                role: message.role,
+                                content: JSON.stringify(assistantContent),
+                                timestamp: new Date(message.createdAt).getTime()
+                            });
+                            assistantContent.artifact.actions.forEach(action => {
+                                const currentAction: FileAction | ShellAction = {
+                                    id: crypto.randomUUID(),
+                                    timestamp: Date.now(),
+                                    ...action
+                                };
+                                if (currentAction.type === 'file') {
+                                    addAction(message.id, {
+                                        id: currentAction.id,
+                                        type: 'file',
+                                        filePath: currentAction.filePath,
+                                        timestamp: Date.now(),
+                                        state: 'created',
+                                    });
+                                } else if (action.type === 'shell') {
+                                    addAction(message.id, {
+                                        id: currentAction.id,
+                                        type: 'shell',
+                                        command: currentAction.command,
+                                        timestamp: Date.now(),
+                                        state: isLastMessage ? 'queued' : 'completed',
+                                    });
+                                    if (isLastMessage) {
+                                        setCurrentMessageId(message.id);
+                                        actionExecutor.addAction(currentAction);
+                                    }
+                                }
+                            });
+                        }
+                        index++;
+                    });
+                    files = [...projectFiles];
+                    updateProjectFiles(projectFiles.map(file => ({
+                        type: 'file',
+                        ...file,
+                    })));
                 } else {
-                    const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } = result;
+                    const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } = result as NewProject;
                     const messages = [
                         { id: '1', role: 'user', content: projectFilesMsg(templateFiles, ignorePatterns) },
                         ...(templatePrompt
@@ -104,10 +168,9 @@ export default function ProjectInfo() {
                         filePath: file.filePath,
                         content: file.content
                     })));
-                    const container = await getWebContainer();
-                    await mountFiles(templateFiles, container);
-                    setWebContainerInstance(container);
+                    files = [...templateFiles];
                 }
+                await mountFiles(files, container);
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : "Error while initializing project"
                 toast.error(errorMessage)
@@ -143,7 +206,7 @@ export default function ProjectInfo() {
         e.preventDefault();
         upsertMessage({ id: crypto.randomUUID(), role: 'user', content: input, timestamp: Date.now() });
         if (!currentMessageId || !projectFiles.length) return;
-        const newMessages = constructMessages(input, currentMessageId, projectFiles, messageHistory);
+        const newMessages = constructMessages(input, currentMessageId, projectFiles, messageHistory, ignorePatterns);
         setMessages(newMessages);
         reload();
         setCurrentMessageId(crypto.randomUUID());
