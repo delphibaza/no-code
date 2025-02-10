@@ -13,10 +13,11 @@ interface Dependencies {
     setIframeURL: (url: string) => void;
     iframeURL: string;
     setCurrentTab: (tab: 'code' | 'preview') => void;
-    updateActionStatus: (actionId: string, status: ActionState['state']) => void;
+    updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
 }
+type QueueItem = { messageId: string, action: FileAction | ShellAction };
 class ActionExecutor {
-    private actionQueue: Array<FileAction | ShellAction> = [];
+    private actionQueue: QueueItem[] = [];
     private isProcessing = false;
     private deps: Dependencies;
 
@@ -24,9 +25,9 @@ class ActionExecutor {
         this.deps = dependencies;
     }
 
-    async addAction(action: FileAction | ShellAction) {
+    async addAction(messageId: string, action: FileAction | ShellAction) {
         // Add action to queue
-        this.actionQueue.push(action);
+        this.actionQueue.push({ messageId, action });
         // Start processing if not already processing
         if (!this.isProcessing) {
             await this.processQueue();
@@ -40,21 +41,22 @@ class ActionExecutor {
         this.isProcessing = true;
         try {
             while (this.actionQueue.length > 0) {
-                const action = this.actionQueue[0]; // Peek at the next action
+                const item = this.actionQueue[0]; // Peek at the next action
                 const webContainer = this.deps.getWebContainer();
                 const terminal = this.deps.getTerminal();
                 const shellProcess = this.deps.getShellProcess();
 
                 if (!webContainer || !terminal || !shellProcess) {
                     // push the action back to the queue
-                    this.actionQueue.push(action);
+                    this.actionQueue.push(item);
                     console.error('WebContainer or Terminal or Shell Process not found');
                     return;
                 }
-                if (action.type === 'file') {
-                    await this.handleFileAction(action, webContainer);
-                } else if (action.type === 'shell') {
-                    await this.handleShellAction(action, webContainer, terminal);
+                if (item.action.type === 'file') {
+                    await this.handleFileAction(item.action, webContainer);
+                } else if (item.action.type === 'shell') {
+                    const shellItem = item as { messageId: string, action: ShellAction };
+                    await this.handleShellAction(shellItem, webContainer, terminal);
                 }
                 // Remove the processed action
                 this.actionQueue.shift();
@@ -81,12 +83,13 @@ class ActionExecutor {
     }
 
     private async handleShellAction(
-        action: ShellAction,
+        queueItem: { messageId: string, action: ShellAction },
         webContainer: WebContainer,
         terminal: Terminal
     ) {
+        const { messageId, action } = queueItem;
         try {
-            this.deps.updateActionStatus(action.id, 'running');
+            this.deps.updateActionStatus(messageId, action.id, 'running');
             const commandArgs = action.command.trim().split(' ');
 
             if (isInstallCommand(action.command)) {
@@ -97,12 +100,17 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
                 if (exitCode === null) {
                     if (!this.deps.iframeURL) {
+                        // Todo: Do something with the port
                         webContainer.on('server-ready', (port, url) => {
                             this.deps.setIframeURL(url);
-                            this.deps.setCurrentTab('preview')
+                            setTimeout(() => {
+                                this.deps.setCurrentTab('preview');
+                            }, 1000);
                         });
                     } else {
-                        this.deps.setCurrentTab('preview')
+                        setTimeout(() => {
+                            this.deps.setCurrentTab('preview');
+                        }, 1000);
                     }
                 } else {
                     throw new Error(`Failed to run command: ${action.command}`);
@@ -112,9 +120,9 @@ class ActionExecutor {
                 const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.deps.updateActionStatus(action.id, 'completed')
+            this.deps.updateActionStatus(messageId, action.id, 'completed')
         } catch (error) {
-            this.deps.updateActionStatus(action.id, 'error')
+            this.deps.updateActionStatus(messageId, action.id, 'error')
             throw error;
         }
     }
@@ -127,5 +135,5 @@ export const actionExecutor = new ActionExecutor({
     iframeURL: useGeneralStore.getState().iframeURL,
     setIframeURL: (url) => useGeneralStore.getState().setIframeURL(url),
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
-    updateActionStatus: (actionId, status) => useProjectStore.getState().updateActionStatus(actionId, status)
+    updateActionStatus: (messageId, actionId, status) => useProjectStore.getState().updateActionStatus(messageId, actionId, status)
 });      

@@ -153,6 +153,7 @@ export function useMessageParser() {
             if (lastStreamedAction.type === 'file') {
                 const prevStatus = getActionStatus(lastStreamedAction.id);
                 updateActionStatus(
+                    currentMessageId,
                     lastStreamedAction.id,
                     prevStatus === 'creating' || prevStatus === 'created'
                         ? 'created'
@@ -167,7 +168,7 @@ export function useMessageParser() {
                     command: lastStreamedAction.command
                 });
             }
-            actionExecutor.addAction(lastStreamedAction);
+            actionExecutor.addAction(currentMessageId, lastStreamedAction);
         }
     }, [lastStreamedAction?.id]);
 

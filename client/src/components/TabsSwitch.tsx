@@ -24,13 +24,15 @@ export function TabsSwitch() {
                 <TabsTrigger className="rounded-2xl text-xs" value="code">Code</TabsTrigger>
                 <TabsTrigger className="rounded-2xl text-xs" value="preview">Preview</TabsTrigger>
             </TabsList>
-            <TabsContent value="code" className="space-y-3">
+            <TabsContent value="code">
                 <FileExplorer />
-                <Terminal onTerminalReady={setTerminal} />
             </TabsContent>
             <TabsContent value="preview" className="h-full">
                 <PreviewCode />
             </TabsContent>
+            <div className={`${currentTab === "code" ? "block" : "hidden"} overflow-hidden max-h-[20vh]`}>
+                <Terminal onTerminalReady={setTerminal} />
+            </div>
         </Tabs>
     );
 }

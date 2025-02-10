@@ -1,6 +1,5 @@
+import { ChatInput } from "@/components/ChatInput";
 import { TabsSwitch } from "@/components/TabsSwitch";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Workbench } from "@/components/Workbench";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
@@ -9,7 +8,6 @@ import { constructMessages, startShell } from "@/lib/runtime";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
-import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "react-router-dom";
@@ -43,7 +41,7 @@ export default function ProjectInfo() {
             currentMessageId: state.currentMessageId
         }))
     );
-    const { messages, input, setInput, handleInputChange, isLoading, stop, error, reload, setMessages } = useChat({
+    const { messages, input, setInput, error, isLoading, stop, reload, setMessages } = useChat({
         api: `${API_URL}/api/chat`,
         body: {
             projectId: params.projectId
@@ -92,8 +90,7 @@ export default function ProjectInfo() {
         }
     }, [messages]);
 
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
+    function handleSubmit() {
         upsertMessage({ id: crypto.randomUUID(), role: 'user', content: input, timestamp: Date.now() });
         if (!currentMessageId || !projectFiles.length) return;
         const newMessages = constructMessages(input, currentMessageId, projectFiles, messageHistory, ignorePatterns);
@@ -116,37 +113,16 @@ export default function ProjectInfo() {
             <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
                 <div className="flex flex-col gap-y-5 col-span-4">
                     <Workbench />
-                    {error && (
-                        <>
-                            <div>An error occurred.</div>
-                            <Button type="button" onClick={() => reload()}>
-                                Retry
-                            </Button>
-                        </>
-                    )}
-                    {isLoading && (
-                        <div>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <Button
-                                disabled={!isLoading}
-                                type="button"
-                                onClick={() => stop()}>
-                                Stop
-                            </Button>
-                        </div>
-                    )}
-                    <Button onClick={() => reload()} disabled={isLoading}>Regenerate</Button>
-                    <form onSubmit={handleSubmit}>
-                        <Textarea
-                            value={input}
-                            placeholder="How can we refine it..."
-                            onChange={handleInputChange}
-                            // disabled={isLoading || error !== null}
-                            disabled={isLoading}
-                        />
-                        <Button type="submit">Submit</Button>
-                    </form>
-                    {/* <Input placeholder="How can we refine it..." handleSubmit={handleSubmit} /> */}
+                    <ChatInput
+                        placeholder="How can we refine it..."
+                        handleSubmit={handleSubmit}
+                        input={input}
+                        setInput={setInput}
+                        isLoading={isLoading}
+                        reload={reload}
+                        stop={stop}
+                        error={error}
+                    />
                 </div>
                 <TabsSwitch />
             </div>

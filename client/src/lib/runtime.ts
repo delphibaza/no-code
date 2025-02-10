@@ -2,7 +2,7 @@ import { File, FileAction, ShellAction, MessageHistory, ExistingProject, Artifac
 import type { WebContainer } from "@webcontainer/api";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
-import { chatHistoryMsg, projectFilesMsg } from "./utils";
+import { chatHistoryMsg, isDevCommand, projectFilesMsg } from "./utils";
 
 export function isNewFile(filePath: string, templateFiles: File[]) {
     return templateFiles.every(file => file.filePath !== filePath);
@@ -68,11 +68,28 @@ export function constructMessages(
     messageHistory: MessageHistory[],
     ignorePatterns: string[]
 ) {
-    const payload: MessageHistory[] = [];
-    payload.push({ id: crypto.randomUUID(), role: 'user', content: projectFilesMsg(projectFiles, ignorePatterns), timestamp: Date.now() });
-    payload.push({ id: crypto.randomUUID(), role: 'user', content: chatHistoryMsg(), timestamp: Date.now() });
-    let currentIndex = 0;
-    for (const message of messageHistory) {
+    // Initialize with system messages
+    const payload: MessageHistory[] = [
+        {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content: projectFilesMsg(projectFiles, ignorePatterns),
+            timestamp: Date.now()
+        },
+        {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content: chatHistoryMsg(),
+            timestamp: Date.now()
+        }
+    ];
+    messageHistory.forEach((message, currentIndex) => {
+        const isImportArtifact = message.id === 'import-artifact';
+
+        // Skip import-artifact messages
+        if (isImportArtifact) {
+            return;
+        }
         const nextMessage = messageHistory[currentIndex + 1];
         if (message.id === currentMessageId) {
             const upperMessage = `Assistant Response to Message #${currentIndex}`;
@@ -87,7 +104,7 @@ export function constructMessages(
             payload.push({ ...message, role: 'user', content: `${upperMessage}\n ${message.content} \n ${lowerMessage}` });
         }
         currentIndex++;
-    }
+    });
     payload.push({
         id: 'currentMessage',
         role: 'user',
@@ -100,8 +117,14 @@ export function constructMessages(
 
 export function getImportArtifact(messages: ExistingProject['messages']) {
     const recentAssistantMessage = messages.findLastIndex(m => m.role === 'assistant');
-    const startCommand = (messages[recentAssistantMessage].content as { artifact: Artifact })
-        .artifact.actions.find(action => action.type === 'shell')?.command ?? 'npm run dev';
+    const lastShellCommand = (messages[recentAssistantMessage].content as { artifact: Artifact })
+        .artifact.actions.findLast(action => action.type === 'shell')?.command;
+
+    // Determine start command
+    const startCommand = lastShellCommand && isDevCommand(lastShellCommand)
+        ? lastShellCommand
+        : 'npm run dev';
+
     const currentActions: (Pick<ShellAction, 'type' | 'command'>)[] = [
         {
             type: 'shell',
