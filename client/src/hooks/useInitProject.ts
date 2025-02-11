@@ -84,9 +84,14 @@ export function useInitProject(
                         });
                     }
                 });
-                const currentMessageId = crypto.randomUUID();
-                setCurrentMessageId(currentMessageId);
+                const currentMessageId = 'import-artifact';
                 const { artifact, currentActions } = getImportArtifact(messages);
+                upsertMessage({
+                    id: currentMessageId,
+                    role: 'assistant',
+                    timestamp: Date.now(),
+                    content: JSON.stringify({ artifact: artifact })
+                });
                 currentActions.forEach(action => {
                     const currentAction: ShellAction = {
                         id: crypto.randomUUID(),
@@ -97,13 +102,7 @@ export function useInitProject(
                         state: 'queued',
                         ...currentAction
                     });
-                    actionExecutor.addAction(currentAction);
-                });
-                upsertMessage({
-                    id: currentMessageId,
-                    role: 'assistant',
-                    timestamp: Date.now(),
-                    content: JSON.stringify({ artifact: artifact })
+                    actionExecutor.addAction(currentMessageId, currentAction);
                 });
                 files = [...projectFiles];
                 updateProjectFiles(projectFiles.map(file => ({

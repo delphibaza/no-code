@@ -1,12 +1,14 @@
-import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { javascript } from '@codemirror/lang-javascript';
-import { vscodeLight, vscodeDark } from "@uiw/codemirror-theme-vscode";
-import { useTheme } from "./ui/theme-provider";
 import { codeEditorOptions } from "@/config/codeEditorOptions";
+import { getLanguageExtension, SupportedLanguages } from "@/lib/getLanguageExtension";
+import { EditorView } from "@codemirror/view";
+import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
+import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useEffect, useRef } from "react";
+import { useTheme } from "./ui/theme-provider";
 
-export function CodeEditor({ code }: {
+export function CodeEditor({ code, language = 'javascript' }: {
     code: string,
+    language?: SupportedLanguages
     // setCode: React.Dispatch<React.SetStateAction<string>>
 }) {
     const { theme } = useTheme();
@@ -31,7 +33,10 @@ export function CodeEditor({ code }: {
                 fontSize: '12px'
             }}
             theme={theme === 'dark' ? vscodeDark : vscodeLight}
-            extensions={[javascript({ jsx: true, typescript: true })]}
+            extensions={[
+                getLanguageExtension(language),
+                EditorView.lineWrapping,
+            ]}
             // onChange={(val, viewUpdate) => {
             // setCode(val);
             // }}

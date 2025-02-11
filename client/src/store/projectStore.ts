@@ -18,9 +18,9 @@ interface ProjectState {
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
     getActionStatus: (actionId: string) => ActionState['state'] | null;
-    updateActionStatus: (actionId: string, status: ActionState['state']) => void;
+    updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
     updateFile: (filePath: string, content: string) => void;
-    setSelectedFile: (filePath: string | null) => void;
+    setSelectedFile: (filePath: string) => void;
     updateProjectFiles: (files: FileAction[]) => void;
     setIgnorePatterns: (patterns: string[]) => void;
 }
@@ -102,15 +102,10 @@ export const useProjectStore = create<ProjectState>()(
                     ?.state ?? null;
             },
 
-            updateActionStatus: (actionId, status) =>
+            updateActionStatus: (messageId, actionId, status) =>
                 set((state) => {
                     const actions = new Map(state.actions);
-                    if (!state.currentMessageId) {
-                        return {
-                            actions: state.actions
-                        };
-                    }
-                    const currentMessage = actions.get(state.currentMessageId);
+                    const currentMessage = actions.get(messageId);
                     if (!currentMessage) {
                         return {
                             actions: state.actions
@@ -119,10 +114,10 @@ export const useProjectStore = create<ProjectState>()(
                     const newActions = currentMessage.map(action =>
                         action.id === actionId ? { ...action, state: status } : action
                     ) as ActionState[];
-                    actions.set(state.currentMessageId, newActions);
+                    actions.set(messageId, newActions);
                     return { actions };
                 }),
         }),
         { name: 'project-store' }
     )
-) 
+);
