@@ -1,13 +1,15 @@
 import { CircleStop, CornerDownLeft, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import { memo } from "react";
 
 interface ButtonConfig {
     show: boolean;
     icon: React.ReactNode;
     onClick: () => void;
 }
-export function ChatInput({
+
+export const ChatInput = memo(({
     input,
     isLoading,
     reload,
@@ -25,7 +27,7 @@ export function ChatInput({
     reload?: () => Promise<string | null | undefined>
     stop?: () => void
     error?: Error | undefined
-}) {
+}) => {
     const buttonConfigs: ButtonConfig[] = [
         {
             show: Boolean(input && !isLoading),
@@ -44,6 +46,7 @@ export function ChatInput({
         }
     ];
     const activeButton = buttonConfigs.find(config => config.show);
+
     return (
         <div className="relative">
             <Textarea
@@ -68,4 +71,6 @@ export function ChatInput({
             )}
         </div>
     );
-}
+});
+
+ChatInput.displayName = 'ChatInput';

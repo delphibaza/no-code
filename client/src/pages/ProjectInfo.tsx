@@ -111,7 +111,7 @@ export default function ProjectInfo() {
         <>
             <Toaster />
             <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
-                <div className="flex flex-col gap-y-5 col-span-4">
+                <div className="flex flex-col gap-y-3 col-span-4">
                     <Workbench />
                     <ChatInput
                         placeholder="How can we refine it..."

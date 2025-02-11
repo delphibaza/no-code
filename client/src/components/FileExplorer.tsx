@@ -1,4 +1,5 @@
 import { buildHierarchy } from "@/lib/formatterHelpers";
+import { getLanguageFromFileExtension } from "@/lib/getLanguageExtension";
 import { findFileContent } from "@/lib/utils";
 import { useProjectStore } from "@/store/projectStore";
 import { Folders } from "@repo/common/types";
@@ -42,7 +43,7 @@ export function FileExplorer() {
     const folders = buildHierarchy(projectFiles);
     return (
         <div className="grid grid-cols-10 gap-x-2">
-            <div className="col-span-2 bg-secondary rounded-sm flex flex-col px-1">
+            <div className="col-span-2 bg-secondary rounded-sm flex flex-col">
                 <div className="text-sm p-2 border-b mb-2 flex items-center gap-x-1">
                     <FolderIcon className="h-4" />
                     Files
@@ -50,7 +51,10 @@ export function FileExplorer() {
                 <RenderStructure files={folders} />
             </div>
             <div className="col-span-8">
-                <CodeEditor code={findFileContent(projectFiles, selectedFile ?? '') ?? ""} />
+                <CodeEditor
+                    code={findFileContent(projectFiles, selectedFile ?? '') ?? ""}
+                    language={getLanguageFromFileExtension(selectedFile ?? '')}
+                />
             </div>
         </div>
     )

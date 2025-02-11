@@ -106,7 +106,7 @@ Treat these as strict requirements. Any deviation will result in rejection.`;
 
 export function chatHistoryMsg() {
   return `Below is the conversation history, including all previous messages along with the most recent assistant response. 
-Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated.`
+Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated. But, always give the appropriate application start command.`
 };
 
 export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];

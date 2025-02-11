@@ -1,9 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGeneralStore } from "@/store/generalStore";
+import { useShallow } from "zustand/react/shallow";
 import { FileExplorer } from "./FileExplorer";
 import PreviewCode from "./PreviewCode";
 import { Terminal } from "./Terminal";
-import { useShallow } from "zustand/react/shallow";
-import { useGeneralStore } from "@/store/generalStore";
 
 export function TabsSwitch() {
     const { setTerminal, currentTab, setCurrentTab } = useGeneralStore(
@@ -18,7 +18,7 @@ export function TabsSwitch() {
         <Tabs
             value={currentTab}
             onValueChange={(value) => setCurrentTab(value as 'code' | 'preview')}
-            className="col-span-8"
+            className="col-span-8 space-y-2"
         >
             <TabsList className="bg-secondary rounded-3xl space-x-2 px-1">
                 <TabsTrigger className="rounded-2xl text-xs" value="code">Code</TabsTrigger>
