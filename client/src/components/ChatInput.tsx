@@ -50,6 +50,7 @@ export const ChatInput = memo(({
     return (
         <div className="relative">
             <Textarea
+                rows={5}
                 className="relative"
                 placeholder={placeholder}
                 value={input}
@@ -64,7 +65,7 @@ export const ChatInput = memo(({
                 <Button
                     size="sm"
                     onClick={activeButton.onClick}
-                    className="absolute bottom-2 right-2"
+                    className="absolute bottom-3 right-2"
                 >
                     {activeButton.icon}
                 </Button>
