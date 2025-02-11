@@ -46,9 +46,9 @@ export function PromptInput() {
         }
     }
     return (
-        <div className="relative flex flex-col w-full md:w-1/2">
+        <div className="relative flex flex-col w-full md:w-5/12">
             <ChatInput
-                placeholder="Type a prompt"
+                placeholder="Type a prompt ..."
                 handleSubmit={handleSubmit}
                 input={input}
                 setInput={setInput}

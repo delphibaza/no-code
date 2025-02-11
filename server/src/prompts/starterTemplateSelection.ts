@@ -39,16 +39,29 @@ Response:
 </selection>
 </example>
 
+<example>
+User: How are you?
+Response:
+<selection>
+  <templateName>bolt-vite-react</templateName>
+  <reasoning>Simple React setup chosen as a default response.</reasoning>
+</selection>
+</example>
+
 Instructions:
 1. Try to find the framework name from the prompt and use the tags to make a decision.
 2. Do not select based on the order, go through all the templates and tags before making a decision.
-3. For trivial tasks and simple scripts, recommend the "node" template
+3. For simple tasks that only require basic scripting (like calculations, file operations, or data processing), 
+   use the "node" template. However, skip this rule if the message is conversational (like greetings) or irrelevant to web development, programming, or software engineering.
 4. For more complex projects, recommend templates of libraries and frameworks from the provided list
 5. Follow the exact XML format.
 6. Consider both technical requirements and tags.
 7. If no perfect match exists, recommend the closest option
 8. If the user asks for a specific language or framework, prioritize that.
-9. If no specific library or framework is mentioned, recommend the "react" template.
+9. Default template selection:
+   - If the message is a greeting (like "hi", "hello"), or unrelated to projects, irrelevant to web development, programming, or software engineering,
+   - OR if no specific framework/library is mentioned
+   Then recommend the "bolt-vite-react" i.e., the "react" template as the default choice.
 
 Ultra-Important: Provide only the selection tags in your response, no additional text. 
 The template name you provide should be from the above provided available list only!`;

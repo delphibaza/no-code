@@ -15,10 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { webContainerInstance,
-        terminal,
-        setShellProcess,
-    } = useGeneralStore(
+    const { webContainerInstance, terminal, setShellProcess } = useGeneralStore(
         useShallow(state => ({
             webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
@@ -113,16 +110,18 @@ export default function ProjectInfo() {
             <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
                 <div className="flex flex-col gap-y-3 col-span-4">
                     <Workbench />
-                    <ChatInput
-                        placeholder="How can we refine it..."
-                        handleSubmit={handleSubmit}
-                        input={input}
-                        setInput={setInput}
-                        isLoading={isLoading}
-                        reload={reload}
-                        stop={stop}
-                        error={error}
-                    />
+                    <div>
+                        <ChatInput
+                            placeholder="How can we refine it..."
+                            handleSubmit={handleSubmit}
+                            input={input}
+                            setInput={setInput}
+                            isLoading={isLoading}
+                            reload={reload}
+                            stop={stop}
+                            error={error}
+                        />
+                    </div>
                 </div>
                 <TabsSwitch />
             </div>
