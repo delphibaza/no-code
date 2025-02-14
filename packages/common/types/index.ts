@@ -82,4 +82,13 @@ export interface ContentFile {
 export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
+export interface Process {
+    id: string;
+    port: number;
+    url: string;
+    command: string;
+    path: string;  // working directory where command was executed
+    pid: number;
+    status: 'starting' | 'running' | 'stopped' | 'error';
+}
 export type Files = Record<string, ContentFile | Directory>;

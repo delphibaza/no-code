@@ -2,16 +2,21 @@ import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
-import { ActionState, FileAction, ShellAction } from "@repo/common/types";
+import { ActionState, FileAction, Process, ShellAction } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
 
 interface Dependencies {
+    processes: Map<string, Process>;
+    addProcess: (process: Omit<Process, 'id'>) => string;
+    updateProcess: (id: string, updates: Partial<Process>) => void;
+    removeProcess: (id: string) => void;
+    setActiveProcessId: (id: string | null) => void;
+    getProcessByPort: (port: number) => Process | undefined;
+    getProcessByPath: (path: string) => Process | undefined;
     getWebContainer: () => WebContainer | null;
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
-    setIframeURL: (url: string) => void;
-    iframeURL: string;
     setCurrentTab: (tab: 'code' | 'preview') => void;
     updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
 }
@@ -19,11 +24,8 @@ type QueueItem = { messageId: string, action: FileAction | ShellAction };
 class ActionExecutor {
     private actionQueue: QueueItem[] = [];
     private isProcessing = false;
-    private deps: Dependencies;
 
-    constructor(dependencies: Dependencies) {
-        this.deps = dependencies;
-    }
+    constructor(private deps: Dependencies) { }
 
     async addAction(messageId: string, action: FileAction | ShellAction) {
         // Add action to queue
@@ -31,6 +33,15 @@ class ActionExecutor {
         // Start processing if not already processing
         if (!this.isProcessing) {
             await this.processQueue();
+        }
+    }
+
+    private async killProcess(webContainer: WebContainer, processId: string) {
+        const process = this.deps.processes.get(processId);
+        if (process?.pid) {
+            webContainer.internal.onProcessesRemove(());
+            // await webContainer.run({ command: 'kill', args: ['-9', process.pid.toString()] });
+            this.deps.removeProcess(processId);
         }
     }
 
@@ -82,6 +93,46 @@ class ActionExecutor {
         }
     }
 
+    private async handleDevCommand(
+        webContainer: WebContainer,
+        terminal: Terminal,
+        commandArgs: string[],
+        cwd: string
+    ) {
+        // Check if a process is already running in this directory
+        const existingProcess = this.deps.getProcessByPath(cwd);
+        if (existingProcess) {
+            await this.killProcess(webContainer, existingProcess.id);
+        }
+
+        const exitCode = await runCommand(webContainer, terminal, commandArgs, false, cwd);
+        if (exitCode === null) {
+            const processId = this.deps.addProcess({
+                port: 0, // Will be updated when server is ready
+                url: '',
+                command: commandArgs.join(' '),
+                path: cwd,
+                status: 'starting',
+                pid: 0
+            });
+
+            webContainer.on('server-ready', (port, url) => {
+                this.deps.updateProcess(processId, {
+                    port,
+                    url,
+                    status: 'running'
+                });
+
+                this.deps.setActiveProcessId(processId);
+                setTimeout(() => {
+                    this.deps.setCurrentTab('preview');
+                }, 1000);
+            });
+        } else {
+            throw new Error(`Failed to run command: ${commandArgs.join(' ')}`);
+        }
+    }
+
     private async handleShellAction(
         queueItem: { messageId: string, action: ShellAction },
         webContainer: WebContainer,
@@ -91,49 +142,38 @@ class ActionExecutor {
         try {
             this.deps.updateActionStatus(messageId, action.id, 'running');
             const commandArgs = action.command.trim().split(' ');
-
+            const cwd = (await webContainer.spawn('pwd')).stdout;
+            console.log('CWD:', cwd);
             if (isInstallCommand(action.command)) {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
+                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
                 if (exitCode !== 0) throw new Error("Installation failed");
             }
             else if (isDevCommand(action.command)) {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
-                if (exitCode === null) {
-                    if (!this.deps.iframeURL) {
-                        // Todo: Do something with the port
-                        webContainer.on('server-ready', (port, url) => {
-                            this.deps.setIframeURL(url);
-                            setTimeout(() => {
-                                this.deps.setCurrentTab('preview');
-                            }, 1000);
-                        });
-                    } else {
-                        setTimeout(() => {
-                            this.deps.setCurrentTab('preview');
-                        }, 1000);
-                    }
-                } else {
-                    throw new Error(`Failed to run command: ${action.command}`);
-                }
+                await this.handleDevCommand(webContainer, terminal, commandArgs, cwd);
             }
             else {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
+                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
-            this.deps.updateActionStatus(messageId, action.id, 'completed')
+            this.deps.updateActionStatus(messageId, action.id, 'completed');
         } catch (error) {
-            this.deps.updateActionStatus(messageId, action.id, 'error')
+            this.deps.updateActionStatus(messageId, action.id, 'error');
             throw error;
         }
     }
 }
 
 export const actionExecutor = new ActionExecutor({
+    processes: useGeneralStore.getState().processes,
+    addProcess: useGeneralStore.getState().addProcess,
+    updateProcess: useGeneralStore.getState().updateProcess,
+    removeProcess: useGeneralStore.getState().removeProcess,
+    setActiveProcessId: useGeneralStore.getState().setActiveProcessId,
+    getProcessByPort: useGeneralStore.getState().getProcessByPort,
+    getProcessByPath: useGeneralStore.getState().getProcessByPath,
     getWebContainer: () => useGeneralStore.getState().webContainerInstance,
     getTerminal: () => useGeneralStore.getState().terminal,
     getShellProcess: () => useGeneralStore.getState().shellProcess,
-    iframeURL: useGeneralStore.getState().iframeURL,
-    setIframeURL: (url) => useGeneralStore.getState().setIframeURL(url),
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
     updateActionStatus: (messageId, actionId, status) => useProjectStore.getState().updateActionStatus(messageId, actionId, status)
 });      
