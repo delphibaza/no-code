@@ -1,6 +1,7 @@
+import { cwd } from "@repo/common/types";
+
 export const MAX_TOKENS = 8192;
-export const WORK_DIR_NAME = 'project';
-export const WORK_DIR = `/${WORK_DIR_NAME}`;
+export const WORK_DIR = `/home/${cwd}`;
 export const MODIFICATIONS_TAG_NAME = 'bolt_file_modifications';
 export interface StarterTemplate {
     name: string;

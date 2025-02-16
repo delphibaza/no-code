@@ -1,19 +1,18 @@
 import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
+import { Preview, usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
-import { ActionState, FileAction, Process, ShellAction } from "@repo/common/types";
+import { ActionState, FileAction, ShellAction } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
 
 interface Dependencies {
-    processes: Map<string, Process>;
-    addProcess: (process: Omit<Process, 'id'>) => string;
-    updateProcess: (id: string, updates: Partial<Process>) => void;
-    removeProcess: (id: string) => void;
-    setActiveProcessId: (id: string | null) => void;
-    getProcessByPort: (port: number) => Process | undefined;
-    getProcessByPath: (path: string) => Process | undefined;
+    addPreview: (preview: Omit<Preview, 'id'>) => string;
+    updatePreview: (id: string, updates: Partial<Preview>) => void;
+    removePreview: (id: string) => void;
+    getPreviewByPort: (port: number) => Preview | undefined;
+    setActivePreviewId: (id: string | null) => void;
     getWebContainer: () => WebContainer | null;
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
@@ -33,15 +32,6 @@ class ActionExecutor {
         // Start processing if not already processing
         if (!this.isProcessing) {
             await this.processQueue();
-        }
-    }
-
-    private async killProcess(webContainer: WebContainer, processId: string) {
-        const process = this.deps.processes.get(processId);
-        if (process?.pid) {
-            webContainer.internal.onProcessesRemove(());
-            // await webContainer.run({ command: 'kill', args: ['-9', process.pid.toString()] });
-            this.deps.removeProcess(processId);
         }
     }
 
@@ -96,34 +86,23 @@ class ActionExecutor {
     private async handleDevCommand(
         webContainer: WebContainer,
         terminal: Terminal,
-        commandArgs: string[],
-        cwd: string
+        commandArgs: string[]
     ) {
-        // Check if a process is already running in this directory
-        const existingProcess = this.deps.getProcessByPath(cwd);
-        if (existingProcess) {
-            await this.killProcess(webContainer, existingProcess.id);
-        }
-
-        const exitCode = await runCommand(webContainer, terminal, commandArgs, false, cwd);
+        const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
         if (exitCode === null) {
-            const processId = this.deps.addProcess({
+            const previewId = this.deps.addPreview({
                 port: 0, // Will be updated when server is ready
-                url: '',
-                command: commandArgs.join(' '),
-                path: cwd,
-                status: 'starting',
-                pid: 0
+                ready: false,
+                baseUrl: '',
             });
 
             webContainer.on('server-ready', (port, url) => {
-                this.deps.updateProcess(processId, {
+                this.deps.updatePreview(previewId, {
                     port,
-                    url,
-                    status: 'running'
+                    baseUrl: url,
+                    ready: true,
                 });
-
-                this.deps.setActiveProcessId(processId);
+                this.deps.setActivePreviewId(previewId);
                 setTimeout(() => {
                     this.deps.setCurrentTab('preview');
                 }, 1000);
@@ -142,17 +121,16 @@ class ActionExecutor {
         try {
             this.deps.updateActionStatus(messageId, action.id, 'running');
             const commandArgs = action.command.trim().split(' ');
-            const cwd = (await webContainer.spawn('pwd')).stdout;
-            console.log('CWD:', cwd);
+
             if (isInstallCommand(action.command)) {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
+                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error("Installation failed");
             }
             else if (isDevCommand(action.command)) {
-                await this.handleDevCommand(webContainer, terminal, commandArgs, cwd);
+                await this.handleDevCommand(webContainer, terminal, commandArgs);
             }
             else {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
+                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
             this.deps.updateActionStatus(messageId, action.id, 'completed');
@@ -164,14 +142,12 @@ class ActionExecutor {
 }
 
 export const actionExecutor = new ActionExecutor({
-    processes: useGeneralStore.getState().processes,
-    addProcess: useGeneralStore.getState().addProcess,
-    updateProcess: useGeneralStore.getState().updateProcess,
-    removeProcess: useGeneralStore.getState().removeProcess,
-    setActiveProcessId: useGeneralStore.getState().setActiveProcessId,
-    getProcessByPort: useGeneralStore.getState().getProcessByPort,
-    getProcessByPath: useGeneralStore.getState().getProcessByPath,
-    getWebContainer: () => useGeneralStore.getState().webContainerInstance,
+    getWebContainer: () => usePreviewStore.getState().webContainer,
+    addPreview: (preview) => usePreviewStore.getState().addPreview(preview),
+    updatePreview: (id, updates) => usePreviewStore.getState().updatePreview(id, updates),
+    removePreview: (id) => usePreviewStore.getState().removePreview(id),
+    setActivePreviewId: (id) => usePreviewStore.getState().setActivePreviewId(id),
+    getPreviewByPort: (port: number) => usePreviewStore.getState().getPreviewByPort(port),
     getTerminal: () => useGeneralStore.getState().terminal,
     getShellProcess: () => useGeneralStore.getState().shellProcess,
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),

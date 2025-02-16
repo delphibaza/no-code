@@ -1,25 +1,29 @@
-import { useGeneralStore } from "@/store/generalStore";
-import { ProcessSwitcher } from "./ProcessSwitcher";
+import { usePreviewStore } from "@/store/previewStore";
 import { useShallow } from "zustand/react/shallow";
+import { ProcessSwitcher } from "./ProcessSwitcher";
 
 export function Preview() {
-    const { activeProcess } = useGeneralStore(
+    const { activePreview } = usePreviewStore(
         useShallow((state) => ({
-            activeProcess: state.activeProcessId
-                ? state.processes.get(state.activeProcessId) ?? null
+            activePreview: state.activePreviewId
+                ? state.previews.get(state.activePreviewId) ?? null
                 : null,
         }))
     );
 
-    if (!activeProcess) {
-        return <div className="flex items-center justify-center h-full">No preview available</div>;
+    if (!activePreview) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                No preview available
+            </div>
+        );
     }
 
     return (
         <div className="h-full flex flex-col">
             <ProcessSwitcher />
             <iframe
-                src={activeProcess.url}
+                src={activePreview.baseUrl}
                 className="flex-1 w-full"
                 title="preview"
             />
