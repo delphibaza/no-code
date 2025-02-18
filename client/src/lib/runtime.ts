@@ -144,24 +144,3 @@ export function getImportArtifact(messages: ExistingProject['messages']) {
     };
     return { artifact, currentActions };
 }
-
-export async function runCommand(
-    webContainerInstance: WebContainer,
-    terminal: XTerm,
-    commands: string[],
-    willExit: boolean
-) {
-    const process = await webContainerInstance.spawn(commands[0], commands.slice(1));
-    process.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        })
-    );
-    if (willExit) {
-        const exitCode = await process.exit;
-        return exitCode;
-    }
-    return null;
-}

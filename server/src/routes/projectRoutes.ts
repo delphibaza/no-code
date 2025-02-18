@@ -5,7 +5,7 @@ import express from "express";
 import { STARTER_TEMPLATES } from "../constants";
 import { enhancerPrompt } from "../prompts/enhancerPrompt";
 import { parseSelectedTemplate, starterTemplateSelectionPrompt } from "../prompts/starterTemplateSelection";
-import { llamaModel } from "../providers";
+import { selectorModel } from "../providers";
 import { createProject, getProject, getTemplateData } from "../services/projectService";
 
 const router = express.Router();
@@ -42,13 +42,13 @@ router.get('/project/:projectId', async (req, res) => {
         if (project.messages.length === 1 && project.messages[0].role === 'user') {
             // Enhance the prompt
             const { text: enhancedPrompt } = await generateText({
-                model: llamaModel,
+                model: selectorModel,
                 system: enhancerPrompt(),
                 prompt: project.name
             });
             // Select the template
             const { text: templateXML } = await generateText({
-                model: llamaModel,
+                model: selectorModel,
                 system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
                 prompt: enhancedPrompt
             });

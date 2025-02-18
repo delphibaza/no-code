@@ -1,22 +1,21 @@
-import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
+import { mountFiles as mountFile } from "@/lib/runtime";
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
-import { Preview, usePreviewStore } from "@/store/previewStore";
+import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
-import { ActionState, FileAction, ShellAction } from "@repo/common/types";
+import { ActionState, FileAction, Preview, ShellAction, WORK_DIR } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
+import type { Terminal as XTerm } from "@xterm/xterm";
 
 interface Dependencies {
     addPreview: (preview: Omit<Preview, 'id'>) => string;
-    updatePreview: (id: string, updates: Partial<Preview>) => void;
-    removePreview: (id: string) => void;
-    getPreviewByPort: (port: number) => Preview | undefined;
     setActivePreviewId: (id: string | null) => void;
     getWebContainer: () => WebContainer | null;
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
     setCurrentTab: (tab: 'code' | 'preview') => void;
+    getPreviewByPath: (path: string) => Preview | undefined;
     updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
 }
 type QueueItem = { messageId: string, action: FileAction | ShellAction };
@@ -86,21 +85,22 @@ class ActionExecutor {
     private async handleDevCommand(
         webContainer: WebContainer,
         terminal: Terminal,
-        commandArgs: string[]
+        command: string,
     ) {
-        const exitCode = await runCommand(webContainer, terminal, commandArgs, false);
-        if (exitCode === null) {
-            const previewId = this.deps.addPreview({
-                port: 0, // Will be updated when server is ready
-                ready: false,
-                baseUrl: '',
-            });
+        const { output } = await webContainer.spawn('pwd');
+        const cwd = (await output.getReader().read()).value ?? WORK_DIR;
 
+        if (this.deps.getPreviewByPath(cwd)) {
+            return;
+        }
+        const exitCode = await this.runCommand(webContainer, terminal, command, false);
+        if (exitCode === null) {
             webContainer.on('server-ready', (port, url) => {
-                this.deps.updatePreview(previewId, {
+                const previewId = this.deps.addPreview({
                     port,
-                    baseUrl: url,
+                    cwd,
                     ready: true,
+                    baseUrl: url,
                 });
                 this.deps.setActivePreviewId(previewId);
                 setTimeout(() => {
@@ -108,8 +108,31 @@ class ActionExecutor {
                 }, 1000);
             });
         } else {
-            throw new Error(`Failed to run command: ${commandArgs.join(' ')}`);
+            throw new Error(`Failed to run command: ${command}`);
         }
+    }
+
+    private async runCommand(
+        webContainerInstance: WebContainer,
+        terminal: XTerm,
+        command: string,
+        willExit: boolean
+    ) {
+        const process = await webContainerInstance.spawn('jsh', ['-c', command], {
+            env: { npm_config_yes: true },
+        });
+        process.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            })
+        );
+        if (willExit) {
+            const exitCode = await process.exit;
+            return exitCode;
+        }
+        return null;
     }
 
     private async handleShellAction(
@@ -120,17 +143,16 @@ class ActionExecutor {
         const { messageId, action } = queueItem;
         try {
             this.deps.updateActionStatus(messageId, action.id, 'running');
-            const commandArgs = action.command.trim().split(' ');
 
             if (isInstallCommand(action.command)) {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
+                const exitCode = await this.runCommand(webContainer, terminal, action.command, true);
                 if (exitCode !== 0) throw new Error("Installation failed");
             }
             else if (isDevCommand(action.command)) {
-                await this.handleDevCommand(webContainer, terminal, commandArgs);
+                await this.handleDevCommand(webContainer, terminal, action.command);
             }
             else {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true);
+                const exitCode = await this.runCommand(webContainer, terminal, action.command, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
             this.deps.updateActionStatus(messageId, action.id, 'completed');
@@ -144,12 +166,10 @@ class ActionExecutor {
 export const actionExecutor = new ActionExecutor({
     getWebContainer: () => usePreviewStore.getState().webContainer,
     addPreview: (preview) => usePreviewStore.getState().addPreview(preview),
-    updatePreview: (id, updates) => usePreviewStore.getState().updatePreview(id, updates),
-    removePreview: (id) => usePreviewStore.getState().removePreview(id),
     setActivePreviewId: (id) => usePreviewStore.getState().setActivePreviewId(id),
-    getPreviewByPort: (port: number) => usePreviewStore.getState().getPreviewByPort(port),
     getTerminal: () => useGeneralStore.getState().terminal,
     getShellProcess: () => useGeneralStore.getState().shellProcess,
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
+    getPreviewByPath: (path) => usePreviewStore.getState().getPreviewByPath(path),
     updateActionStatus: (messageId, actionId, status) => useProjectStore.getState().updateActionStatus(messageId, actionId, status)
 });      

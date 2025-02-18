@@ -1,12 +1,6 @@
+import { Preview } from '@repo/common/types';
 import { WebContainer } from '@webcontainer/api';
 import { create } from 'zustand';
-
-export interface Preview {
-    id: string;
-    port: number;
-    ready: boolean;
-    baseUrl: string;
-}
 
 interface PreviewStore {
     previews: Map<string, Preview>;
@@ -14,10 +8,9 @@ interface PreviewStore {
     webContainer: WebContainer | null;
 
     addPreview: (preview: Omit<Preview, 'id'>) => string;
-    updatePreview: (id: string, updates: Partial<Preview>) => void;
     removePreview: (id: string) => void;
     setActivePreviewId: (id: string | null) => void;
-    getPreviewByPort: (port: number) => Preview | undefined;
+    getPreviewByPath: (path: string) => Preview | undefined;
     setWebContainer: (container: WebContainer) => void;
     initializeWebContainerEvents: () => void;
 }
@@ -37,17 +30,6 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
         return id;
     },
 
-    updatePreview: (id, updates) => {
-        set((state) => {
-            const preview = state.previews.get(id);
-            if (!preview) return state;
-
-            const newPreviews = new Map(state.previews);
-            newPreviews.set(id, { ...preview, ...updates });
-            return { previews: newPreviews };
-        });
-    },
-
     removePreview: (id) => {
         set((state) => {
             const newPreviews = new Map(state.previews);
@@ -61,9 +43,9 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
 
     setActivePreviewId: (id) => set({ activePreviewId: id }),
 
-    getPreviewByPort: (port) => {
+    getPreviewByPath: (path) => {
         const previews = get().previews;
-        return Array.from(previews.values()).find(p => p.port === port);
+        return Array.from(previews.values()).find(p => p.cwd === path);
     },
 
     setWebContainer: (container) => {
@@ -72,22 +54,15 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
     },
 
     initializeWebContainerEvents: () => {
-        const { webContainer, updatePreview, removePreview } = get();
+        const { webContainer, removePreview } = get();
         if (!webContainer) return;
 
-        webContainer.on('port', (port, type, url) => {
+        webContainer.on('port', (port, type) => {
             const preview = Array.from(get().previews.values()).find(p => p.port === port);
 
             if (type === 'close' && preview) {
                 removePreview(preview.id);
                 return;
-            }
-
-            if (type === 'open' && preview) {
-                updatePreview(preview.id, {
-                    ready: type === 'open',
-                    baseUrl: url,
-                });
             }
         });
     }

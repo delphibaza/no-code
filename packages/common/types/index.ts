@@ -82,6 +82,13 @@ export interface ContentFile {
 export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
+export interface Preview {
+    id: string;
+    port: number;
+    ready: boolean;
+    cwd: string;
+    baseUrl: string;
+}
 export type Files = Record<string, ContentFile | Directory>;
-
 export const cwd = 'project';
+export const WORK_DIR = `/home/${cwd}`;

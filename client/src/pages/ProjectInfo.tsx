@@ -6,6 +6,7 @@ import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { constructMessages, startShell } from "@/lib/runtime";
 import { useGeneralStore } from "@/store/generalStore";
+import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
 import { useEffect } from "react";
@@ -15,11 +16,15 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { webContainerInstance, terminal, setShellProcess } = useGeneralStore(
+    const { terminal, setShellProcess } = useGeneralStore(
         useShallow(state => ({
-            webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
             setShellProcess: state.setShellProcess,
+        }))
+    );
+    const { webContainerInstance } = usePreviewStore(
+        useShallow(state => ({
+            webContainerInstance: state.webContainer
         }))
     );
     const { messageHistory,

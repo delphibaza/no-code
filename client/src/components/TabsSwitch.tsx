@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGeneralStore } from "@/store/generalStore";
 import { useShallow } from "zustand/react/shallow";
 import { FileExplorer } from "./FileExplorer";
-import PreviewCode from "./PreviewCode";
+import { Preview } from "./Preview";
 import { Terminal } from "./Terminal";
 
 export function TabsSwitch() {
@@ -28,7 +28,7 @@ export function TabsSwitch() {
                 <FileExplorer />
             </TabsContent>
             <TabsContent value="preview" className="h-full">
-                <PreviewCode />
+                <Preview />
             </TabsContent>
             <div className={`${currentTab === "code" ? "block" : "hidden"} overflow-hidden max-h-[20vh]`}>
                 <Terminal onTerminalReady={setTerminal} />
