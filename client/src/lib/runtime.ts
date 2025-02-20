@@ -33,7 +33,8 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {
-    const process = await webContainer.spawn('/bin/jsh', {
+    const args: string[] = [];
+    const process = await webContainer.spawn('/bin/jsh', ['--osc', ...args], {
         terminal: {
             cols: terminal.cols ?? 80,
             rows: terminal.rows ?? 15,

@@ -61,6 +61,7 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
             const preview = Array.from(get().previews.values()).find(p => p.port === port);
 
             if (type === 'close' && preview) {
+                console.log('Port closed for preview:', preview);
                 removePreview(preview.id);
                 return;
             }

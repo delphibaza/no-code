@@ -1,8 +1,11 @@
-import { Button } from "./ui/button";
 import { usePreviewStore } from "@/store/previewStore";
+import { ChevronDown, ChevronUp, Unplug } from "lucide-react";
+import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { Button } from "./ui/button";
 
 export function ProcessSwitcher() {
+    const [isExpanded, setIsExpanded] = useState(false);
     const { previews, activePreviewId, setActivePreviewId } = usePreviewStore(
         useShallow((state) => ({
             previews: state.previews,
@@ -11,22 +14,42 @@ export function ProcessSwitcher() {
         }))
     );
     const previewList = Array.from(previews.values());
-
-    if (!previewList.length) return null;
+    const activePreview = previewList.find(p => p.id === activePreviewId);
+    if (!previewList.length || !activePreview) return null;
 
     return (
-        <div className="flex flex-wrap gap-2 p-2 bg-secondary">
-            {previewList.map((preview) => (
-                <Button
-                    key={preview.id}
-                    variant={activePreviewId === preview.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActivePreviewId(preview.id)}
-                    className="flex items-center gap-2"
-                >
-                    {preview.port}
-                </Button>
-            ))}
+        <div className="relative">
+            <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center rounded-full gap-2 text-muted-foreground hover:text-foreground"
+            >
+                <Unplug className="h-3 w-3" />
+                {activePreview.port}
+                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+
+            {isExpanded && (
+                <div className="absolute top-full left-0 z-50 mt-1 w-32 rounded-md border bg-popover shadow-md">
+                    <div className="text-sm font-bold px-3 py-2">Ports</div>
+                    {previewList.map((preview) => (
+                        <div
+                            key={preview.id}
+                            onClick={() => {
+                                setActivePreviewId(preview.id);
+                                setIsExpanded(false);
+                            }}
+                            className={`cursor-pointer px-3 py-2 text-sm ${activePreviewId === preview.id
+                                ? "text-blue-500 font-medium"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                }`}
+                        >
+                            {preview.port}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

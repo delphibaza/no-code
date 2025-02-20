@@ -75,7 +75,7 @@ export default function ProjectInfo() {
                 const process = await startShell(terminal, webContainerInstance);
                 setShellProcess(process);
             } catch (error) {
-                console.error('Failed to initialize shell:', error);
+                terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
                 setShellProcess(null);
             }
         }

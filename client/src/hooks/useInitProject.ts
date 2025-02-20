@@ -126,7 +126,6 @@ export function useInitProject(
                 ];
                 setMessages(messages as Message[]);
                 reload();
-                setCurrentMessageId(crypto.randomUUID());
                 upsertMessage({ id: crypto.randomUUID(), role: 'data', content: templatePrompt, timestamp: Date.now() });
                 files = [...templateFiles];
                 // Add files to project store
@@ -137,6 +136,7 @@ export function useInitProject(
                     ...file,
                 })));
             }
+            setCurrentMessageId(crypto.randomUUID());
             await mountFiles(files, container);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Error while initializing project"

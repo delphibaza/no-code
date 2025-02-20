@@ -1,12 +1,12 @@
 import { mountFiles as mountFile } from "@/lib/runtime";
-import { isDevCommand, isInstallCommand } from "@/lib/utils";
+import { isDevCommand, isInstallCommand, removeTrailingNewlines } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { ActionState, FileAction, Preview, ShellAction, WORK_DIR } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
-import { Terminal } from "@xterm/xterm";
 import type { Terminal as XTerm } from "@xterm/xterm";
+import { Terminal } from "@xterm/xterm";
 
 interface Dependencies {
     addPreview: (preview: Omit<Preview, 'id'>) => string;
@@ -89,8 +89,9 @@ class ActionExecutor {
     ) {
         const { output } = await webContainer.spawn('pwd');
         const cwd = (await output.getReader().read()).value ?? WORK_DIR;
-
-        if (this.deps.getPreviewByPath(cwd)) {
+        const trimmedCWD = removeTrailingNewlines(cwd.trim());
+        if (this.deps.getPreviewByPath(trimmedCWD)) {
+            this.deps.setCurrentTab('preview');
             return;
         }
         const exitCode = await this.runCommand(webContainer, terminal, command, false);
@@ -98,7 +99,7 @@ class ActionExecutor {
             webContainer.on('server-ready', (port, url) => {
                 const previewId = this.deps.addPreview({
                     port,
-                    cwd,
+                    cwd: trimmedCWD,
                     ready: true,
                     baseUrl: url,
                 });
