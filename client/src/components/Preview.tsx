@@ -20,11 +20,11 @@ export function Preview() {
     }
 
     return (
-        <div className="h-full flex flex-col bg-secondary rounded-sm">
+        <div className="flex flex-col h-full rounded-sm">
             <ProcessSwitcher />
             <iframe
                 src={activePreview.baseUrl}
-                className="flex-1 w-full border-t-2"
+                className="flex-1 w-full border-t-2 h-full"
                 title="preview"
             />
         </div>

@@ -3,6 +3,7 @@ import { API_URL } from "@/lib/constants";
 import { getImportArtifact, mountFiles } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
+import { useFilesStore } from "@/store/filesStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { Artifact, ExistingProject, File, FileAction, NewProject, ShellAction } from "@repo/common/types";
@@ -19,17 +20,19 @@ export function useInitProject(
             setWebContainerInstance: state.setWebContainer
         }))
     );
-    const { updateProjectFiles,
-        addAction,
-        setSelectedFile,
+    const { setSelectedFile, updateProjectFiles } = useFilesStore(
+        useShallow(state => ({
+            updateProjectFiles: state.updateProjectFiles,
+            setSelectedFile: state.setSelectedFile,
+        }))
+    );
+    const { addAction,
         upsertMessage,
         setCurrentMessageId
     } = useProjectStore(
         useShallow(state => ({
-            updateProjectFiles: state.updateProjectFiles,
             addAction: state.addAction,
             upsertMessage: state.upsertMessage,
-            setSelectedFile: state.setSelectedFile,
             setCurrentMessageId: state.setCurrentMessageId,
         }))
     );

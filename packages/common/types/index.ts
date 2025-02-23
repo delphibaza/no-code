@@ -89,6 +89,11 @@ export interface Preview {
     cwd: string;
     baseUrl: string;
 }
+export type Project = {
+    id: string;
+    name: string;
+    createdAt: string;
+}
 export type Files = Record<string, ContentFile | Directory>;
 export const cwd = 'project';
 export const WORK_DIR = `/home/${cwd}`;
