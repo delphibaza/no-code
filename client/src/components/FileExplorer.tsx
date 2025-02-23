@@ -1,7 +1,7 @@
 import { buildHierarchy } from "@/lib/formatterHelpers";
 import { getLanguageFromFileExtension } from "@/lib/getLanguageExtension";
 import { findFileContent } from "@/lib/utils";
-import { useProjectStore } from "@/store/projectStore";
+import { useFilesStore } from "@/store/filesStore";
 import { Folders } from "@repo/common/types";
 import { FolderIcon } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -34,19 +34,25 @@ function RenderStructure({ files }: { files: Folders[] }) {
 }
 
 export function FileExplorer() {
-    const { projectFiles, selectedFile } = useProjectStore(
+    const { projectFiles, selectedFile, isFileModified } = useFilesStore(
         useShallow(state => ({
             projectFiles: state.projectFiles,
-            selectedFile: state.selectedFile
+            selectedFile: state.selectedFile,
+            isFileModified: state.isFileModified
         }))
     );
     const folders = buildHierarchy(projectFiles);
     return (
-        <div className="grid grid-cols-10 gap-x-2">
+        <div className="grid grid-cols-10">
             <div className="col-span-2 bg-secondary rounded-sm flex flex-col">
-                <div className="text-sm p-2 border-b mb-2 flex items-center gap-x-1">
-                    <FolderIcon className="h-4" />
-                    Files
+                <div className="text-sm p-2 border-b-2 mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-x-1">
+                        <FolderIcon className="h-4" />
+                        Files
+                    </div>
+                    {selectedFile && isFileModified(selectedFile) && (
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    )}
                 </div>
                 <RenderStructure files={folders} />
             </div>

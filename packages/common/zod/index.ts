@@ -13,4 +13,11 @@ export const chatSchema = z.object({
     projectId: z.string(),
     messages: z.array(messageSchema)
 });
+export const saveFileSchema = z.object({
+    projectId: z.string(),
+    files: z.array(z.object({
+        filePath: z.string(),
+        content: z.string()
+    }))
+});
 export type PromptSchema = z.infer<typeof promptSchema>;

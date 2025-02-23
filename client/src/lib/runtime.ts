@@ -33,7 +33,8 @@ export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {
-    const process = await webContainer.spawn('/bin/jsh', {
+    const args: string[] = [];
+    const process = await webContainer.spawn('/bin/jsh', ['--osc', ...args], {
         terminal: {
             cols: terminal.cols ?? 80,
             rows: terminal.rows ?? 15,
@@ -143,25 +144,4 @@ export function getImportArtifact(messages: ExistingProject['messages']) {
         endingContext: "I've successfully imported your project. I'm ready to assist you with analyzing and improving your code."
     };
     return { artifact, currentActions };
-}
-
-export async function runCommand(
-    webContainerInstance: WebContainer,
-    terminal: XTerm,
-    commands: string[],
-    willExit: boolean
-) {
-    const process = await webContainerInstance.spawn(commands[0], commands.slice(1));
-    process.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        })
-    );
-    if (willExit) {
-        const exitCode = await process.exit;
-        return exitCode;
-    }
-    return null;
 }

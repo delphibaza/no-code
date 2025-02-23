@@ -1,40 +1,41 @@
-import { ActionState, MessageHistory, FileAction } from '@repo/common/types';
+import { ActionState, MessageHistory, Project } from '@repo/common/types';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 interface ProjectState {
+    projects: Project[];
+    currentProjectId: string | null;
     // messageId, message with json string
     messageHistory: MessageHistory[];
-    projectFiles: FileAction[];
     // messageId, actions
     actions: Map<string, ActionState[]>;
     currentMessageId: string | null;
-    ignorePatterns: string[];
-    lastModified: number;
-    selectedFile: string | null;
 
     // Actions
+    setProjects: (projects: Project[]) => void;
+    setCurrentProjectId: (projectId: string) => void;
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
     getActionStatus: (actionId: string) => ActionState['state'] | null;
     updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
-    updateFile: (filePath: string, content: string) => void;
-    setSelectedFile: (filePath: string) => void;
-    updateProjectFiles: (files: FileAction[]) => void;
-    setIgnorePatterns: (patterns: string[]) => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
     devtools(
         (set, get) => ({
-            projectFiles: [],
             currentMessageId: null,
             actions: new Map(),
-            lastModified: Date.now(),
-            selectedFile: null,
             messageHistory: [],
-            ignorePatterns: [],
+            projects: [],
+            currentProjectId: null,
+
+            // Actions
+            setProjects: (projects) =>
+                set({ projects }),
+
+            setCurrentProjectId: (projectId) =>
+                set({ currentProjectId: projectId }),
 
             upsertMessage: (message) =>
                 set((state) => {
@@ -51,35 +52,6 @@ export const useProjectStore = create<ProjectState>()(
             setCurrentMessageId: (messageId) =>
                 set({ currentMessageId: messageId }),
 
-            updateFile: (filePath, content) =>
-                set((state) => {
-                    if (!state.currentMessageId) {
-                        return {
-                            currentMessage: null
-                        };
-                    }
-                    const newFiles = state.projectFiles.map(file =>
-                        file.filePath === filePath ? {
-                            ...file,
-                            content: content,
-                            timestamp: Date.now()
-                        } : file
-                    );
-                    return {
-                        projectFiles: newFiles,
-                        lastModified: Date.now()
-                    };
-                }),
-
-            setSelectedFile: (filePath) =>
-                set({ selectedFile: filePath }),
-
-            updateProjectFiles: (files) =>
-                set({ projectFiles: files }),
-
-            setIgnorePatterns: (patterns) =>
-                set({ ignorePatterns: patterns }),
-
             addAction: (messageId, action) =>
                 set((state) => {
                     const actions = new Map(state.actions);
@@ -88,7 +60,6 @@ export const useProjectStore = create<ProjectState>()(
                     actions.set(messageId, newActions);
                     return {
                         actions: actions,
-                        lastModified: Date.now()
                     };
                 }),
 

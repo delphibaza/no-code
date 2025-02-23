@@ -3,7 +3,8 @@ import { API_URL } from "@/lib/constants";
 import { getImportArtifact, mountFiles } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
-import { useGeneralStore } from "@/store/generalStore";
+import { useFilesStore } from "@/store/filesStore";
+import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { Artifact, ExistingProject, File, FileAction, NewProject, ShellAction } from "@repo/common/types";
 import { Message } from 'ai/react';
@@ -14,22 +15,24 @@ export function useInitProject(
     setMessages: (messages: Message[] | ((messages: Message[]) => Message[])) => void,
     reload: () => Promise<string | null | undefined>
 ) {
-    const { setWebContainerInstance } = useGeneralStore(
+    const { setWebContainerInstance } = usePreviewStore(
         useShallow(state => ({
-            setWebContainerInstance: state.setWebContainerInstance
+            setWebContainerInstance: state.setWebContainer
         }))
     );
-    const { updateProjectFiles,
-        addAction,
-        setSelectedFile,
+    const { setSelectedFile, updateProjectFiles } = useFilesStore(
+        useShallow(state => ({
+            updateProjectFiles: state.updateProjectFiles,
+            setSelectedFile: state.setSelectedFile,
+        }))
+    );
+    const { addAction,
         upsertMessage,
         setCurrentMessageId
     } = useProjectStore(
         useShallow(state => ({
-            updateProjectFiles: state.updateProjectFiles,
             addAction: state.addAction,
             upsertMessage: state.upsertMessage,
-            setSelectedFile: state.setSelectedFile,
             setCurrentMessageId: state.setCurrentMessageId,
         }))
     );
@@ -126,7 +129,6 @@ export function useInitProject(
                 ];
                 setMessages(messages as Message[]);
                 reload();
-                setCurrentMessageId(crypto.randomUUID());
                 upsertMessage({ id: crypto.randomUUID(), role: 'data', content: templatePrompt, timestamp: Date.now() });
                 files = [...templateFiles];
                 // Add files to project store
@@ -137,6 +139,7 @@ export function useInitProject(
                     ...file,
                 })));
             }
+            setCurrentMessageId(crypto.randomUUID());
             await mountFiles(files, container);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Error while initializing project"

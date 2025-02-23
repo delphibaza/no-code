@@ -5,7 +5,9 @@ import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { constructMessages, startShell } from "@/lib/runtime";
+import { useFilesStore } from "@/store/filesStore";
 import { useGeneralStore } from "@/store/generalStore";
+import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
 import { useEffect } from "react";
@@ -15,27 +17,35 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { webContainerInstance, terminal, setShellProcess } = useGeneralStore(
+    const { terminal, setShellProcess } = useGeneralStore(
         useShallow(state => ({
-            webContainerInstance: state.webContainerInstance,
             terminal: state.terminal,
             setShellProcess: state.setShellProcess,
         }))
     );
+    const { webContainerInstance } = usePreviewStore(
+        useShallow(state => ({
+            webContainerInstance: state.webContainer
+        }))
+    );
     const { messageHistory,
-        projectFiles,
         currentMessageId,
-        ignorePatterns,
         upsertMessage,
         setCurrentMessageId,
+        setCurrentProjectId,
     } = useProjectStore(
         useShallow(state => ({
             messageHistory: state.messageHistory,
-            projectFiles: state.projectFiles,
-            ignorePatterns: state.ignorePatterns,
             upsertMessage: state.upsertMessage,
+            setCurrentProjectId: state.setCurrentProjectId,
             setCurrentMessageId: state.setCurrentMessageId,
             currentMessageId: state.currentMessageId
+        }))
+    );
+    const { ignorePatterns, projectFiles } = useFilesStore(
+        useShallow(state => ({
+            projectFiles: state.projectFiles,
+            ignorePatterns: state.ignorePatterns,
         }))
     );
     const { messages, input, setInput, error, isLoading, stop, reload, setMessages } = useChat({
@@ -60,6 +70,7 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         if (!params.projectId) return;
+        setCurrentProjectId(params.projectId);
         initializeProject(params.projectId);
     }, [params.projectId]);
 
@@ -70,7 +81,7 @@ export default function ProjectInfo() {
                 const process = await startShell(terminal, webContainerInstance);
                 setShellProcess(process);
             } catch (error) {
-                console.error('Failed to initialize shell:', error);
+                terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
                 setShellProcess(null);
             }
         }

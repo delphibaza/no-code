@@ -82,13 +82,18 @@ export interface ContentFile {
 export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
-export interface Process {
+export interface Preview {
     id: string;
     port: number;
-    url: string;
-    command: string;
-    path: string;  // working directory where command was executed
-    pid: number;
-    status: 'starting' | 'running' | 'stopped' | 'error';
+    ready: boolean;
+    cwd: string;
+    baseUrl: string;
+}
+export type Project = {
+    id: string;
+    name: string;
+    createdAt: string;
 }
 export type Files = Record<string, ContentFile | Directory>;
+export const cwd = 'project';
+export const WORK_DIR = `/home/${cwd}`;

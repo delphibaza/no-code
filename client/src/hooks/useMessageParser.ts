@@ -1,6 +1,7 @@
 import { isNewFile, parseActions } from "@/lib/runtime";
 import { removeTrailingNewlines } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
+import { useFilesStore } from "@/store/filesStore";
 import { useProjectStore } from "@/store/projectStore";
 import { FileAction, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
@@ -11,26 +12,26 @@ import { useShallow } from "zustand/react/shallow";
 export function useMessageParser() {
     const [streamingAction, setStreamingAction] = useState<FileAction | ShellAction | null>(null);
     const [lastStreamedAction, setLastStreamedAction] = useState<FileAction | ShellAction | null>(null);
-    const { selectedFile,
-        currentMessageId,
-        projectFiles,
+    const { currentMessageId,
         upsertMessage,
         addAction,
         updateActionStatus,
-        updateProjectFiles,
         getActionStatus,
-        setSelectedFile,
     } = useProjectStore(
         useShallow(state => ({
             currentMessageId: state.currentMessageId,
-            projectFiles: state.projectFiles,
-            selectedFile: state.selectedFile,
             upsertMessage: state.upsertMessage,
-            setSelectedFile: state.setSelectedFile,
             getActionStatus: state.getActionStatus,
-            updateProjectFiles: state.updateProjectFiles,
             addAction: state.addAction,
             updateActionStatus: state.updateActionStatus,
+        }))
+    );
+    const { selectedFile, projectFiles, updateProjectFiles, setSelectedFile } = useFilesStore(
+        useShallow(state => ({
+            projectFiles: state.projectFiles,
+            selectedFile: state.selectedFile,
+            setSelectedFile: state.setSelectedFile,
+            updateProjectFiles: state.updateProjectFiles,
         }))
     );
 

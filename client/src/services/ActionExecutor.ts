@@ -1,23 +1,21 @@
-import { mountFiles as mountFile, runCommand } from "@/lib/runtime";
-import { isDevCommand, isInstallCommand } from "@/lib/utils";
+import { mountFiles as mountFile } from "@/lib/runtime";
+import { isDevCommand, isInstallCommand, removeTrailingNewlines } from "@/lib/utils";
 import { useGeneralStore } from "@/store/generalStore";
+import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
-import { ActionState, FileAction, Process, ShellAction } from "@repo/common/types";
+import { ActionState, FileAction, Preview, ShellAction, WORK_DIR } from "@repo/common/types";
 import { WebContainer, WebContainerProcess } from "@webcontainer/api";
+import type { Terminal as XTerm } from "@xterm/xterm";
 import { Terminal } from "@xterm/xterm";
 
 interface Dependencies {
-    processes: Map<string, Process>;
-    addProcess: (process: Omit<Process, 'id'>) => string;
-    updateProcess: (id: string, updates: Partial<Process>) => void;
-    removeProcess: (id: string) => void;
-    setActiveProcessId: (id: string | null) => void;
-    getProcessByPort: (port: number) => Process | undefined;
-    getProcessByPath: (path: string) => Process | undefined;
+    addPreview: (preview: Omit<Preview, 'id'>) => string;
+    setActivePreviewId: (id: string | null) => void;
     getWebContainer: () => WebContainer | null;
     getTerminal: () => Terminal | null;
     getShellProcess: () => WebContainerProcess | null;
     setCurrentTab: (tab: 'code' | 'preview') => void;
+    getPreviewByPath: (path: string) => Preview | undefined;
     updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
 }
 type QueueItem = { messageId: string, action: FileAction | ShellAction };
@@ -33,15 +31,6 @@ class ActionExecutor {
         // Start processing if not already processing
         if (!this.isProcessing) {
             await this.processQueue();
-        }
-    }
-
-    private async killProcess(webContainer: WebContainer, processId: string) {
-        const process = this.deps.processes.get(processId);
-        if (process?.pid) {
-            webContainer.internal.onProcessesRemove(());
-            // await webContainer.run({ command: 'kill', args: ['-9', process.pid.toString()] });
-            this.deps.removeProcess(processId);
         }
     }
 
@@ -96,41 +85,55 @@ class ActionExecutor {
     private async handleDevCommand(
         webContainer: WebContainer,
         terminal: Terminal,
-        commandArgs: string[],
-        cwd: string
+        command: string,
     ) {
-        // Check if a process is already running in this directory
-        const existingProcess = this.deps.getProcessByPath(cwd);
-        if (existingProcess) {
-            await this.killProcess(webContainer, existingProcess.id);
+        const { output } = await webContainer.spawn('pwd');
+        const cwd = (await output.getReader().read()).value ?? WORK_DIR;
+        const trimmedCWD = removeTrailingNewlines(cwd.trim());
+        if (this.deps.getPreviewByPath(trimmedCWD)) {
+            this.deps.setCurrentTab('preview');
+            return;
         }
-
-        const exitCode = await runCommand(webContainer, terminal, commandArgs, false, cwd);
+        const exitCode = await this.runCommand(webContainer, terminal, command, false);
         if (exitCode === null) {
-            const processId = this.deps.addProcess({
-                port: 0, // Will be updated when server is ready
-                url: '',
-                command: commandArgs.join(' '),
-                path: cwd,
-                status: 'starting',
-                pid: 0
-            });
-
             webContainer.on('server-ready', (port, url) => {
-                this.deps.updateProcess(processId, {
+                const previewId = this.deps.addPreview({
                     port,
-                    url,
-                    status: 'running'
+                    cwd: trimmedCWD,
+                    ready: true,
+                    baseUrl: url,
                 });
-
-                this.deps.setActiveProcessId(processId);
+                this.deps.setActivePreviewId(previewId);
                 setTimeout(() => {
                     this.deps.setCurrentTab('preview');
                 }, 1000);
             });
         } else {
-            throw new Error(`Failed to run command: ${commandArgs.join(' ')}`);
+            throw new Error(`Failed to run command: ${command}`);
         }
+    }
+
+    private async runCommand(
+        webContainerInstance: WebContainer,
+        terminal: XTerm,
+        command: string,
+        willExit: boolean
+    ) {
+        const process = await webContainerInstance.spawn('jsh', ['-c', command], {
+            env: { npm_config_yes: true },
+        });
+        process.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            })
+        );
+        if (willExit) {
+            const exitCode = await process.exit;
+            return exitCode;
+        }
+        return null;
     }
 
     private async handleShellAction(
@@ -141,18 +144,16 @@ class ActionExecutor {
         const { messageId, action } = queueItem;
         try {
             this.deps.updateActionStatus(messageId, action.id, 'running');
-            const commandArgs = action.command.trim().split(' ');
-            const cwd = (await webContainer.spawn('pwd')).stdout;
-            console.log('CWD:', cwd);
+
             if (isInstallCommand(action.command)) {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
+                const exitCode = await this.runCommand(webContainer, terminal, action.command, true);
                 if (exitCode !== 0) throw new Error("Installation failed");
             }
             else if (isDevCommand(action.command)) {
-                await this.handleDevCommand(webContainer, terminal, commandArgs, cwd);
+                await this.handleDevCommand(webContainer, terminal, action.command);
             }
             else {
-                const exitCode = await runCommand(webContainer, terminal, commandArgs, true, cwd);
+                const exitCode = await this.runCommand(webContainer, terminal, action.command, true);
                 if (exitCode !== 0) throw new Error(`Failed to run command: ${action.command}`);
             }
             this.deps.updateActionStatus(messageId, action.id, 'completed');
@@ -164,16 +165,12 @@ class ActionExecutor {
 }
 
 export const actionExecutor = new ActionExecutor({
-    processes: useGeneralStore.getState().processes,
-    addProcess: useGeneralStore.getState().addProcess,
-    updateProcess: useGeneralStore.getState().updateProcess,
-    removeProcess: useGeneralStore.getState().removeProcess,
-    setActiveProcessId: useGeneralStore.getState().setActiveProcessId,
-    getProcessByPort: useGeneralStore.getState().getProcessByPort,
-    getProcessByPath: useGeneralStore.getState().getProcessByPath,
-    getWebContainer: () => useGeneralStore.getState().webContainerInstance,
+    getWebContainer: () => usePreviewStore.getState().webContainer,
+    addPreview: (preview) => usePreviewStore.getState().addPreview(preview),
+    setActivePreviewId: (id) => usePreviewStore.getState().setActivePreviewId(id),
     getTerminal: () => useGeneralStore.getState().terminal,
     getShellProcess: () => useGeneralStore.getState().shellProcess,
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
+    getPreviewByPath: (path) => usePreviewStore.getState().getPreviewByPath(path),
     updateActionStatus: (messageId, actionId, status) => useProjectStore.getState().updateActionStatus(messageId, actionId, status)
 });      
