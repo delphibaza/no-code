@@ -1,4 +1,4 @@
-import { File, Folders, Directory, Files } from "@repo/common/types";
+import { File, Folders, Directory, Files, Project } from "@repo/common/types";
 
 export function buildHierarchy(files: File[]): Folders[] {
     const root: Folders = { type: "folder", name: "root", children: [] };
@@ -61,4 +61,15 @@ export function formatFilesToMount(folders: Folders[], result: Files = {}): File
         }
     });
     return result;
+}
+export function formatProjectsByDate(projects: Project[]) {
+    const formattedProjects: Record<string, Project[]> = {};
+    projects.forEach((project) => {
+        const date = new Date(project.createdAt).toDateString();
+        if (!formattedProjects[date]) {
+            formattedProjects[date] = [];
+        }
+        formattedProjects[date].push(project);
+    });
+    return formattedProjects;
 }

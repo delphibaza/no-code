@@ -14,6 +14,7 @@ interface FilesStore {
     lastModified: number;
 
     // Actions
+    resetFilesStore: () => void;
     updateFile: (filePath: string, content: string) => void;
     setSelectedFile: (filePath: string) => void;
     updateProjectFiles: (files: FileAction[]) => void;
@@ -36,6 +37,16 @@ export const useFilesStore = create<FilesStore>()(
             selectedFile: null,
             ignorePatterns: [],
             lastModified: Date.now(),
+
+            resetFilesStore: () =>
+                set({
+                    projectFiles: [],
+                    modifiedFiles: new Set(),
+                    originalContent: new Map(),
+                    selectedFile: null,
+                    ignorePatterns: [],
+                    lastModified: Date.now(),
+                }),
 
             updateFile: (filePath, content) =>
                 set((state) => {

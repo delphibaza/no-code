@@ -4,7 +4,7 @@ import { Workbench } from "@/components/Workbench";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { constructMessages, startShell } from "@/lib/runtime";
+import { constructMessages } from "@/lib/runtime";
 import { useFilesStore } from "@/store/filesStore";
 import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
@@ -17,14 +17,14 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { terminal, setShellProcess } = useGeneralStore(
+    const { terminal } = useGeneralStore(
         useShallow(state => ({
             terminal: state.terminal,
-            setShellProcess: state.setShellProcess,
         }))
     );
-    const { webContainerInstance } = usePreviewStore(
+    const { resetPreviews } = usePreviewStore(
         useShallow(state => ({
+            resetPreviews: state.resetPreviews,
             webContainerInstance: state.webContainer
         }))
     );
@@ -33,8 +33,10 @@ export default function ProjectInfo() {
         upsertMessage,
         setCurrentMessageId,
         setCurrentProjectId,
+        resetMessages,
     } = useProjectStore(
         useShallow(state => ({
+            resetMessages: state.resetMessages,
             messageHistory: state.messageHistory,
             upsertMessage: state.upsertMessage,
             setCurrentProjectId: state.setCurrentProjectId,
@@ -42,8 +44,9 @@ export default function ProjectInfo() {
             currentMessageId: state.currentMessageId
         }))
     );
-    const { ignorePatterns, projectFiles } = useFilesStore(
+    const { ignorePatterns, projectFiles, resetFilesStore } = useFilesStore(
         useShallow(state => ({
+            resetFilesStore: state.resetFilesStore,
             projectFiles: state.projectFiles,
             ignorePatterns: state.ignorePatterns,
         }))
@@ -66,27 +69,19 @@ export default function ProjectInfo() {
         }
     });
 
-    const { initializeProject } = useInitProject(setMessages, reload);
+    const { initializeProject, fetchingProjects } = useInitProject(setMessages, reload);
 
     useEffect(() => {
         if (!params.projectId) return;
+        resetMessages();
+        resetPreviews();
+        resetFilesStore();
         setCurrentProjectId(params.projectId);
-        initializeProject(params.projectId);
-    }, [params.projectId]);
-
-    useEffect(() => {
-        async function initializeShell() {
-            if (!webContainerInstance || !terminal) return;
-            try {
-                const process = await startShell(terminal, webContainerInstance);
-                setShellProcess(process);
-            } catch (error) {
-                terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
-                setShellProcess(null);
-            }
+        if (terminal) {
+            terminal.reset();
+            initializeProject(params.projectId);
         }
-        initializeShell();
-    }, [webContainerInstance, terminal]);
+    }, [params.projectId, terminal]);
 
     const handleNewMessage = useMessageParser();
 
@@ -108,17 +103,10 @@ export default function ProjectInfo() {
         setInput('');
     }
 
-    // if (isLoading) {
-    //     return (
-    //         <div className="min-h-screen w-full flex justify-center items-center">
-    //             <Loader2 className="w-5 h-5 animate-spin" />
-    //         </div>
-    //     );
-    // }
     return (
         <>
             <Toaster />
-            <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+            <div className="w-full px-2 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
                 <div className="flex flex-col gap-y-3 col-span-4">
                     <Workbench />
                     <div>
