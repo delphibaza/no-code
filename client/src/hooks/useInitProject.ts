@@ -1,13 +1,12 @@
 import { getWebContainer } from "@/config/webContainer";
 import { API_URL } from "@/lib/constants";
-import { getImportArtifact, mountFiles, startShell } from "@/lib/runtime";
+import { getImportArtifact, mountFiles } from "@/lib/runtime";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
 import { useFilesStore } from "@/store/filesStore";
-import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
-import { Artifact, ExistingProject, FileAction, NewProject, ShellAction, WORK_DIR } from "@repo/common/types";
+import { Artifact, ExistingProject, FileAction, NewProject, ShellAction } from "@repo/common/types";
 import { Message } from 'ai/react';
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -18,12 +17,6 @@ export function useInitProject(
     reload: () => Promise<string | null | undefined>
 ) {
     const [fetchingProjects, setFetchingProjects] = useState(false);
-    const { terminal, setShellProcess } = useGeneralStore(
-        useShallow(state => ({
-            terminal: state.terminal,
-            setShellProcess: state.setShellProcess
-        }))
-    );
     const { webContainer, setWebContainer } = usePreviewStore(
         useShallow(state => ({
             webContainer: state.webContainer,
@@ -47,25 +40,13 @@ export function useInitProject(
         }))
     );
     async function initializeProject(projectId: string) {
-        if (!terminal) {
-            toast.error('Terminal not initialized');
-            return;
-        }
         try {
             setFetchingProjects(true);
             let container = webContainer;
             if (!container) {
                 container = await getWebContainer();
                 setWebContainer(container);
-            } else {
-                await container.fs.rm(WORK_DIR, {
-                    force: true,
-                    recursive: true
-                });
-                actionExecutor.clearQueue();
             }
-            const process = await startShell(terminal, container);
-            setShellProcess(process);
             const response = await fetch(`${API_URL}/api/project/${projectId}`);
             const result = await response.json();
             if (!response.ok) {

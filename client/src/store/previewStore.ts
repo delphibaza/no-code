@@ -7,7 +7,6 @@ interface PreviewStore {
     activePreviewId: string | null;
     webContainer: WebContainer | null;
 
-    resetPreviews: () => void;
     addPreview: (preview: Omit<Preview, 'id'>) => string;
     removePreview: (id: string) => void;
     setActivePreviewId: (id: string | null) => void;
@@ -20,11 +19,6 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
     previews: new Map(),
     activePreviewId: null,
     webContainer: null,
-
-    resetPreviews: () => set({
-        previews: new Map(),
-        activePreviewId: null,
-    }),
 
     addPreview: (preview) => {
         const id = crypto.randomUUID();

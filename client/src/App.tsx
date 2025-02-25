@@ -16,7 +16,6 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="/project/:projectId" element={<ProjectInfo />} />
           </Route>
-          {/* Authentication Routes */}
           <Route element={<AuthWrapper />}>
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />

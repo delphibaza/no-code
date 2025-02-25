@@ -4,7 +4,7 @@ import { Workbench } from "@/components/Workbench";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { constructMessages } from "@/lib/runtime";
+import { constructMessages, startShell } from "@/lib/runtime";
 import { useFilesStore } from "@/store/filesStore";
 import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
@@ -17,15 +17,15 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { terminal } = useGeneralStore(
+    const { terminal, setShellProcess } = useGeneralStore(
         useShallow(state => ({
             terminal: state.terminal,
+            setShellProcess: state.setShellProcess
         }))
     );
-    const { resetPreviews } = usePreviewStore(
+    const { webContainer } = usePreviewStore(
         useShallow(state => ({
-            resetPreviews: state.resetPreviews,
-            webContainerInstance: state.webContainer
+            webContainer: state.webContainer
         }))
     );
     const { messageHistory,
@@ -33,10 +33,8 @@ export default function ProjectInfo() {
         upsertMessage,
         setCurrentMessageId,
         setCurrentProjectId,
-        resetMessages,
     } = useProjectStore(
         useShallow(state => ({
-            resetMessages: state.resetMessages,
             messageHistory: state.messageHistory,
             upsertMessage: state.upsertMessage,
             setCurrentProjectId: state.setCurrentProjectId,
@@ -44,9 +42,8 @@ export default function ProjectInfo() {
             currentMessageId: state.currentMessageId
         }))
     );
-    const { ignorePatterns, projectFiles, resetFilesStore } = useFilesStore(
+    const { ignorePatterns, projectFiles } = useFilesStore(
         useShallow(state => ({
-            resetFilesStore: state.resetFilesStore,
             projectFiles: state.projectFiles,
             ignorePatterns: state.ignorePatterns,
         }))
@@ -73,15 +70,23 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         if (!params.projectId) return;
-        resetMessages();
-        resetPreviews();
-        resetFilesStore();
         setCurrentProjectId(params.projectId);
-        if (terminal) {
-            terminal.reset();
-            initializeProject(params.projectId);
+        initializeProject(params.projectId);
+    }, [params.projectId]);
+
+    useEffect(() => {
+        async function initializeShell() {
+            if (!webContainer || !terminal) return;
+            try {
+                const process = await startShell(terminal, webContainer);
+                setShellProcess(process);
+            } catch (error) {
+                terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
+                setShellProcess(null);
+            }
         }
-    }, [params.projectId, terminal]);
+        initializeShell();
+    }, [webContainer, terminal]);
 
     const handleNewMessage = useMessageParser();
 
