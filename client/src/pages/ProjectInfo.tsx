@@ -10,6 +10,7 @@ import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "react-router-dom";
@@ -111,24 +112,30 @@ export default function ProjectInfo() {
     return (
         <>
             <Toaster />
-            <div className="w-full px-2 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
-                <div className="flex flex-col gap-y-3 col-span-4">
-                    <Workbench />
-                    <div>
-                        <ChatInput
-                            placeholder="How can we refine it..."
-                            handleSubmit={handleSubmit}
-                            input={input}
-                            setInput={setInput}
-                            isLoading={isLoading}
-                            reload={reload}
-                            stop={stop}
-                            error={error}
-                        />
-                    </div>
+            {fetchingProjects ? (
+                <div className="flex h-full items-center justify-center">
+                    <Loader2 className="animate-spin size-5" />
                 </div>
-                <TabsSwitch />
-            </div>
+            ) : (
+                <div className="w-full pr-2 pl-8 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+                    <div className="flex flex-col gap-y-3 col-span-4">
+                        <Workbench />
+                        <div>
+                            <ChatInput
+                                placeholder="How can we refine it..."
+                                handleSubmit={handleSubmit}
+                                input={input}
+                                setInput={setInput}
+                                isLoading={isLoading}
+                                reload={reload}
+                                stop={stop}
+                                error={error}
+                            />
+                        </div>
+                    </div>
+                    <TabsSwitch />
+                </div>
+            )}
         </>
     );
 }

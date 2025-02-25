@@ -10,12 +10,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { Loader2, MessageCircle, Sparkles } from "lucide-react";
-import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 import { SearchForm } from "./search-form";
@@ -25,7 +25,9 @@ import { NavUser } from "./ui/nav-user";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isLoading, setIsLoading] = useState(true);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { setOpen } = useSidebar();
   const { setProjects } = useProjectStore(
     useShallow((state) => ({
       projects: state.projects,
@@ -56,8 +58,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    const enterThreshold = 40;
+    const exitThreshold = 250;
+
+    function onMouseMove(event: MouseEvent) {
+      if (event.pageX < enterThreshold) {
+        setOpen(true);
+      }
+
+      if (menuRef.current && event.clientX > menuRef.current.getBoundingClientRect().right + exitThreshold) {
+        setOpen(false);
+      }
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
+
   return (
-    <Sidebar {...props}>
+    <Sidebar {...props} ref={menuRef}>
       <SidebarHeader>
         <SidebarMenuButton size="lg" asChild>
           <a href="/">

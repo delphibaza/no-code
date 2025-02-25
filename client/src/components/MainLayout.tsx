@@ -11,7 +11,7 @@ export default function MainLayout() {
         <div className="flex min-h-screen">
             <SidebarProvider>
                 <AppSidebar variant='floating' />
-                <SidebarInset>
+                <SidebarInset className="w-full">
                     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
                         <div className="flex items-center gap-2">
                             <SidebarTrigger />
