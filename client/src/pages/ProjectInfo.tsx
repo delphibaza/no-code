@@ -10,6 +10,7 @@ import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "react-router-dom";
@@ -20,12 +21,12 @@ export default function ProjectInfo() {
     const { terminal, setShellProcess } = useGeneralStore(
         useShallow(state => ({
             terminal: state.terminal,
-            setShellProcess: state.setShellProcess,
+            setShellProcess: state.setShellProcess
         }))
     );
-    const { webContainerInstance } = usePreviewStore(
+    const { webContainer } = usePreviewStore(
         useShallow(state => ({
-            webContainerInstance: state.webContainer
+            webContainer: state.webContainer
         }))
     );
     const { messageHistory,
@@ -66,7 +67,7 @@ export default function ProjectInfo() {
         }
     });
 
-    const { initializeProject } = useInitProject(setMessages, reload);
+    const { initializeProject, fetchingProjects } = useInitProject(setMessages, reload);
 
     useEffect(() => {
         if (!params.projectId) return;
@@ -76,9 +77,9 @@ export default function ProjectInfo() {
 
     useEffect(() => {
         async function initializeShell() {
-            if (!webContainerInstance || !terminal) return;
+            if (!webContainer || !terminal) return;
             try {
-                const process = await startShell(terminal, webContainerInstance);
+                const process = await startShell(terminal, webContainer);
                 setShellProcess(process);
             } catch (error) {
                 terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
@@ -86,7 +87,7 @@ export default function ProjectInfo() {
             }
         }
         initializeShell();
-    }, [webContainerInstance, terminal]);
+    }, [webContainer, terminal]);
 
     const handleNewMessage = useMessageParser();
 
@@ -108,34 +109,33 @@ export default function ProjectInfo() {
         setInput('');
     }
 
-    // if (isLoading) {
-    //     return (
-    //         <div className="min-h-screen w-full flex justify-center items-center">
-    //             <Loader2 className="w-5 h-5 animate-spin" />
-    //         </div>
-    //     );
-    // }
     return (
         <>
             <Toaster />
-            <div className="w-full py-14 pl-12 pr-4 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
-                <div className="flex flex-col gap-y-3 col-span-4">
-                    <Workbench />
-                    <div>
-                        <ChatInput
-                            placeholder="How can we refine it..."
-                            handleSubmit={handleSubmit}
-                            input={input}
-                            setInput={setInput}
-                            isLoading={isLoading}
-                            reload={reload}
-                            stop={stop}
-                            error={error}
-                        />
-                    </div>
+            {fetchingProjects ? (
+                <div className="flex h-full items-center justify-center">
+                    <Loader2 className="animate-spin size-5" />
                 </div>
-                <TabsSwitch />
-            </div>
+            ) : (
+                <div className="w-full pr-2 pl-8 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+                    <div className="flex flex-col gap-y-3 col-span-4">
+                        <Workbench />
+                        <div>
+                            <ChatInput
+                                placeholder="How can we refine it..."
+                                handleSubmit={handleSubmit}
+                                input={input}
+                                setInput={setInput}
+                                isLoading={isLoading}
+                                reload={reload}
+                                stop={stop}
+                                error={error}
+                            />
+                        </div>
+                    </div>
+                    <TabsSwitch />
+                </div>
+            )}
         </>
     );
 }

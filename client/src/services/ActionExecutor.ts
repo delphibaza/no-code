@@ -34,6 +34,10 @@ class ActionExecutor {
         }
     }
 
+    clearQueue() {
+        this.actionQueue = [];
+    }
+
     private async processQueue() {
         if (this.isProcessing || this.actionQueue.length === 0) {
             return;

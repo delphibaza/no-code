@@ -91,5 +91,35 @@ router.get('/project/:projectId', async (req, res) => {
         });
     }
 });
+// Todo: Add auth
+router.get('/projects', async (req, res) => {
+    const { page = '0', limit = '10' } = req.query;
+    if (isNaN(Number(page)) || isNaN(Number(limit))) {
+        res.status(400).json({
+            msg: "Invalid page or limit",
+        });
+        return;
+    }
+    try {
+        const projects = await prisma.project.findMany({
+            select: {
+                id: true,
+                name: true,
+                createdAt: true,
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: Number(page) * Number(limit),
+            take: Number(limit)
+        });
+        res.json(projects);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: "Failed to get projects",
+        });
+    }
+});
 
 export default router;

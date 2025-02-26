@@ -7,6 +7,7 @@ export interface GeneralStoreState {
     shellProcess: WebContainerProcess | null;
     currentTab: 'code' | 'preview';
 
+    // Actions
     setTerminal: (terminal: XTerm) => void;
     setShellProcess: (process: WebContainerProcess | null) => void;
     setCurrentTab: (tab: 'code' | 'preview') => void;

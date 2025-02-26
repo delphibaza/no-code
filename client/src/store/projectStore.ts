@@ -13,6 +13,7 @@ interface ProjectState {
 
     // Actions
     setProjects: (projects: Project[]) => void;
+    addProject: (project: Project) => void;
     setCurrentProjectId: (projectId: string) => void;
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
@@ -30,9 +31,13 @@ export const useProjectStore = create<ProjectState>()(
             projects: [],
             currentProjectId: null,
 
-            // Actions
             setProjects: (projects) =>
                 set({ projects }),
+
+            addProject: (project) =>
+                set((state) => ({
+                    projects: [...state.projects, project]
+                })),
 
             setCurrentProjectId: (projectId) =>
                 set({ currentProjectId: projectId }),
