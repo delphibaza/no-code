@@ -11,12 +11,14 @@ import { Message } from 'ai/react';
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
+import useFetch from "./useFetch";
 
 export function useInitProject(
     setMessages: (messages: Message[] | ((messages: Message[]) => Message[])) => void,
     reload: () => Promise<string | null | undefined>
 ) {
     const [fetchingProjects, setFetchingProjects] = useState(false);
+    const { authenticatedFetch } = useFetch();
     const { webContainer, setWebContainer } = usePreviewStore(
         useShallow(state => ({
             webContainer: state.webContainer,
@@ -47,11 +49,7 @@ export function useInitProject(
                 container = await getWebContainer();
                 setWebContainer(container);
             }
-            const response = await fetch(`${API_URL}/api/project/${projectId}`);
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.msg);
-            }
+            const result = await authenticatedFetch(`${API_URL}/api/project/${projectId}`);
             if (result.type === 'existing') {
                 const { messages, projectFiles } = result as ExistingProject;
                 messages.forEach(message => {

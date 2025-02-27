@@ -1,10 +1,12 @@
+import { requireAuth } from '@clerk/express';
 import { saveFileSchema } from '@repo/common/zod';
 import prisma from '@repo/db/client';
 import express, { Request, Response } from 'express';
+import { validateProjectOwnership } from '../services/projectService';
 
 const router = express.Router();
-
-router.post('/saveFiles', async (req: Request, res: Response) => {
+// Owner can only save files
+router.post('/saveFiles', requireAuth(), async (req: Request, res: Response) => {
     const validation = saveFileSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({
@@ -14,6 +16,7 @@ router.post('/saveFiles', async (req: Request, res: Response) => {
     }
     const { projectId, files } = validation.data;
     try {
+        await validateProjectOwnership(projectId, req.user?.id!);
         await prisma.$transaction(
             files.map(file =>
                 prisma.file.upsert({
@@ -35,16 +38,15 @@ router.post('/saveFiles', async (req: Request, res: Response) => {
                 })
             )
         );
-        res.status(200).json({
-            msg: "Files saved",
+        res.status(201).json({
+            msg: "File saved successfully",
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            msg: "Failed to save files",
+            msg: error instanceof Error ? error.message : "Failed to save files",
         });
     }
-})
-
+});
 
 export default router;

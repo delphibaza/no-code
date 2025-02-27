@@ -12,6 +12,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { Loader2, MessageCircle, Sparkles } from "lucide-react";
@@ -36,15 +37,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       setCurrentProjectId: state.setCurrentProjectId,
     }))
   );
+  const { authenticatedFetch } = useFetch();
 
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const res = await fetch(`${API_URL}/api/projects`);
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data?.msg);
-        }
+        const data = await authenticatedFetch(`${API_URL}/api/projects`);
         setProjects(data);
       } catch (error) {
         toast.error(error instanceof Error

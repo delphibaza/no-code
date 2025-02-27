@@ -14,10 +14,9 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
+  id             String    @id // Using Clerk Id as the primary key
   username       String    @unique
   email          String    @unique
-  password       String
   profilePicture String?
   createdAt      DateTime  @default(now())
   projects       Project[]

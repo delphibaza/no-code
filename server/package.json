@@ -13,10 +13,12 @@
     "@ai-sdk/google": "^1.1.10",
     "@ai-sdk/groq": "^1.1.9",
     "@ai-sdk/openai": "^1.0.18",
+    "@clerk/express": "^1.3.50",
     "@repo/common": "1.0.0",
     "@repo/db": "1.0.0",
     "@supabase/supabase-js": "^2.47.10",
     "ai": "^4.1.16",
+    "best-effort-json-parser": "^1.1.3",
     "cors": "^2.8.5",
     "esbuild": "^0.24.2",
     "express": "^5.0.1"
