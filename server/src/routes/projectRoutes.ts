@@ -1,3 +1,4 @@
+import { requireAuth } from '@clerk/express';
 import { promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import { generateText } from "ai";
@@ -10,7 +11,7 @@ import { createProject, getProject, getTemplateData } from "../services/projectS
 
 const router = express.Router();
 
-router.post('/new', async (req, res) => {
+router.post('/new', requireAuth(), async (req, res) => {
     const validation = promptSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({
@@ -20,7 +21,7 @@ router.post('/new', async (req, res) => {
     }
     const { prompt } = validation.data;
     try {
-        const newProject = await createProject(prompt);
+        const newProject = await createProject(prompt, req.user?.id!);
         res.json({
             projectId: newProject.id
         });
@@ -31,7 +32,7 @@ router.post('/new', async (req, res) => {
         });
     }
 });
-
+// OPEN ROUTE: Anyone can access a project and its messages
 router.get('/project/:projectId', async (req, res) => {
     try {
         const project = await getProject(req.params.projectId);
@@ -91,8 +92,8 @@ router.get('/project/:projectId', async (req, res) => {
         });
     }
 });
-// Todo: Add auth
-router.get('/projects', async (req, res) => {
+
+router.get('/projects', requireAuth(), async (req, res) => {
     const { page = '0', limit = '10' } = req.query;
     if (isNaN(Number(page)) || isNaN(Number(limit))) {
         res.status(400).json({
@@ -102,6 +103,9 @@ router.get('/projects', async (req, res) => {
     }
     try {
         const projects = await prisma.project.findMany({
+            where: {
+                userId: req.user?.id!
+            },
             select: {
                 id: true,
                 name: true,

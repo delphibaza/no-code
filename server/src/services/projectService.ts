@@ -4,12 +4,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { getTemplates } from "../prompts/starterTemplateSelection";
 
-export const createProject = async (name: string) => {
+export const createProject = async (name: string, userId: string) => {
     return await prisma.project.create({
         data: {
             name,
             createdAt: new Date(),
-            userId: "cm6v8wm2v0000jcdbyeckox9d",
+            userId: userId,
             messages: {
                 create: {
                     role: 'user',
@@ -22,7 +22,9 @@ export const createProject = async (name: string) => {
 
 export const getProject = async (projectId: string) => {
     return await prisma.project.findUnique({
-        where: { id: projectId },
+        where: {
+            id: projectId
+        },
         include: {
             files: {
                 select: {
@@ -64,3 +66,20 @@ export const getTemplateData = async (templateName: string): Promise<Template> =
         return temResp;
     }
 };
+
+export async function validateProjectOwnership(projectId: string, userId: string) {
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+    });
+
+    if (!project) {
+        throw new Error("Project not found");
+    }
+
+    if (project.userId !== userId) {
+        throw new Error("You are not allowed to access this project");
+    }
+
+    return project;
+}

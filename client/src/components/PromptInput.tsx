@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { useShallow } from "zustand/react/shallow";
 import { ChatInput } from "./ChatInput";
+import useFetch from "@/hooks/useFetch";
 
 export function PromptInput() {
     const navigate = useNavigate();
@@ -16,28 +17,25 @@ export function PromptInput() {
     );
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const { authenticatedFetch } = useFetch();
 
     async function handleSubmit() {
         try {
             setIsLoading(true);
-            const response = await fetch(`${API_URL}/api/new`, {
+            const data = await authenticatedFetch(`${API_URL}/api/new`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ prompt: input } as PromptSchema)
             });
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.msg);
-            }
             upsertMessage({
                 id: crypto.randomUUID(),
                 role: 'user',
                 timestamp: Date.now(),
                 content: input
             });
-            navigate(`/project/${result.projectId}`);
+            navigate(`/project/${data.projectId}`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Error while getting files"
             toast.error(errorMessage)

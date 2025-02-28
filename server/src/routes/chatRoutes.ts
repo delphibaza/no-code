@@ -1,15 +1,18 @@
+import { requireAuth } from "@clerk/express";
 import { Artifact } from "@repo/common/types";
 import { chatSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import { smoothStream, streamText } from "ai";
+import { parse } from "best-effort-json-parser";
 import express from "express";
 import { MAX_TOKENS } from "../constants";
 import { getSystemPrompt } from "../prompts/systemPrompt";
 import { google2FlashModel } from "../providers";
+import { validateProjectOwnership } from "../services/projectService";
 
 const router = express.Router();
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', requireAuth(), async (req, res) => {
     const validation = chatSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({
@@ -18,6 +21,8 @@ router.post('/chat', async (req, res) => {
         return;
     }
     const { messages, projectId } = validation.data;
+    // Validate ownership
+    await validateProjectOwnership(projectId, req.user?.id!);
     const result = streamText({
         model: google2FlashModel,
         system: getSystemPrompt(),
@@ -27,7 +32,7 @@ router.post('/chat', async (req, res) => {
         async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
                 // Remove JSON markdown wrapper and parse
-                const jsonContent = JSON.parse(text.slice('```json\n'.length, -3)); // Parse the JSON string
+                const jsonContent = parse(text.slice('```json\n'.length, -3)); // Parse the JSON string
                 const currentMessage = messages.find(message => message.role === 'user' && message.id === 'currentMessage');
                 await prisma.message.createMany({
                     data: [
