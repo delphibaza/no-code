@@ -37,8 +37,21 @@ export function shouldResetMonthly(lastReset: Date): boolean {
 }
 
 export type PlanInfo = {
+    subscriptionId: string;
     dailyTokenLimit: number;
     monthlyTokenLimit: number;
     dailyTokensUsed: number;
     monthlyTokensUsed: number;
+    dailyTokensReset: Date;
+    monthlyTokensReset: Date;
+}
+// Define a custom error class with code property
+export class ApplicationError extends Error {
+    code: string;
+
+    constructor(message: string, code: string) {
+        super(message);
+        this.name = 'ApplicationError';
+        this.code = code;
+    }
 }

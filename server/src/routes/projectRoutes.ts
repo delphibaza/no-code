@@ -1,19 +1,15 @@
 import { promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
-import { generateText } from "ai";
 import express, { Request, Response } from "express";
-import { STARTER_TEMPLATES } from "../constants";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
-import { enhancerPrompt } from "../prompts/enhancerPrompt";
-import { parseSelectedTemplate, starterTemplateSelectionPrompt } from "../prompts/starterTemplateSelection";
-import { selectorModel } from "../providers";
-import { createProject, getProject, getTemplateData } from "../services/projectService";
-import { checkLimits } from "../services/subscriptionService";
+import { createProject, createProjectFiles, enhanceProjectPrompt, getProject, getTemplateData, selectTemplate } from "../services/projectService";
+import { updateSubscription, updateTokenUsage } from "../services/subscriptionService";
+import { ApplicationError } from "../utils";
 
 const router = express.Router();
 
-router.post('/new', ensureUserExists, resetLimits, async (req: Request, res: Response) => {
+router.post('/new', async (req: Request, res: Response) => {
     const validation = promptSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({
@@ -21,16 +17,13 @@ router.post('/new', ensureUserExists, resetLimits, async (req: Request, res: Res
         });
         return;
     }
+    if (!req.auth.userId) {
+        res.status(401).json({ msg: 'Unauthorized' });
+        return;
+    }
     const { prompt } = validation.data;
     try {
-        // Check if the user has reached the limit
-        const limitsResult = checkLimits(req.plan!);
-
-        if (!limitsResult.success) {
-            throw new Error(limitsResult.message);
-        }
-
-        const newProject = await createProject(prompt, req.auth.userId!);
+        const newProject = await createProject(prompt, req.auth.userId);
         res.json({
             projectId: newProject.id
         });
@@ -41,68 +34,119 @@ router.post('/new', ensureUserExists, resetLimits, async (req: Request, res: Res
         });
     }
 });
+
 // OPEN ROUTE: Anyone can access a project and its messages
 router.get('/project/:projectId', async (req, res) => {
     try {
         const project = await getProject(req.params.projectId);
+
         if (!project) {
-            throw new Error("Project not found");
+            res.status(404).json({ msg: "Project not found" });
+            return;
         }
-        // If the project has only one message and it's from the user
-        if (project.messages.length === 1 && project.messages[0].role === 'user') {
-            // Enhance the prompt
-            const { text: enhancedPrompt } = await generateText({
-                model: selectorModel,
-                system: enhancerPrompt(),
-                prompt: project.name
-            });
-            // Select the template
-            const { text: templateXML } = await generateText({
-                model: selectorModel,
-                system: starterTemplateSelectionPrompt(STARTER_TEMPLATES),
-                prompt: enhancedPrompt
-            });
-
-            const templateName = parseSelectedTemplate(templateXML);
-            // Indicates that LLM hasn't generated any template name. It doesn't happen mostly. 
-            if (!templateName) {
-                throw new Error("Error occurred while identifying a template");
-            }
-            // Get the template data
-            const templateData = await getTemplateData(templateName);
-
-            if (project.files.length === 0) {
-                // Save the files to the project
-                await prisma.file.createMany({
-                    data: templateData.templateFiles.map(file => ({
-                        projectId: project.id,
-                        filePath: file.filePath,
-                        content: file.content
-                    }))
-                });
-            }
-
-            res.json({
-                type: 'new',
-                enhancedPrompt,
-                ...templateData
-            });
-        } else {
-            res.json({
-                type: 'existing',
-                messages: project.messages,
-                projectFiles: project.files
-            });
+        if (project.state === 'new') {
+            throw new Error("Project has not been initialized. Please generate a new project.");
         }
+
+        res.json({
+            type: 'existing',
+            messages: project.messages,
+            projectFiles: project.files,
+            projectTitle: project.name
+        });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ msg: "Failed to retrieve project" });
+    }
+});
+
+// Route to generate a new project - requires auth + subscription
+router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async (req, res) => {
+    const { projectId } = req.params;
+
+    try {
+        // Validate project state
+        const project = await getProject(projectId);
+        if (!project || project.messages.length === 0) {
+            res.status(404).json({ msg: "Project not found" });
+            return;
+        }
+
+        if (project.messages.length !== 1 || project.messages[0].role !== 'user') {
+            res.status(400).json({ msg: "Project already generated" });
+            return;
+        }
+
+        if (!req.plan) {
+            res.status(403).json({ msg: "Unable to get token limits for the user" });
+            return;
+        }
+        // Step 1: Enhance the prompt
+        const { enhancedPrompt, usage: enhanceUsage } = await enhanceProjectPrompt(project.name);
+
+        // Update token usage and check limits
+        req.plan.dailyTokensUsed += enhanceUsage.totalTokens;
+        req.plan.monthlyTokensUsed += enhanceUsage.totalTokens;
+
+        // Check the limits
+        await updateTokenUsage(req.plan);
+
+        // Step 2: Select appropriate template based on the enhanced prompt
+        const { templateName, projectTitle, usage: templateUsage } = await selectTemplate(enhancedPrompt);
+
+        // Update token usage and check limits
+        req.plan.dailyTokensUsed += templateUsage.totalTokens;
+        req.plan.monthlyTokensUsed += templateUsage.totalTokens;
+
+        await updateTokenUsage(req.plan);
+
+        // Step 3: Get template data and create project files
+        const templateData = await getTemplateData(templateName);
+
+        if (project.files.length === 0) {
+            await createProjectFiles(project.id, templateData.templateFiles);
+        }
+
+        // Update the project with new title and state
+        const updatedProject = await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                state: 'existing',
+                name: projectTitle ?? project.name.slice(0, 25),
+            }
+        });
+
+        // Persist updated token usage
+        await updateSubscription(req.plan);
+
+        res.json({
+            type: 'new',
+            enhancedPrompt: enhancedPrompt,
+            projectTitle: updatedProject.name,
+            ...templateData
+        });
+    } catch (error) {
+        console.error('Project generation failed:', error);
+
+        if (error instanceof ApplicationError) {
+            if (error.code === 'TOKEN_LIMIT_EXCEEDED') {
+                res.status(402).json({ msg: error.message });
+                return;
+            }
+
+            if (error.code === 'TEMPLATE_ERROR') {
+                res.status(422).json({ msg: error.message });
+                return;
+            }
+        }
+
         res.status(500).json({
-            msg: error instanceof Error ? error.message : "Failed to generate template",
+            msg: error instanceof Error ? error.message : "Failed to generate template"
         });
     }
 });
 
-router.get('/projects', ensureUserExists, async (req, res) => {
+router.get('/projects', ensureUserExists, resetLimits, async (req, res) => {
     const { page = '0', limit = '10' } = req.query;
     if (isNaN(Number(page)) || isNaN(Number(limit))) {
         res.status(400).json({
@@ -126,7 +170,9 @@ router.get('/projects', ensureUserExists, async (req, res) => {
             skip: Number(page) * Number(limit),
             take: Number(limit)
         });
-        res.json(projects);
+        res.json({
+            projects
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({

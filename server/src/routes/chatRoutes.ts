@@ -6,14 +6,15 @@ import { smoothStream, streamText } from "ai";
 import { parse } from "best-effort-json-parser";
 import express from "express";
 import { MAX_TOKENS } from "../constants";
+import { ensureUserExists } from "../middleware/ensureUser";
+import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
 import { google2FlashModel } from "../providers";
 import { validateProjectOwnership } from "../services/projectService";
-import { ensureUserExists } from "../middleware/ensureUser";
 
 const router = express.Router();
 
-router.post('/chat', ensureUserExists, async (req, res) => {
+router.post('/chat', ensureUserExists, resetLimits, async (req, res) => {
     const validation = chatSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({
@@ -47,6 +48,7 @@ router.post('/chat', ensureUserExists, async (req, res) => {
                             role: 'assistant',
                             projectId: projectId,
                             createdAt: new Date(),
+                            tokensUsed: usage.totalTokens,
                             content: jsonContent
                         }
                     ]

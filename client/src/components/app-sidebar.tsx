@@ -43,7 +43,7 @@ export function AppSidebar() {
     async function fetchProjects() {
       try {
         const data = await authenticatedFetch(`${API_URL}/api/projects`);
-        setProjects(data);
+        setProjects(data.projects);
       } catch (error) {
         console.error(error instanceof Error
           ? error.message

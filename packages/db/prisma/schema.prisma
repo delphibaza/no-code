@@ -54,14 +54,15 @@ model Subscription {
 }
 
 model Project {
-  id        String    @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
-  createdAt DateTime  @default(now())
+  state     ProjectState @default(new)
+  createdAt DateTime     @default(now())
   userId    String
   files     File[]
   messages  Message[]
   // Deletes project if user is deleted
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -109,4 +110,9 @@ enum SubscriptionStatus {
   active
   expired
   canceled
+}
+
+enum ProjectState {
+  new
+  existing
 }

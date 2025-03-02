@@ -1,12 +1,13 @@
 import { saveFileSchema } from '@repo/common/zod';
 import prisma from '@repo/db/client';
 import express, { Request, Response } from 'express';
-import { validateProjectOwnership } from '../services/projectService';
 import { ensureUserExists } from '../middleware/ensureUser';
+import { resetLimits } from '../middleware/resetLimits';
+import { validateProjectOwnership } from '../services/projectService';
 
 const router = express.Router();
 // Owner can only save files
-router.post('/saveFiles', ensureUserExists, async (req: Request, res: Response) => {
+router.post('/saveFiles', ensureUserExists, resetLimits, async (req: Request, res: Response) => {
     const validation = saveFileSchema.safeParse(req.body);
     if (!validation.success) {
         res.status(400).json({

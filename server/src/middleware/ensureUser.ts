@@ -27,7 +27,7 @@ export async function ensureUserExists(req: Request, res: Response, next: NextFu
                     email: clerkUser.emailAddresses[0].emailAddress,
                     username: clerkUser.username || clerkUser.emailAddresses[0].emailAddress.split('@')[0],
                     profilePicture: clerkUser.imageUrl,
-                    Subscription: {
+                    subscription: {
                         create: {
                             // create a free subscription for new users with an end date of 10 years
                             planType: 'free',
@@ -37,7 +37,7 @@ export async function ensureUserExists(req: Request, res: Response, next: NextFu
                     },
                 },
                 include: {
-                    Subscription: {
+                    subscription: {
                         include: {
                             plan: true
                         }
@@ -45,12 +45,27 @@ export async function ensureUserExists(req: Request, res: Response, next: NextFu
                 }
             });
             // Add plan info to request for later use
-            const subscription = newUser.Subscription[0];
+            const subscription = newUser.subscription[0];
             req.plan = {
+                subscriptionId: subscription.id,
                 dailyTokenLimit: subscription.plan.dailyTokenLimit,
                 monthlyTokenLimit: subscription.plan.monthlyTokenLimit,
                 dailyTokensUsed: subscription.dailyTokensUsed,
-                monthlyTokensUsed: subscription.monthlyTokensUsed
+                monthlyTokensUsed: subscription.monthlyTokensUsed,
+                dailyTokensReset: subscription.dailyTokensReset,
+                monthlyTokensReset: subscription.monthlyTokensReset
+            }   
+        } else {
+            // If user exists, add plan info to request for later use
+            const subscription = userWithSubscription.subscription[0];
+            req.plan = {
+                subscriptionId: subscription.id,
+                dailyTokenLimit: subscription.plan.dailyTokenLimit,
+                monthlyTokenLimit: subscription.plan.monthlyTokenLimit,
+                dailyTokensUsed: subscription.dailyTokensUsed,
+                monthlyTokensUsed: subscription.monthlyTokensUsed,
+                dailyTokensReset: subscription.dailyTokensReset,
+                monthlyTokensReset: subscription.monthlyTokensReset
             }
         }
         next();

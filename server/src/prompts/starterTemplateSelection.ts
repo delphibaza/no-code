@@ -16,7 +16,7 @@ ${templates.map((template) => `
 Response Format:
 <selection>
   <templateName>{selected template name}</templateName>
-  <reasoning>{brief explanation for the choice}</reasoning>
+  <projectTitle>{Small project title in 25 characters or less}</projectTitle>
 </selection>
 
 Examples:
@@ -26,7 +26,7 @@ User: I need to build a todo app
 Response:
 <selection>
   <templateName>bolt-vite-react</templateName>
-  <reasoning>Simple React setup perfect for building a todo application</reasoning>
+  <projectTitle>React Todo App</projectTitle>
 </selection>
 </example>
 
@@ -35,7 +35,7 @@ User: Write a script to generate numbers from 1 to 100
 Response:
 <selection>
   <templateName>bolt-node</templateName>
-  <reasoning>A simple script that can be run in a Node.js environment</reasoning>
+  <projectTitle>Generate Numbers</projectTitle>
 </selection>
 </example>
 
@@ -44,7 +44,7 @@ User: How are you?
 Response:
 <selection>
   <templateName>bolt-vite-react</templateName>
-  <reasoning>Simple React setup chosen as a default response.</reasoning>
+  <projectTitle>Simple React project.</projectTitle>
 </selection>
 </example>
 
@@ -62,17 +62,21 @@ Instructions:
    - If the message is a greeting (like "hi", "hello"), or unrelated to projects, irrelevant to web development, programming, or software engineering,
    - OR if no specific framework/library is mentioned
    Then recommend the "bolt-vite-react" i.e., the "react" template as the default choice.
-
+10. Give the project a name that accurately represents the task, but not too long(less than 25 characters).
 Ultra-Important: Provide only the selection tags in your response, no additional text. 
 The template name you provide should be from the above provided available list only!`;
 
-export const parseSelectedTemplate = (llmOutput: string): string | null => {
+export const parseSelectedTemplate = (llmOutput: string): { templateName: string | null, projectTitle: string | null } => {
   // Extract content between <templateName> tags
   const templateNameMatch = llmOutput.match(/<templateName>(.*?)<\/templateName>/);
-  if (!templateNameMatch) {
-    return null;
-  }
-  return templateNameMatch[1].trim();
+
+  // Extract content between <projectTitle> tags
+  const projectTitleMatch = llmOutput.match(/<projectTitle>(.*?)<\/projectTitle>/);
+
+  return {
+    templateName: templateNameMatch ? templateNameMatch[1].trim() : null,
+    projectTitle: projectTitleMatch ? projectTitleMatch[1].trim() : null
+  };
 };
 
 const getGitHubRepoContent = async (
