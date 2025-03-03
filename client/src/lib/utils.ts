@@ -120,3 +120,15 @@ export function isInstallCommand(command: string) {
 export function isDevCommand(command: string) {
   return devCommands.some(cmd => cmd === command)
 }
+export const planDetails = {
+  free: {
+    name: "Free",
+    color: "bg-gray-100 text-gray-900 hover:bg-gray-200",
+    features: ["150K tokens per day", "1Million tokens per month", "Basic features"],
+  },
+  pro: {
+    name: "Pro",
+    color: "bg-blue-100 text-blue-900 hover:bg-blue-200",
+    features: ["250K tokens per day", "10Million tokens per month", "Advanced features"],
+  }
+}

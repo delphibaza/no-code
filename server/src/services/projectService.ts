@@ -37,7 +37,7 @@ export const getProject = async (projectId: string) => {
                     id: true,
                     filePath: true,
                     content: true,
-                    timestamp: true
+                    timestamp: true,
                 }
             },
             messages: {
@@ -48,7 +48,8 @@ export const getProject = async (projectId: string) => {
                     id: true,
                     role: true,
                     content: true,
-                    createdAt: true
+                    createdAt: true,
+                    tokensUsed: true,
                 }
             }
         }

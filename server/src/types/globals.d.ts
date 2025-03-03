@@ -3,6 +3,7 @@
 declare namespace Express {
     interface Request {
         plan?: {
+            planType: string;
             subscriptionId: string;
             dailyTokenLimit: number;
             monthlyTokenLimit: number;
@@ -10,6 +11,8 @@ declare namespace Express {
             monthlyTokensUsed: number;
             dailyTokensReset: Date;
             monthlyTokensReset: Date;
+            endDate: Date;
+            startDate: Date;
         }
     }
 }

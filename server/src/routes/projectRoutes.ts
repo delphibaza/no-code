@@ -1,3 +1,4 @@
+import type { NewProject } from "@repo/common/types";
 import { promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import express, { Request, Response } from "express";
@@ -49,14 +50,14 @@ router.get('/project/:projectId', async (req, res) => {
         }
 
         res.json({
-            type: 'existing',
             messages: project.messages,
             projectFiles: project.files,
-            projectTitle: project.name
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Failed to retrieve project" });
+        res.status(500).json({
+            msg: error instanceof Error ? error.message : "Failed to retrieve project"
+        });
     }
 });
 
@@ -72,7 +73,11 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
             return;
         }
 
-        if (project.messages.length !== 1 || project.messages[0].role !== 'user') {
+        if (
+            project.messages.length !== 1
+            || project.messages[0].role !== 'user'
+            || project.state !== 'new'
+        ) {
             res.status(400).json({ msg: "Project already generated" });
             return;
         }
@@ -120,11 +125,11 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
         await updateSubscription(req.plan);
 
         res.json({
-            type: 'new',
             enhancedPrompt: enhancedPrompt,
-            projectTitle: updatedProject.name,
-            ...templateData
-        });
+            templateFiles: templateData.templateFiles,
+            templatePrompt: templateData.templatePrompt,
+            ignorePatterns: templateData.ignorePatterns
+        } as NewProject);
     } catch (error) {
         console.error('Project generation failed:', error);
 

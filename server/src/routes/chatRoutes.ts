@@ -1,5 +1,4 @@
-import { requireAuth } from "@clerk/express";
-import { Artifact } from "@repo/common/types";
+import { Artifact, SubscriptionUsage } from "@repo/common/types";
 import { chatSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import { smoothStream, streamText } from "ai";
@@ -11,6 +10,7 @@ import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
 import { google2FlashModel } from "../providers";
 import { validateProjectOwnership } from "../services/projectService";
+import { getDaysBetweenDates } from "../utils";
 
 const router = express.Router();
 
@@ -87,6 +87,50 @@ router.post('/chat', ensureUserExists, resetLimits, async (req, res) => {
         }
     });
     return result.pipeDataStreamToResponse(res);
+});
+
+router.get('/subscription', resetLimits, async (req, res) => {
+
+    if (!req.plan) {
+        res.status(403).json({ msg: "Unable to get token limits for the user" });
+        return;
+    }
+    const { dailyTokensUsed,
+        dailyTokenLimit,
+        monthlyTokensUsed,
+        monthlyTokenLimit,
+        endDate,
+        planType,
+        startDate,
+        dailyTokensReset,
+        monthlyTokensReset
+    } = req.plan;
+    // Calculate peak usage
+    const peakUsage = Math.max(dailyTokensUsed, monthlyTokensUsed);
+    // Calculate daily average
+    const totalDaysElapsed = getDaysBetweenDates(startDate, new Date());
+    const dailyAverage = totalDaysElapsed > 0 ? monthlyTokensUsed / totalDaysElapsed : 0;
+
+    res.json({
+        plan: planType,
+        renewalDate: endDate,
+        tokenUsage: {
+            daily: {
+                used: dailyTokensUsed,
+                limit: dailyTokenLimit,
+                percentage: (dailyTokensUsed / dailyTokenLimit) * 100,
+                dailyTokensReset: dailyTokensReset
+            },
+            monthly: {
+                used: monthlyTokensUsed,
+                limit: monthlyTokenLimit,
+                percentage: (monthlyTokensUsed / monthlyTokenLimit) * 100,
+                monthlyTokensReset: monthlyTokensReset
+            }
+        },
+        peakUsage: peakUsage,
+        dailyAverage: dailyAverage
+    } as SubscriptionUsage);
 });
 
 export default router;

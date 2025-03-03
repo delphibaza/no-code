@@ -14,7 +14,7 @@ export function ModeToggle() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button variant="ghost" className="px-0">
           {theme === "dark" ? <Moon /> : <Sun />}
           <span>Toggle theme</span>

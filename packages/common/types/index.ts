@@ -61,7 +61,6 @@ export interface Artifact {
     endingContext: string;
 }
 export type ExistingProject = {
-    type: 'existing';
     projectFiles: (File & BaseAction)[]; // File with id and timestamp
     messages: {
         id: string;
@@ -71,7 +70,6 @@ export type ExistingProject = {
     }[];
 }
 export type NewProject = Template & {
-    type: 'new';
     enhancedPrompt: string;
 }
 export interface ContentFile {
@@ -94,6 +92,38 @@ export type Project = {
     name: string;
     createdAt: string;
 }
+export type PlanInfo = {
+    subscriptionId: string;
+    planType: string;
+    dailyTokenLimit: number;
+    monthlyTokenLimit: number;
+    dailyTokensUsed: number;
+    monthlyTokensUsed: number;
+    dailyTokensReset: Date;
+    monthlyTokensReset: Date;
+    endDate: Date;
+    startDate: Date;
+}
+export type SubscriptionUsage = {
+    plan: 'free' | 'pro' | 'enterprise';
+    renewalDate: Date;
+    tokenUsage: {
+        daily: {
+            used: number;
+            limit: number;
+            percentage: number;
+            dailyTokensReset: Date;
+        };
+        monthly: {
+            used: number;
+            limit: number;
+            percentage: number;
+            monthlyTokensReset: Date;
+        };
+    };
+    peakUsage: number;
+    dailyAverage: number;
+};
 export type Files = Record<string, ContentFile | Directory>;
 export const cwd = 'project';
 export const WORK_DIR = `/home/${cwd}`;

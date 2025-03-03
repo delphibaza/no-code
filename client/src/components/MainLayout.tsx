@@ -4,12 +4,21 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useProjectStore } from "@/store/projectStore";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { Outlet } from "react-router-dom";
-import { Button } from "./ui/button";
+import { useShallow } from "zustand/react/shallow";
 import { Logo } from "./Logo";
+import { Button } from "./ui/button";
 
 export default function MainLayout() {
+    const { currentProjectId, projects } = useProjectStore(
+        useShallow((state) => ({
+            currentProjectId: state.currentProjectId,
+            projects: state.projects,
+        }))
+    );
+    const currentProject = projects.find((project) => project.id === currentProjectId);
     return (
         <div className="flex min-h-screen">
             <SidebarProvider>
@@ -20,6 +29,13 @@ export default function MainLayout() {
                             <Logo />
                             <SidebarTrigger />
                         </div>
+                        {currentProject && (
+                            <div className="flex items-center border px-2 py-1 rounded-sm cursor-default bg-secondary">
+                                <div className="font-semibold truncate text-sm">
+                                    {currentProject.name || ''}
+                                </div>
+                            </div>
+                        )}
                         <div>
                             <SignedOut>
                                 <Button size={'sm'}>

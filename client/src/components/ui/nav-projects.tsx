@@ -10,7 +10,7 @@ export function NavProjects({ searchQuery }: { searchQuery: string }) {
             currentProjectId: state.currentProjectId,
         }))
     );
-    const filteredProjects = projects.filter(project => 
+    const filteredProjects = projects.filter(project =>
         project.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
     return (
@@ -20,20 +20,24 @@ export function NavProjects({ searchQuery }: { searchQuery: string }) {
                     <SidebarMenuButton className="cursor-default hover:bg-sidebar font-medium">
                         {date}
                     </SidebarMenuButton>
-                    {projectsForDate.length > 0 && (
-                        <SidebarMenuSub>
-                            {projectsForDate.map((project) => (
-                                <SidebarMenuSubItem key={project.id}>
-                                    <SidebarMenuSubButton asChild isActive={project.id === currentProjectId}>
-                                        <a href={project.id === currentProjectId ? '#' : `/project/${project.id}`}
-                                            className="overflow-hidden text-ellipsis whitespace-nowrap">
-                                            {project.name}
-                                        </a>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            ))}
-                        </SidebarMenuSub>
-                    )}
+                    <SidebarMenuSub>
+                        {projectsForDate.length > 0 ? projectsForDate.map((project) => (
+                            <SidebarMenuSubItem key={project.id}>
+                                <SidebarMenuSubButton asChild isActive={project.id === currentProjectId}>
+                                    <a href={project.id === currentProjectId ? '#' : `/project/${project.id}`}
+                                        className="overflow-hidden text-ellipsis whitespace-nowrap">
+                                        {project.name}
+                                    </a>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                        )) : (
+                            <SidebarMenuSubItem>
+                                <SidebarMenuSubButton className="cursor-default">
+                                    No projects found
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                        )}
+                    </SidebarMenuSub>
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>

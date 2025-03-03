@@ -19,6 +19,7 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Logo } from "./Logo";
+import SubscriptionDialog from "./subscription-dialog";
 import { SearchForm } from "./search-form";
 import { ModeToggle } from "./ui/mode-toggle";
 import { NavProjects } from "./ui/nav-projects";
@@ -77,10 +78,6 @@ export function AppSidebar() {
     };
   }, []);
 
-  if (isLoading) {
-    return null;
-  }
-
   return (
     <Sidebar ref={menuRef} variant="floating">
       <SidebarHeader>
@@ -117,8 +114,13 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton size="sm">
+                <SidebarMenuButton>
                   <ModeToggle />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <SubscriptionDialog />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

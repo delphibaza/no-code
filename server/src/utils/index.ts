@@ -1,3 +1,4 @@
+import { Request } from 'express';
 
 export function getDateTenYearsFromNow(): Date {
     const currentDate = new Date();
@@ -9,6 +10,17 @@ export function getDateTenYearsFromNow(): Date {
     const tenYearsFromNow = new Date(currentYear + 10, currentMonth, currentDay);
 
     return tenYearsFromNow;
+}
+
+export function getDaysBetweenDates(startDate: Date, endDate: Date): number {
+    const start = startDate.getTime(); // Convert Date to number
+    const end = endDate.getTime();     // Convert Date to number
+
+    // Calculate the difference in milliseconds
+    const diffTime = Math.abs(end - start);
+
+    // Convert milliseconds to days
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 /**
 * Checks if daily tokens should be reset (past midnight)
@@ -23,7 +35,21 @@ export function shouldResetDaily(lastReset: Date): boolean {
     // If the last reset day is before today, we should reset
     return lastResetDay < nowDay;
 }
-
+// Helper function to set subscription plan data on request object
+export function setPlanData(subscription: any) {
+    return {
+        subscriptionId: subscription.id,
+        planType: subscription.planType,
+        dailyTokenLimit: subscription.plan.dailyTokenLimit,
+        monthlyTokenLimit: subscription.plan.monthlyTokenLimit,
+        dailyTokensUsed: subscription.dailyTokensUsed,
+        monthlyTokensUsed: subscription.monthlyTokensUsed,
+        dailyTokensReset: subscription.dailyTokensReset,
+        monthlyTokensReset: subscription.monthlyTokensReset,
+        endDate: subscription.endDate,
+        startDate: subscription.startDate
+    };
+}
 /**
  * Checks if monthly tokens should be reset (new month)
  */
@@ -34,16 +60,6 @@ export function shouldResetMonthly(lastReset: Date): boolean {
     // If month or year has changed, we should reset
     return lastResetDate.getMonth() !== now.getMonth() ||
         lastResetDate.getFullYear() !== now.getFullYear();
-}
-
-export type PlanInfo = {
-    subscriptionId: string;
-    dailyTokenLimit: number;
-    monthlyTokenLimit: number;
-    dailyTokensUsed: number;
-    monthlyTokensUsed: number;
-    dailyTokensReset: Date;
-    monthlyTokensReset: Date;
 }
 // Define a custom error class with code property
 export class ApplicationError extends Error {

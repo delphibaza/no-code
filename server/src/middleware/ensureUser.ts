@@ -1,8 +1,8 @@
-import prisma from '@repo/db/client';
 import { clerkClient } from '@clerk/express';
-import { Request, Response, NextFunction } from 'express';
-import { getDateTenYearsFromNow } from '../utils';
+import prisma from '@repo/db/client';
+import { NextFunction, Request, Response } from 'express';
 import { getUserWithSubscription } from '../services/subscriptionService';
+import { getDateTenYearsFromNow, setPlanData } from '../utils';
 
 export async function ensureUserExists(req: Request, res: Response, next: NextFunction) {
     // Get the `userId` from the `Auth` object
@@ -46,27 +46,12 @@ export async function ensureUserExists(req: Request, res: Response, next: NextFu
             });
             // Add plan info to request for later use
             const subscription = newUser.subscription[0];
-            req.plan = {
-                subscriptionId: subscription.id,
-                dailyTokenLimit: subscription.plan.dailyTokenLimit,
-                monthlyTokenLimit: subscription.plan.monthlyTokenLimit,
-                dailyTokensUsed: subscription.dailyTokensUsed,
-                monthlyTokensUsed: subscription.monthlyTokensUsed,
-                dailyTokensReset: subscription.dailyTokensReset,
-                monthlyTokensReset: subscription.monthlyTokensReset
-            }   
+            req.plan = setPlanData(subscription);
         } else {
-            // If user exists, add plan info to request for later use
+            // We ensure that a user contains a single active subscription
             const subscription = userWithSubscription.subscription[0];
-            req.plan = {
-                subscriptionId: subscription.id,
-                dailyTokenLimit: subscription.plan.dailyTokenLimit,
-                monthlyTokenLimit: subscription.plan.monthlyTokenLimit,
-                dailyTokensUsed: subscription.dailyTokensUsed,
-                monthlyTokensUsed: subscription.monthlyTokensUsed,
-                dailyTokensReset: subscription.dailyTokensReset,
-                monthlyTokensReset: subscription.monthlyTokensReset
-            }
+            // If user exists, add plan info to request for later use
+            req.plan = setPlanData(subscription);
         }
         next();
     } catch (error) {
