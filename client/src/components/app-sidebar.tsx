@@ -15,16 +15,17 @@ import {
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
-import { Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
+import { Logo } from "./Logo";
+import SubscriptionDialog from "./subscription-dialog";
 import { SearchForm } from "./search-form";
 import { ModeToggle } from "./ui/mode-toggle";
 import { NavProjects } from "./ui/nav-projects";
 import { NavUser } from "./ui/nav-user";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar() {
   const [isLoading, setIsLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,9 +44,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     async function fetchProjects() {
       try {
         const data = await authenticatedFetch(`${API_URL}/api/projects`);
-        setProjects(data);
+        setProjects(data.projects);
       } catch (error) {
-        toast.error(error instanceof Error
+        console.error(error instanceof Error
           ? error.message
           : "Something went wrong while fetching projects"
         );
@@ -78,17 +79,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, []);
 
   return (
-    <Sidebar {...props} ref={menuRef}>
+    <Sidebar ref={menuRef} variant="floating">
       <SidebarHeader>
-        <SidebarMenuButton size="lg" asChild>
-          <a href="/">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Sparkles className="size-5" />
-            </div>
-            <div className="leading-none">
-              <span className="font-semibold">NoCode</span>
-            </div>
-          </a>
+        <SidebarMenuButton size="lg">
+          <Logo />
         </SidebarMenuButton>
       </SidebarHeader>
       <SearchForm searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -111,7 +105,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Loader2 className="animate-spin size-5 text-sidebar-primary" />
             </div>
           ) : (
-            <SidebarGroup>
+            <SidebarGroup style={{ scrollbarWidth: 'thin' }} className="overflow-y-scroll">
               <SidebarGroupLabel>Chats</SidebarGroupLabel>
               <NavProjects searchQuery={searchQuery} />
             </SidebarGroup>
@@ -120,8 +114,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton size="sm">
+                <SidebarMenuButton>
                   <ModeToggle />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <SubscriptionDialog />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

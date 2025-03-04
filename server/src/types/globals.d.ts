@@ -2,12 +2,17 @@
 
 declare namespace Express {
     interface Request {
-        user?: {
-            id: string;
-            username: string;
-            email: string;
-            profilePicture: string | null;
-            createdAt: Date;
+        plan?: {
+            planType: string;
+            subscriptionId: string;
+            dailyTokenLimit: number;
+            monthlyTokenLimit: number;
+            dailyTokensUsed: number;
+            monthlyTokensUsed: number;
+            dailyTokensReset: Date;
+            monthlyTokensReset: Date;
+            endDate: Date;
+            startDate: Date;
         }
     }
 }

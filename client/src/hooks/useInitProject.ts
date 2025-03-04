@@ -7,6 +7,7 @@ import { useFilesStore } from "@/store/filesStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { Artifact, ExistingProject, FileAction, NewProject, ShellAction } from "@repo/common/types";
+import type { WebContainer } from "@webcontainer/api";
 import { Message } from 'ai/react';
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -17,7 +18,7 @@ export function useInitProject(
     setMessages: (messages: Message[] | ((messages: Message[]) => Message[])) => void,
     reload: () => Promise<string | null | undefined>
 ) {
-    const [fetchingProjects, setFetchingProjects] = useState(false);
+    const [initializingProject, setInitializingProject] = useState(false);
     const { authenticatedFetch } = useFetch();
     const { webContainer, setWebContainer } = usePreviewStore(
         useShallow(state => ({
@@ -42,113 +43,135 @@ export function useInitProject(
         }))
     );
     async function initializeProject(projectId: string) {
+        let container = webContainer;
         try {
-            setFetchingProjects(true);
-            let container = webContainer;
+            setInitializingProject(true);
             if (!container) {
                 container = await getWebContainer();
                 setWebContainer(container);
             }
             const result = await authenticatedFetch(`${API_URL}/api/project/${projectId}`);
-            if (result.type === 'existing') {
-                const { messages, projectFiles } = result as ExistingProject;
-                messages.forEach(message => {
-                    if (message.role === 'user') {
-                        // For user messages, content is always { text: string }
-                        const userContent = message.content as { text: string };
-                        upsertMessage({
-                            id: message.id,
-                            role: message.role,
-                            content: userContent.text,
-                            timestamp: new Date(message.createdAt).getTime()
-                        });
-                    } else if (message.role === 'assistant') {
-                        // For assistant messages, content is always Artifact
-                        const assistantContent = message.content as { artifact: Artifact };
-                        upsertMessage({
-                            id: message.id,
-                            role: message.role,
-                            content: JSON.stringify(assistantContent),
-                            timestamp: new Date(message.createdAt).getTime()
-                        });
-                        assistantContent.artifact.actions.forEach(action => {
-                            const currentAction: FileAction | ShellAction = {
-                                id: crypto.randomUUID(),
-                                timestamp: Date.now(),
-                                ...action
-                            };
-                            if (currentAction.type === 'file') {
-                                addAction(message.id, {
-                                    state: 'created',
-                                    ...currentAction
-                                });
-                            } else if (action.type === 'shell') {
-                                addAction(message.id, {
-                                    state: 'completed',
-                                    ...currentAction
-                                });
-                            }
-                        });
-                    }
-                });
-                const currentMessageId = 'import-artifact';
-                setCurrentMessageId(currentMessageId);
-                const { artifact, currentActions } = getImportArtifact(messages);
-                upsertMessage({
-                    id: currentMessageId,
-                    role: 'assistant',
-                    timestamp: Date.now(),
-                    content: JSON.stringify({ artifact: artifact })
-                });
-                await mountFiles(projectFiles, container);
-                updateProjectFiles(projectFiles.map(file => ({
-                    type: 'file',
-                    ...file,
-                })));
-                setSelectedFile(projectFiles[0]?.filePath ?? '');
-                currentActions.forEach(action => {
-                    const currentAction: ShellAction = {
-                        id: crypto.randomUUID(),
-                        timestamp: Date.now(),
-                        ...action
-                    }
-                    addAction(currentMessageId, {
-                        state: 'queued',
-                        ...currentAction
+            const { messages, projectFiles } = result as ExistingProject;
+            messages.forEach(message => {
+                if (message.role === 'user') {
+                    // For user messages, content is always { text: string }
+                    const userContent = message.content as { text: string };
+                    upsertMessage({
+                        id: message.id,
+                        role: message.role,
+                        content: userContent.text,
+                        timestamp: new Date(message.createdAt).getTime()
                     });
-                    actionExecutor.addAction(currentMessageId, currentAction);
-                });
-            } else {
-                const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } = result as NewProject;
-                const messages = [
-                    { id: '1', role: 'user', content: projectFilesMsg(templateFiles, ignorePatterns) },
-                    ...(templatePrompt
-                        ? [
-                            { id: '2', role: 'user', content: templatePrompt },
-                            { id: '3', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }
-                        ]
-                        : [{ id: '2', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }]
-                    )
-                ];
-                setMessages(messages as Message[]);
-                upsertMessage({ id: crypto.randomUUID(), role: 'data', content: templatePrompt, timestamp: Date.now() });
-                // Add files to project store
-                updateProjectFiles(templateFiles.map(file => ({
+                } else if (message.role === 'assistant') {
+                    // For assistant messages, content is always Artifact
+                    const assistantContent = message.content as { artifact: Artifact };
+                    upsertMessage({
+                        id: message.id,
+                        role: message.role,
+                        content: JSON.stringify(assistantContent),
+                        timestamp: new Date(message.createdAt).getTime()
+                    });
+                    assistantContent.artifact.actions.forEach(action => {
+                        const currentAction: FileAction | ShellAction = {
+                            id: crypto.randomUUID(),
+                            timestamp: Date.now(),
+                            ...action
+                        };
+                        if (currentAction.type === 'file') {
+                            addAction(message.id, {
+                                state: 'created',
+                                ...currentAction
+                            });
+                        } else if (action.type === 'shell') {
+                            addAction(message.id, {
+                                state: 'completed',
+                                ...currentAction
+                            });
+                        }
+                    });
+                }
+            });
+            const currentMessageId = 'import-artifact';
+            setCurrentMessageId(currentMessageId);
+            const { artifact, currentActions } = getImportArtifact(messages);
+            upsertMessage({
+                id: currentMessageId,
+                role: 'assistant',
+                timestamp: Date.now(),
+                content: JSON.stringify({ artifact: artifact })
+            });
+            await mountFiles(projectFiles, container);
+            updateProjectFiles(projectFiles.map(file => ({
+                type: 'file',
+                ...file,
+            })));
+            setSelectedFile(projectFiles[0]?.filePath ?? '');
+            currentActions.forEach(action => {
+                const currentAction: ShellAction = {
                     id: crypto.randomUUID(),
-                    type: 'file',
                     timestamp: Date.now(),
-                    ...file,
-                })));
-                await mountFiles(templateFiles, container);
-                setCurrentMessageId(crypto.randomUUID());
-                reload();
-            }
+                    ...action
+                }
+                addAction(currentMessageId, {
+                    state: 'queued',
+                    ...currentAction
+                });
+                actionExecutor.addAction(currentMessageId, currentAction);
+            });
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Error while initializing project"
-            toast.error(errorMessage)
+            if (error instanceof Error && error.message.includes("Project has not been initialized")) {
+                try {
+                    // Call the generate endpoint
+                    if (!container) throw new Error("WebContainer not initialized");
+                    await initializeNewProject(projectId, container);
+                } catch (genError) {
+                    toast.error(genError instanceof Error
+                        ? genError.message
+                        : "Something went wrong while generating project"
+                    );
+                }
+            } else {
+                const errorMessage = error instanceof Error ? error.message : "Error while initializing project";
+                toast.error(errorMessage);
+            }
         } finally {
-            setFetchingProjects(false);
+            setInitializingProject(false);
         }
     }
-    return { initializeProject, fetchingProjects }
+
+    async function initializeNewProject(projectId: string, container: WebContainer) {
+        const result = await authenticatedFetch(`${API_URL}/api/project/${projectId}/generate`, {
+            method: 'POST'
+        });
+
+        const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } = result as NewProject;
+        const messages = [
+            { id: '1', role: 'user', content: projectFilesMsg(templateFiles, ignorePatterns) },
+            ...(templatePrompt
+                ? [
+                    { id: '2', role: 'user', content: templatePrompt },
+                    { id: '3', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }
+                ]
+                : [{ id: '2', role: 'user', content: projectInstructionsMsg(enhancedPrompt) }]
+            )
+        ];
+        setMessages(messages as Message[]);
+        upsertMessage({
+            id: crypto.randomUUID(),
+            role: 'data',
+            content: templatePrompt,
+            timestamp: Date.now()
+        });
+        // Add files to project store
+        updateProjectFiles(templateFiles.map(file => ({
+            id: crypto.randomUUID(),
+            type: 'file',
+            timestamp: Date.now(),
+            ...file,
+        })));
+        await mountFiles(templateFiles, container);
+        setCurrentMessageId(crypto.randomUUID());
+        reload();
+    }
+    return { initializeProject, initializingProject }
 }

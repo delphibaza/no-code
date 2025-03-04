@@ -1,6 +1,7 @@
 import { ChatInput } from "@/components/ChatInput";
 import { TabsSwitch } from "@/components/TabsSwitch";
 import { Workbench } from "@/components/Workbench";
+import useFetch from "@/hooks/useFetch";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
@@ -29,18 +30,23 @@ export default function ProjectInfo() {
             webContainer: state.webContainer
         }))
     );
+    const { customFetch } = useFetch();
     const { messageHistory,
         currentMessageId,
+        refreshTokens,
         upsertMessage,
         setCurrentMessageId,
         setCurrentProjectId,
+        setRefreshTokens
     } = useProjectStore(
         useShallow(state => ({
             messageHistory: state.messageHistory,
+            currentMessageId: state.currentMessageId,
+            refreshTokens: state.refreshTokens,
             upsertMessage: state.upsertMessage,
+            setRefreshTokens: state.setRefreshTokens,
             setCurrentProjectId: state.setCurrentProjectId,
             setCurrentMessageId: state.setCurrentMessageId,
-            currentMessageId: state.currentMessageId
         }))
     );
     const { ignorePatterns, projectFiles } = useFilesStore(
@@ -54,20 +60,24 @@ export default function ProjectInfo() {
         body: {
             projectId: params.projectId
         },
+        fetch: customFetch,
         sendExtraMessageFields: true,
         experimental_throttle: 100,
-        // onFinish: (message, { usage, finishReason }) => {
-        // console.log('Finished streaming message:', message);
-        // console.log('Token usage:', usage);
-        // console.log('Finish reason:', finishReason);
-        // },
+        onFinish: async (_, { finishReason }) => {
+            if (finishReason !== 'stop') {
+                toast.error('An error occurred while processing your request. Please try again.');
+                return;
+            }
+            setRefreshTokens(!refreshTokens);
+        },
         onError: error => {
-            console.error('An error occurred:', error);
-            toast.error('There was an error processing your request');
+            toast.error(JSON.parse(error.message)?.msg ??
+                'An error occurred while processing your request. Please try again.'
+            );
         }
     });
 
-    const { initializeProject, fetchingProjects } = useInitProject(setMessages, reload);
+    const { initializeProject, initializingProject } = useInitProject(setMessages, reload);
 
     useEffect(() => {
         if (!params.projectId) return;
@@ -112,12 +122,12 @@ export default function ProjectInfo() {
     return (
         <>
             <Toaster />
-            {fetchingProjects ? (
-                <div className="flex h-full items-center justify-center">
-                    <Loader2 className="animate-spin size-5" />
-                </div>
-            ) : (
-                <div className="w-full pr-2 pl-8 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+            <div className="w-full pr-2 pl-8 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+                {initializingProject ? (
+                    <div className="flex col-span-12 h-full md:h-[90vh] items-center justify-center">
+                        <Loader2 className="animate-spin size-5" />
+                    </div>
+                ) : (
                     <div className="flex flex-col gap-y-3 col-span-4">
                         <Workbench />
                         <div>
@@ -133,9 +143,9 @@ export default function ProjectInfo() {
                             />
                         </div>
                     </div>
-                    <TabsSwitch />
-                </div>
-            )}
+                )}
+                <TabsSwitch initializingProject={initializingProject} />
+            </div>
         </>
     );
 }
