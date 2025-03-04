@@ -5,7 +5,7 @@ import express, { Request, Response } from "express";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { createProject, createProjectFiles, enhanceProjectPrompt, getProject, getTemplateData, selectTemplate } from "../services/projectService";
-import { updateSubscription, updateTokenUsage } from "../services/subscriptionService";
+import { checkLimits, updateSubscription, updateTokenUsage } from "../services/subscriptionService";
 import { ApplicationError } from "../utils";
 
 const router = express.Router();
@@ -86,6 +86,16 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
             res.status(403).json({ msg: "Unable to get token limits for the user" });
             return;
         }
+        // Check the limits
+        const limitsCheck = checkLimits(req.plan);
+
+        if (!limitsCheck.success) {
+            throw new ApplicationError(
+                limitsCheck.message ?? "You have reached your token limit",
+                'TOKEN_LIMIT_EXCEEDED'
+            );
+        }
+
         // Step 1: Enhance the prompt
         const { enhancedPrompt, usage: enhanceUsage } = await enhanceProjectPrompt(project.name);
 
@@ -113,7 +123,7 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
         }
 
         // Update the project with new title and state
-        const updatedProject = await prisma.project.update({
+        await prisma.project.update({
             where: { id: projectId },
             data: {
                 state: 'existing',

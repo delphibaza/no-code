@@ -16,15 +16,23 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import useFetch from "@/hooks/useFetch"
 import { API_URL } from "@/lib/constants"
 import { planDetails } from "@/lib/utils"
-import { SubscriptionUsage } from "@repo/common/types"
+import { useProjectStore } from "@/store/projectStore"
 import { BarChart3, Check, CreditCard, Gauge, Info, Loader2, Zap } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useShallow } from "zustand/react/shallow"
 
 export default function SubscriptionDialog() {
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { authenticatedFetch } = useFetch();
-    const [subscriptionData, setSubscriptionData] = useState<SubscriptionUsage | null>(null);
+    const { subscriptionData, setSubscriptionData, refreshTokens } = useProjectStore(
+        useShallow(state => ({
+            subscriptionData: state.subscriptionData,
+            setSubscriptionData: state.setSubscriptionData,
+            refreshTokens: state.refreshTokens,
+            setRefreshTokens: state.setRefreshTokens
+        }))
+    );
     const plan = subscriptionData?.plan ? planDetails[subscriptionData.plan as keyof typeof planDetails] : null;
 
     useEffect(() => {
@@ -39,10 +47,8 @@ export default function SubscriptionDialog() {
                 setIsLoading(false);
             }
         }
-        if (open) {
-            fetchSubscriptionData();
-        }
-    }, [open]);
+        fetchSubscriptionData();
+    }, [refreshTokens]);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -86,6 +92,34 @@ export default function SubscriptionDialog() {
                                         </div>
                                     </CardContent>
                                 </Card>
+                            </div>
+
+                            {/* Billing Period */}
+                            <div className="mt-4 space-y-2">
+                                <h3 className="text-sm font-medium flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4" />
+                                    Billing Period
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-muted-foreground">
+                                            Start Date {' '}
+                                            <span className="text-xs md:text-[9px]">
+                                                (MM/DD/YYYY)
+                                            </span>
+                                        </span>
+                                        <p className="font-medium">{new Date(subscriptionData.startDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-muted-foreground">
+                                            End Date {' '}
+                                            <span className="text-xs md:text-[9px]">
+                                                (MM/DD/YYYY)
+                                            </span>
+                                        </span>
+                                        <p className="font-medium">{new Date(subscriptionData.endDate).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <Separator />
@@ -132,7 +166,7 @@ export default function SubscriptionDialog() {
                                                         <Info className="h-3.5 w-3.5 text-muted-foreground" />
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p>Resets on billing cycle: {new Date(subscriptionData.renewalDate).toLocaleDateString()}</p>
+                                                        <p>Resets on first day of the month</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>

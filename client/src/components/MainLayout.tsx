@@ -30,7 +30,7 @@ export default function MainLayout() {
                             <SidebarTrigger />
                         </div>
                         {currentProject && (
-                            <div className="flex items-center border px-2 py-1 rounded-sm cursor-default bg-secondary">
+                            <div className="flex items-center border px-4 py-1 rounded-md cursor-default">
                                 <div className="font-semibold truncate text-sm">
                                     {currentProject.name || ''}
                                 </div>

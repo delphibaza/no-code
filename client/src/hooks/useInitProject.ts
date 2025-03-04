@@ -125,8 +125,10 @@ export function useInitProject(
                     if (!container) throw new Error("WebContainer not initialized");
                     await initializeNewProject(projectId, container);
                 } catch (genError) {
-                    console.error(genError instanceof Error ? genError.message : "Something went wrong while generating project");
-                    toast.error("Failed to generate project");
+                    toast.error(genError instanceof Error
+                        ? genError.message
+                        : "Something went wrong while generating project"
+                    );
                 }
             } else {
                 const errorMessage = error instanceof Error ? error.message : "Error while initializing project";

@@ -1,7 +1,9 @@
+import { useProjectStore } from "@/store/projectStore";
 import { CircleStop, CornerDownLeft, RotateCcw } from "lucide-react";
+import { memo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { memo } from "react";
 
 interface ButtonConfig {
     show: boolean;
@@ -45,10 +47,26 @@ export const ChatInput = memo(({
             onClick: reload || (() => { })
         }
     ];
+    const { subscriptionData } = useProjectStore(
+        useShallow(state => ({
+            subscriptionData: state.subscriptionData
+        }))
+    )
     const activeButton = buttonConfigs.find(config => config.show);
 
     return (
         <div className="relative">
+            {subscriptionData && (
+                <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 text-center -top-5 px-2 border rounded-t-md text-sm bg-white">
+                    {(subscriptionData.tokenUsage.daily.limit - subscriptionData.tokenUsage.daily.used).toLocaleString()}
+                    {' '}
+                    daily tokens left out of
+                    {' '}
+                    {subscriptionData.tokenUsage.daily.limit.toLocaleString()}
+                    {' '}
+                    tokens
+                </div>
+            )}
             <Textarea
                 rows={5}
                 className="relative"

@@ -1,4 +1,4 @@
-import { ActionState, MessageHistory, Project } from '@repo/common/types';
+import { ActionState, MessageHistory, Project, SubscriptionUsage } from '@repo/common/types';
 import { create } from 'zustand';
 
 interface ProjectState {
@@ -9,11 +9,15 @@ interface ProjectState {
     // messageId, actions
     actions: Map<string, ActionState[]>;
     currentMessageId: string | null;
+    subscriptionData: SubscriptionUsage | null;
+    refreshTokens: boolean;
 
     // Actions
     setProjects: (projects: Project[]) => void;
     addProject: (project: Project) => void;
+    setSubscriptionData: (usage: SubscriptionUsage) => void;
     setCurrentProjectId: (projectId: string) => void;
+    setRefreshTokens: (refreshTokens: boolean) => void;
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
@@ -28,6 +32,8 @@ export const useProjectStore = create<ProjectState>()(
         messageHistory: [],
         projects: [],
         currentProjectId: null,
+        subscriptionData: null,
+        refreshTokens: false,
 
         setProjects: (projects) =>
             set({ projects }),
@@ -37,8 +43,14 @@ export const useProjectStore = create<ProjectState>()(
                 projects: [...state.projects, project]
             })),
 
+        setSubscriptionData: (usage) =>
+            set({ subscriptionData: usage }),
+
         setCurrentProjectId: (projectId) =>
             set({ currentProjectId: projectId }),
+
+        setRefreshTokens: (refreshTokens) =>
+            set({ refreshTokens }),
 
         upsertMessage: (message) =>
             set((state) => {

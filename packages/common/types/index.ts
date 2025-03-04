@@ -106,19 +106,18 @@ export type PlanInfo = {
 }
 export type SubscriptionUsage = {
     plan: 'free' | 'pro' | 'enterprise';
-    renewalDate: Date;
+    startDate: string;
+    endDate: string;
     tokenUsage: {
         daily: {
             used: number;
             limit: number;
             percentage: number;
-            dailyTokensReset: Date;
         };
         monthly: {
             used: number;
             limit: number;
             percentage: number;
-            monthlyTokensReset: Date;
         };
     };
     peakUsage: number;

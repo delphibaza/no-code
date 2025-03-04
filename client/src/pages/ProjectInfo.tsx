@@ -33,16 +33,20 @@ export default function ProjectInfo() {
     const { customFetch } = useFetch();
     const { messageHistory,
         currentMessageId,
+        refreshTokens,
         upsertMessage,
         setCurrentMessageId,
         setCurrentProjectId,
+        setRefreshTokens
     } = useProjectStore(
         useShallow(state => ({
             messageHistory: state.messageHistory,
+            currentMessageId: state.currentMessageId,
+            refreshTokens: state.refreshTokens,
             upsertMessage: state.upsertMessage,
+            setRefreshTokens: state.setRefreshTokens,
             setCurrentProjectId: state.setCurrentProjectId,
             setCurrentMessageId: state.setCurrentMessageId,
-            currentMessageId: state.currentMessageId
         }))
     );
     const { ignorePatterns, projectFiles } = useFilesStore(
@@ -59,14 +63,17 @@ export default function ProjectInfo() {
         fetch: customFetch,
         sendExtraMessageFields: true,
         experimental_throttle: 100,
-        // onFinish: (message, { usage, finishReason }) => {
-        // console.log('Finished streaming message:', message);
-        // console.log('Token usage:', usage);
-        // console.log('Finish reason:', finishReason);
-        // },
+        onFinish: async (_, { finishReason }) => {
+            if (finishReason !== 'stop') {
+                toast.error('An error occurred while processing your request. Please try again.');
+                return;
+            }
+            setRefreshTokens(!refreshTokens);
+        },
         onError: error => {
-            console.error('An error occurred:', error);
-            toast.error('There was an error processing your request');
+            toast.error(JSON.parse(error.message)?.msg ??
+                'An error occurred while processing your request. Please try again.'
+            );
         }
     });
 
