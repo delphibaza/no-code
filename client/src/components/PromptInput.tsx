@@ -1,12 +1,12 @@
+import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/store/projectStore";
 import { PromptSchema } from "@repo/common/zod";
 import { useState } from "react";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { useShallow } from "zustand/react/shallow";
 import { ChatInput } from "./ChatInput";
-import useFetch from "@/hooks/useFetch";
 
 export function PromptInput() {
     const navigate = useNavigate();
@@ -44,7 +44,8 @@ export function PromptInput() {
         }
     }
     return (
-        <div className="relative flex flex-col w-full md:w-5/12">
+        <div className="relative flex flex-col w-full">
+            <Toaster />
             <ChatInput
                 placeholder="Type a prompt ..."
                 handleSubmit={handleSubmit}

@@ -11,6 +11,7 @@ interface ProjectState {
     currentMessageId: string | null;
     subscriptionData: SubscriptionUsage | null;
     refreshTokens: boolean;
+    refreshProjects: boolean;
 
     // Actions
     setProjects: (projects: Project[]) => void;
@@ -18,6 +19,7 @@ interface ProjectState {
     setSubscriptionData: (usage: SubscriptionUsage) => void;
     setCurrentProjectId: (projectId: string) => void;
     setRefreshTokens: (refreshTokens: boolean) => void;
+    setRefreshProjects: (refreshProjects: boolean) => void;
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
@@ -34,6 +36,7 @@ export const useProjectStore = create<ProjectState>()(
         currentProjectId: null,
         subscriptionData: null,
         refreshTokens: false,
+        refreshProjects: false,
 
         setProjects: (projects) =>
             set({ projects }),
@@ -51,6 +54,9 @@ export const useProjectStore = create<ProjectState>()(
 
         setRefreshTokens: (refreshTokens) =>
             set({ refreshTokens }),
+
+        setRefreshProjects: (refreshProjects) =>
+            set({ refreshProjects }),
 
         upsertMessage: (message) =>
             set((state) => {
