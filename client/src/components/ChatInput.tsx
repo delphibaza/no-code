@@ -1,8 +1,11 @@
-import { BorderedTextarea } from "@/components/ui/moving-border";
 import { useProjectStore } from "@/store/projectStore";
 import { CircleStop, CornerDownLeft, RotateCcw } from "lucide-react";
 import { memo } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface ButtonConfig {
     show: boolean;
@@ -46,6 +49,7 @@ export const ChatInput = memo(({
             onClick: reload || (() => { })
         }
     ];
+
     const { subscriptionData } = useProjectStore(
         useShallow(state => ({
             subscriptionData: state.subscriptionData
@@ -53,10 +57,32 @@ export const ChatInput = memo(({
     )
     const activeButton = buttonConfigs.find(config => config.show);
 
+    const rainbowVariants = {
+        initial: {
+            boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
+        },
+        animate: {
+            boxShadow: [
+                "0 0 15px rgba(255, 0, 0, 0.5)",
+                "0 0 15px rgba(255, 165, 0, 0.5)",
+                "0 0 15px rgba(255, 255, 0, 0.5)",
+                "0 0 15px rgba(0, 255, 0, 0.5)",
+                "0 0 15px rgba(0, 0, 255, 0.5)",
+                "0 0 15px rgba(238, 130, 238, 0.5)",
+                "0 0 15px rgba(255, 0, 0, 0.5)",
+            ],
+            transition: {
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear",
+            },
+        },
+    };
+
     return (
         <div className="relative">
             {subscriptionData && (
-                <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 text-center -top-5 px-2 border rounded-t-md text-sm">
+                <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 dark:shadow-sky-400 text-center -top-5 px-2 border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 rounded-t-md text-sm">
                     {(subscriptionData.tokenUsage.daily.limit - subscriptionData.tokenUsage.daily.used).toLocaleString()}
                     {' '}
                     daily tokens left out of
@@ -66,25 +92,39 @@ export const ChatInput = memo(({
                     tokens
                 </div>
             )}
-            <BorderedTextarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={placeholder}
-                rows={5}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        handleSubmit();
-                    }
-                }}
-                className="bg-white dark:bg-slate-900 text-black dark:text-white border-neutral-200 dark:border-slate-800"
-                borderClassName="bg-[radial-gradient(var(--sky-500)_40%,transparent_60%)]"
-            />
+            <motion.div
+                variants={rainbowVariants}
+                initial="initial"
+                animate={isLoading ? "animate" : "initial"}
+                className="rounded-lg overflow-hidden"
+            >
+                <Textarea
+                    rows={5}
+                    className={cn(
+                        "relative pl-4 pr-10 py-3 rounded-lg",
+                        "transition-shadow duration-300",
+                        "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background",
+                        "bg-white dark:bg-slate-900 text-black dark:text-white"
+                    )}
+                    placeholder={placeholder}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit();
+                        }
+                    }}
+                />
+            </motion.div>
             {activeButton && (
-                <button className="px-4 absolute bottom-3 right-2 py-2 text-primary-foreground backdrop-blur-sm border border-black rounded-md hover:shadow-[0px_0px_4px_4px_rgba(0,0,0,0.1)] bg-primary text-sm transition duration-200"
+                <Button
+                    size="sm"
                     onClick={activeButton.onClick}
+                    className="absolute bottom-3 right-2"
                 >
                     {activeButton.icon}
-                </button>
+                </Button>
             )}
         </div>
     );
