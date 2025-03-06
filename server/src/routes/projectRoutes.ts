@@ -64,7 +64,6 @@ router.get('/project/:projectId', async (req, res) => {
 // Route to generate a new project - requires auth + subscription
 router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async (req, res) => {
     const { projectId } = req.params;
-
     try {
         // Validate project state
         const project = await getProject(projectId);
@@ -167,6 +166,10 @@ router.get('/projects', ensureUserExists, resetLimits, async (req, res) => {
         res.status(400).json({
             msg: "Invalid page or limit",
         });
+        return;
+    }
+    if (!req.plan) {
+        res.status(403).json({ msg: "Unable to get token limits for the user" });
         return;
     }
     try {

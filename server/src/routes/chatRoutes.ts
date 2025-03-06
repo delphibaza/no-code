@@ -1,5 +1,5 @@
 import { Artifact } from "@repo/common/types";
-import { chatSchema } from "@repo/common/zod";
+import { chatSchema, promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
 import { smoothStream, streamText } from "ai";
 import { parse } from "best-effort-json-parser";
@@ -9,7 +9,7 @@ import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
 import { google2FlashModel } from "../providers";
-import { validateProjectOwnership } from "../services/projectService";
+import { enhanceProjectPrompt, validateProjectOwnership } from "../services/projectService";
 import { checkLimits, updateSubscription } from "../services/subscriptionService";
 import { ApplicationError, getDaysBetweenDates } from "../utils";
 
@@ -51,7 +51,6 @@ router.post('/chat', ensureUserExists, resetLimits, async (req, res) => {
                     // Update token usage and check limits
                     req.plan!.dailyTokensUsed += usage.totalTokens;
                     req.plan!.monthlyTokensUsed += usage.totalTokens;
-                    console.log(req.plan);
                     await updateSubscription(req.plan!);
                     // Remove JSON markdown wrapper and parse
                     const jsonContent = parse(text.slice('```json\n'.length, -3)); // Parse the JSON string
@@ -115,6 +114,31 @@ router.post('/chat', ensureUserExists, resetLimits, async (req, res) => {
         }
         res.status(500).json({
             msg: error instanceof Error ? error.message : "Failed to generate chat"
+        });
+    }
+});
+
+router.post('/enhance-prompt', async (req, res) => {
+    const validation = promptSchema.safeParse(req.body);
+    if (!validation.success) {
+        res.status(400).json({
+            msg: validation.error.errors[0].message,
+        });
+        return;
+    }
+    if (!req.auth.userId) {
+        res.status(401).json({ msg: 'Unauthorized' });
+        return;
+    }
+    try {
+        const { prompt } = validation.data;
+        const { enhancedPrompt } = await enhanceProjectPrompt(prompt);
+        res.json({
+            enhancedPrompt: enhancedPrompt,
+        });
+    } catch (error) {
+        res.status(500).json({
+            msg: error instanceof Error ? error.message : "Failed to enhance prompt"
         });
     }
 });

@@ -1,6 +1,7 @@
 import { File, FileAction } from "@repo/common/types";
 import { clsx, type ClassValue } from "clsx";
 import { minimatch } from "minimatch";
+import toast from "react-hot-toast";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -132,3 +133,15 @@ export const planDetails = {
     features: ["250K tokens per day", "10Million tokens per month", "Advanced features"],
   }
 }
+
+export function customToast(msg: string) {
+  return toast.error(msg, {
+    style: {
+      borderRadius: '25px',
+      background: '#333',
+      color: '#fff',
+      paddingTop: '3px',
+      paddingBottom: '3px',
+    },
+  })
+};
