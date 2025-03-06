@@ -35,7 +35,7 @@ export const BackgroundDots = ({
         >
             {/* Base dots layer */}
             <div
-                className="absolute inset-0 bg-dot-thick-slate-400/35 dark:bg-dot-thick-slate-400/35"
+                className="absolute inset-0 bg-dot-thick-slate-400/20 dark:bg-dot-thick-slate-400/20"
                 style={{ backgroundSize: '16px 16px' }}
             />
 

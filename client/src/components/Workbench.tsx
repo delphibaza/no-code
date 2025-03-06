@@ -1,19 +1,30 @@
-import { useShallow } from "zustand/react/shallow"
+import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@/store/projectStore";
 import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
+import { useEffect, useRef } from "react";
 
 export function Workbench() {
-    // Todo: Attach token usage to all the assistant responses
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const { actions, messageHistory } = useProjectStore(
         useShallow(state => ({
             actions: state.actions,
             messageHistory: state.messageHistory
         }))
     );
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messageHistory]); // Scroll when messages change
+
     const filteredMessageHistory = messageHistory.filter(
-        message => message.role === 'user' || message.role === 'assistant' 
+        message => message.role === 'user' || message.role === 'assistant'
     );
+
     return (
         <div style={{ scrollbarWidth: 'none' }} className="h-[75vh] overflow-y-auto space-y-3">
             {filteredMessageHistory.map((message) =>
@@ -29,6 +40,7 @@ export function Workbench() {
                         actions={actions.get(message.id) || []}
                     />
             )}
+            <div className="w-0 h-0" ref={messagesEndRef} />
         </div>
     );
 }

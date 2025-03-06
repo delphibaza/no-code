@@ -11,7 +11,7 @@ import { FolderComponent } from "./FolderComponent";
 
 function RenderStructure({ files }: { files: Folders[] }) {
     return (
-        <div style={{ scrollbarWidth: "thin" }} className="md:max-h-[55vh] overflow-y-auto">
+        <div style={{ scrollbarWidth: 'none' }} className="md:max-h-[60vh] overflow-y-auto">
             {files.map((file) => {
                 if (file.type === "folder") {
                     return (
@@ -43,9 +43,9 @@ export function FileExplorer() {
     );
     const folders = buildHierarchy(projectFiles);
     return (
-        <div className="grid grid-cols-10">
-            <div className="col-span-2 bg-secondary rounded-sm flex flex-col">
-                <div className="text-sm p-2 border-b-2 mb-2 flex items-center justify-between">
+        <div className="grid grid-cols-10 border">
+            <div className="col-span-2 bg-primary-foreground rounded-sm flex flex-col">
+                <div className="text-sm p-2 border-b flex items-center justify-between">
                     <div className="flex items-center gap-x-1">
                         <FolderIcon className="h-4" />
                         Files

@@ -22,7 +22,7 @@ export const ShellActionDisplay = memo(({ action }: { action: ShellActionState }
                 {ACTION_ICONS[action.state]}
                 <div>{getCommandText(action.command)}</div>
             </div>
-            <code className="px-3 py-4 rounded-md bg-gray-100 text-gray-800 text-sm">
+            <code className="px-3 py-4 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm">
                 {action.command}
             </code>
         </div>
@@ -40,7 +40,7 @@ export const FileActionDisplay = memo(({ action }: { action: FileActionState }) 
             ) : (
                 <Check className="h-4 w-4 text-green-500" />
             )}
-            <div>
+            <div className="flex-1">
                 {isCreatingAction ? 'Create ' : 'Update '}
                 {action.filePath}
             </div>

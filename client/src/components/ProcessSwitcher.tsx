@@ -23,10 +23,10 @@ export function ProcessSwitcher() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center rounded-full gap-2 text-muted-foreground hover:text-foreground"
+                className="flex items-center rounded-md gap-2 text-muted-foreground hover:text-foreground"
             >
                 <Unplug className="h-3 w-3" />
-                {activePreview.port}
+                <span className="text-xs">{activePreview.port}</span>
                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
 
@@ -45,7 +45,7 @@ export function ProcessSwitcher() {
                                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 }`}
                         >
-                            {preview.port}
+                            <span className="text-xs">{preview.port}</span>
                         </div>
                     ))}
                 </div>
