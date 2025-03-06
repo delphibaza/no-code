@@ -4,6 +4,7 @@ import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
 
 export function Workbench() {
+    // Todo: Attach token usage to all the assistant responses
     const { actions, messageHistory } = useProjectStore(
         useShallow(state => ({
             actions: state.actions,

@@ -32,11 +32,15 @@ export function useInitProject(
             setSelectedFile: state.setSelectedFile,
         }))
     );
-    const { addAction,
+    const { refreshProjects,
+        addAction,
         upsertMessage,
-        setCurrentMessageId
+        setCurrentMessageId,
+        setRefreshProjects,
     } = useProjectStore(
         useShallow(state => ({
+            refreshProjects: state.refreshProjects,
+            setRefreshProjects: state.setRefreshProjects,
             addAction: state.addAction,
             upsertMessage: state.upsertMessage,
             setCurrentMessageId: state.setCurrentMessageId,
@@ -136,6 +140,7 @@ export function useInitProject(
             }
         } finally {
             setInitializingProject(false);
+            setRefreshProjects(!refreshProjects);
         }
     }
 

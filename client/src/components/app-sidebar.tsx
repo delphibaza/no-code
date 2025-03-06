@@ -30,10 +30,11 @@ export function AppSidebar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { setOpen } = useSidebar();
-  const { setProjects } = useProjectStore(
+  const { refreshProjects, setProjects } = useProjectStore(
     useShallow((state) => ({
       projects: state.projects,
       currentProjectId: state.currentProjectId,
+      refreshProjects: state.refreshProjects,
       setProjects: state.setProjects,
       setCurrentProjectId: state.setCurrentProjectId,
     }))
@@ -55,7 +56,7 @@ export function AppSidebar() {
       }
     }
     fetchProjects();
-  }, []);
+  }, [refreshProjects]);
 
   useEffect(() => {
     const enterThreshold = 40;

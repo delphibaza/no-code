@@ -7,7 +7,7 @@ import MainLayout from "./components/MainLayout";
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <Routes>
           <Route element={<MainLayout />}>
             <Route index element={<Home />} />

@@ -4,14 +4,10 @@ export function Logo() {
     return (
         <div
             onClick={() => window.location.assign('/')}
-            className="flex items-center gap-x-2 cursor-pointer"
+            className="flex items-center gap-x-2 cursor-pointer text-lg"
         >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground">
-                <Sparkles className="size-5" />
-            </div>
-            <div className="leading-none">
-                <span className="font-semibold">NoCode</span>
-            </div>
+            <Sparkles className="h-6 w-6 text-primary" />
+            <span className="leading-none font-semibold">NoCode</span>
         </div>
     );
 }
