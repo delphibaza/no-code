@@ -23,6 +23,7 @@ import { SearchForm } from "./search-form";
 import SubscriptionDialog from "./subscription-dialog";
 import { ModeToggle } from "./ui/mode-toggle";
 import { NavProjects } from "./ui/nav-projects";
+import { NavSettings } from "./nav-settings";
 
 export function AppSidebar() {
   const [isLoading, setIsLoading] = useState(true);
@@ -116,6 +117,11 @@ export function AppSidebar() {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <NavSettings />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <ModeToggle />

@@ -20,10 +20,11 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { terminal, setShellProcess } = useGeneralStore(
+    const { terminal, setShellProcess, reasoning } = useGeneralStore(
         useShallow(state => ({
             terminal: state.terminal,
-            setShellProcess: state.setShellProcess
+            setShellProcess: state.setShellProcess,
+            reasoning: state.reasoning
         }))
     );
     const { webContainer } = usePreviewStore(
@@ -59,7 +60,8 @@ export default function ProjectInfo() {
     const { messages, input, setInput, error, isLoading, stop, reload, setMessages } = useChat({
         api: `${API_URL}/api/chat`,
         body: {
-            projectId: params.projectId
+            projectId: params.projectId,
+            reasoning
         },
         fetch: customFetch,
         sendExtraMessageFields: true,

@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { formatNumber } from "@/lib/formatterHelpers";
@@ -143,15 +144,20 @@ export const ChatInput = memo(({
                     }}
                 />
             </motion.div>
-            <Button
-                size="sm"
-                variant="ghost"
-                disabled={enhancing}
-                onClick={handleEnhancePrompt}
-                className="absolute left-3 bottom-3 border-sky-400 dark:border-sky-600 text-sky-700 dark:text-sky-400"
-            >
-                <WandSparkles className="size-4" />
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger
+                        disabled={enhancing}
+                        onClick={handleEnhancePrompt}
+                        className="absolute left-5 bottom-4 border-sky-400 dark:border-sky-600 text-sky-700 dark:text-sky-400"
+                    >
+                        <WandSparkles className="size-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Enhance prompt</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             {activeButton && (
                 <Button
                     size="sm"
