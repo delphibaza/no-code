@@ -123,11 +123,13 @@ Can you help me create a JavaScript function to calculate the factorial of a num
     "initialContext": "Certainly, I can help you create a JavaScript function to calculate the factorial of a number.",
     "actions": [
       {
+        "id": 0,
         "type": "file",
         "filePath": "index.js",
         "content": "function factorial(n) {\n  if (n === 0) {\n    return 1;\n  }\n  return n * factorial(n - 1);\n}\n"
       },
       {
+        "id": 1,
         "type": "shell",
         "command": "node index.js"
       }
@@ -148,20 +150,18 @@ Build a snake game
     "initialContext": "Certainly! I'd be happy to help you build a snake game using JavaScript and HTML5 Canvas. This will be a basic implementation that you can later expand upon. Let's create the game step by step.",
     "actions": [
       {
-        "type": "file",
-        "filePath": "package.json",
-        "content": "{\n  \"name\": \"snake\",\n  \"scripts\": {\n    \"dev\": \"vite\"\n  }\n}"
-      },
-      {
+        "id": 0,
         "type": "shell",
         "command": "npm install"
       },
       {
+        "id": 1,
         "type": "file",
         "filePath": "index.html",
         "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Snake Game</title>\n</head>\n<body>\n  <canvas id=\"gameCanvas\" width=\"800\" height=\"600\"></canvas>\n  <script src=\"./src/index.js\"></script>\n</body>\n</html>"
       },
       {
+        "id": 2,
         "type": "shell",
         "command": "npm run dev"
       }
@@ -182,35 +182,30 @@ Make a bouncing ball with real gravity using React
     "initialContext": "Certainly! I'll create a bouncing ball with real gravity using React. We'll use the react-spring library for physics-based animations.",
     "actions": [
       {
+        "id": 0,
         "type": "file",
         "filePath": "package.json",
         "content": "{\n  \"name\": \"bouncing-ball\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"react-spring\": \"^9.7.1\"\n  },\n  \"devDependencies\": {\n    \"@types/react\": \"^18.0.28\",\n    \"@types/react-dom\": \"^18.0.11\",\n    \"@vitejs/plugin-react\": \"^3.1.0\",\n    \"vite\": \"^4.2.0\"\n  }\n}"
       },
       {
+        "id": 1,
         "type": "shell",
         "command": "npm install"
       },
       {
-        "type": "file",
-        "filePath": "index.html",
-        "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Bouncing Ball</title>\n</head>\n<body>\n  <div id=\"root\"></div>\n  <script type=\"module\" src=\"./src/main.jsx\"></script>\n</body>\n</html>"
-      },
-      {
+        "id": 2,
         "type": "file",
         "filePath": "src/main.jsx",
         "content": "import React from 'react';\nimport ReactDOM from 'react-dom';\nimport App from './App';\n\nReactDOM.render(<App />, document.getElementById('root'));"
       },
       {
-        "type": "file",
-        "filePath": "src/index.css",
-        "content": "body {\n  margin: 0;\n  padding: 0;\n  overflow: hidden;\n}\n"
-      },
-      {
+        "id": 3,
         "type": "file",
         "filePath": "src/App.jsx",
         "content": "import React, { useState } from 'react';\nimport { useSpring, animated } from 'react-spring';\n\nconst App = () => {\n  const [key, set] = useState(1);\n  const { y } = useSpring({ from: { y: 0 }, to: { y: 100 }, config: { duration: 1000 }, reset: true, onRest: () => set(key + 1) });\n\n  return (\n    <animated.div style={{ y }}>\n      <div style={{ width: 50, height: 50, backgroundColor: 'red', borderRadius: '50%' }} />\n    </animated.div>\n  );\n};\n\nexport default App;"
       },
       {
+        "id": 4,
         "type": "shell",
         "command": "npm run dev"
       }

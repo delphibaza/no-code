@@ -6,7 +6,7 @@ import { devtools } from "zustand/middleware";
 import { usePreviewStore } from "./previewStore";
 
 interface FilesStore {
-    projectFiles: FileAction[];
+    projectFiles: Omit<FileAction, 'id' | 'type'>[];
     modifiedFiles: Set<string>;  // Track modified file paths
     originalContent: Map<string, string>;  // Store original content for reset
     selectedFile: string | null;
@@ -16,7 +16,7 @@ interface FilesStore {
     // Actions
     updateFile: (filePath: string, content: string) => void;
     setSelectedFile: (filePath: string) => void;
-    updateProjectFiles: (files: FileAction[]) => void;
+    updateProjectFiles: (files: (Omit<FileAction, 'id' | 'type'>)[]) => void;
     setIgnorePatterns: (patterns: string[]) => void;
     markFileAsModified: (filePath: string) => void;
     resetFile: (filePath: string) => void;
@@ -50,10 +50,9 @@ export const useFilesStore = create<FilesStore>()(
                     const newFiles = state.projectFiles.map(file =>
                         file.filePath === filePath ? {
                             ...file,
-                            content: content,
-                            timestamp: Date.now()
+                            content: content
                         } : file
-                    );
+                    ) as (Omit<FileAction, 'id' | 'type'>)[];
 
                     // Mark file as modified
                     state.modifiedFiles.add(filePath);
@@ -88,10 +87,9 @@ export const useFilesStore = create<FilesStore>()(
                     const newFiles = state.projectFiles.map(file =>
                         file.filePath === filePath ? {
                             ...file,
-                            content: originalContent,
-                            timestamp: Date.now()
+                            content: originalContent
                         } : file
-                    );
+                    ) as (Omit<FileAction, 'id' | 'type'>)[];
 
                     const newModifiedFiles = new Set(state.modifiedFiles);
                     newModifiedFiles.delete(filePath);

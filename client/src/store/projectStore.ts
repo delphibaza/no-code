@@ -23,8 +23,8 @@ interface ProjectState {
     upsertMessage: (message: MessageHistory) => void;
     setCurrentMessageId: (messageId: string) => void;
     addAction: (messageId: string, action: ActionState) => void;
-    getActionStatus: (actionId: string) => ActionState['state'] | null;
-    updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
+    getActionStatus: (actionId: number) => ActionState['state'] | null;
+    updateActionStatus: (messageId: string, actionId: number, status: ActionState['state']) => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -84,7 +84,7 @@ export const useProjectStore = create<ProjectState>()(
                 };
             }),
 
-        getActionStatus: (actionId: string) => {
+        getActionStatus: (actionId: number) => {
             const currentMessageId = get().currentMessageId;
             if (!currentMessageId) return null;
 

@@ -20,27 +20,27 @@ export type MessageHistory = {
     rawContent?: string;
     content: string;
 }
-export type BaseAction = {
-    id: string;
-    timestamp: number;
-}
-export type FileAction = BaseAction & {
+export type FileAction = {
+    id: number;
     type: 'file';
     filePath: string;
     content: string;
 }
-export type ShellAction = BaseAction & {
+export type ShellAction = {
+    id: number;
     type: 'shell';
     command: string;
 }
 export type FileState = "creating" | "created" | "updating" | "updated";
 export type ShellState = "queued" | "running" | "completed" | "error";
-export type FileActionState = BaseAction & {
+export type FileActionState = {
+    id: number;
     type: 'file';
     filePath: string;
     state: FileState;
 }
-export type ShellActionState = BaseAction & {
+export type ShellActionState = {
+    id: number;
     type: 'shell';
     command: string;
     state: ShellState;
@@ -57,11 +57,11 @@ export interface Artifact {
     id: string;
     title: string;
     initialContext: string;
-    actions: (Pick<FileAction, 'type' | 'filePath' | 'content'> | Pick<ShellAction, 'type' | 'command'>)[]; // Actions with no id and timestamp
+    actions: (FileAction | ShellAction)[];
     endingContext: string;
 }
 export type ExistingProject = {
-    projectFiles: (File & BaseAction)[]; // File with id and timestamp
+    projectFiles: (File & FileAction)[]; // File with id and timestamp
     messages: {
         id: string;
         role: Exclude<Role, 'data'>;

@@ -1,34 +1,36 @@
-import { File, FileAction, ShellAction, MessageHistory, ExistingProject, Artifact } from "@repo/common/types";
+import { Artifact, ExistingProject, File, FileAction, MessageHistory, ShellAction } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
-import { chatHistoryMsg, isDevCommand, projectFilesMsg } from "./utils";
+import { chatHistoryMsg, projectFilesMsg } from "./prompts";
+import { isDevCommand } from "./utils";
 
 export function isNewFile(filePath: string, templateFiles: File[]) {
     return templateFiles.every(file => file.filePath !== filePath);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseActions(actions: any[]): (FileAction | ShellAction)[] {
+export function parseActions(actions: (Partial<FileAction> | Partial<ShellAction>)[]): (FileAction | ShellAction)[] {
     return actions.map(action => {
         if (action.type === 'file') {
             return {
+                id: action.id,
                 type: 'file',
                 filePath: action.filePath || '',
                 content: action.content || ''
-            }
+            } as FileAction;
         } else if (action.type === 'shell') {
             return {
+                id: action.id,
                 type: 'shell',
                 command: action.command || ''
-            }
+            } as ShellAction;
         }
         return null;
     })
         .filter(action => action !== null)
         .filter(action => action.type === 'file'
-            ? !!(action.type === 'file' && action.filePath && action.content)
-            : !!(action.type === 'shell' && action.command)
+            ? !!(action.id && action.filePath && action.content)
+            : !!(action.id && action.command)
         ) as (FileAction | ShellAction)[];
 }
 
@@ -126,12 +128,14 @@ export function getImportArtifact(messages: ExistingProject['messages']) {
         ? lastShellCommand
         : 'npm run dev';
 
-    const currentActions: (Pick<ShellAction, 'type' | 'command'>)[] = [
+    const currentActions: ShellAction[] = [
         {
+            id: 0,
             type: 'shell',
             command: 'npm install',
         },
         {
+            id: 1,
             type: 'shell',
             command: startCommand,
         }

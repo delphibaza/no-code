@@ -77,23 +77,9 @@ export function useMessageParser() {
         actionsStreamed: boolean,
         validActions: (FileAction | ShellAction)[]
     ) => {
-        if (!actionsStreamed) {
-            const lastStreamedAction = validActions.at(-2);
-            if (lastStreamedAction) {
-                setLastStreamedAction({
-                    ...lastStreamedAction,
-                    id: (validActions.length - 2).toString()
-                });
-            }
-        }
-        else {
-            const lastStreamedAction = validActions.at(-1);
-            if (lastStreamedAction) {
-                setLastStreamedAction({
-                    ...lastStreamedAction,
-                    id: (validActions.length - 1).toString()
-                });
-            }
+        const lastStreamedAction = actionsStreamed ? validActions.at(-1) : validActions.at(-2);
+        if (lastStreamedAction) {
+            setLastStreamedAction(lastStreamedAction);
         }
     }
 
@@ -101,10 +87,7 @@ export function useMessageParser() {
         if (validActions.length > 0) {
             const streamingAction = validActions.at(-1);
             if (streamingAction) {
-                setStreamingAction({
-                    ...streamingAction,
-                    id: (validActions.length - 1).toString()
-                });
+                setStreamingAction(streamingAction);
             }
         }
     }
@@ -125,12 +108,12 @@ export function useMessageParser() {
                 reasoning: message.reasoning,
                 timestamp: Date.now()
             });
-            setCurrentTab('code');
             const parsedMessage = parseMessage(trimmedJSON);
             if (!parsedMessage) {
                 return;
             }
             const validActions = parsedMessage.actions;
+            setCurrentTab('code');
             updateStore(validActions);
             handleStreamingAction(validActions);
             handleLastStreamedAction(parsedMessage.actionsStreamed, validActions);
@@ -146,7 +129,6 @@ export function useMessageParser() {
         if (streamingAction.type === 'file') {
             addAction(currentMessageId, {
                 id: streamingAction.id,
-                timestamp: streamingAction.timestamp,
                 type: 'file',
                 filePath: streamingAction.filePath,
                 state: isNewFile(streamingAction.filePath, projectFiles) ? 'creating' : 'updating'
@@ -171,7 +153,6 @@ export function useMessageParser() {
             } else if (lastStreamedAction.type === 'shell') {
                 addAction(currentMessageId, {
                     id: lastStreamedAction.id,
-                    timestamp: lastStreamedAction.timestamp,
                     type: 'shell',
                     state: 'queued',
                     command: lastStreamedAction.command
