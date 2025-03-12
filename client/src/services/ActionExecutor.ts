@@ -16,7 +16,7 @@ interface Dependencies {
     getShellProcess: () => WebContainerProcess | null;
     setCurrentTab: (tab: 'code' | 'preview') => void;
     getPreviewByPath: (path: string) => Preview | undefined;
-    updateActionStatus: (messageId: string, actionId: string, status: ActionState['state']) => void;
+    updateActionStatus: (messageId: string, actionId: number, status: ActionState['state']) => void;
 }
 type QueueItem = { messageId: string, action: FileAction | ShellAction };
 class ActionExecutor {

@@ -5,11 +5,10 @@ import useFetch from "@/hooks/useFetch";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { constructMessages, startShell } from "@/lib/runtime";
+import { constructMessages } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
 import { useFilesStore } from "@/store/filesStore";
 import { useGeneralStore } from "@/store/generalStore";
-import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
@@ -20,16 +19,10 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { terminal, setShellProcess, reasoning } = useGeneralStore(
+    const { terminal, reasoning } = useGeneralStore(
         useShallow(state => ({
             terminal: state.terminal,
-            setShellProcess: state.setShellProcess,
             reasoning: state.reasoning
-        }))
-    );
-    const { webContainer } = usePreviewStore(
-        useShallow(state => ({
-            webContainer: state.webContainer
         }))
     );
     const { customFetch } = useFetch();
@@ -83,24 +76,11 @@ export default function ProjectInfo() {
     const { initializeProject, initializingProject } = useInitProject(setMessages, reload);
 
     useEffect(() => {
-        if (!params.projectId) return;
-        setCurrentProjectId(params.projectId);
-        initializeProject(params.projectId);
-    }, [params.projectId]);
-
-    useEffect(() => {
-        async function initializeShell() {
-            if (!webContainer || !terminal) return;
-            try {
-                const process = await startShell(terminal, webContainer);
-                setShellProcess(process);
-            } catch (error) {
-                terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
-                setShellProcess(null);
-            }
+        if (params.projectId && terminal) {
+            setCurrentProjectId(params.projectId);
+            initializeProject(params.projectId);
         }
-        initializeShell();
-    }, [webContainer, terminal]);
+    }, [params.projectId, terminal]);
 
     const handleNewMessage = useMessageParser();
 

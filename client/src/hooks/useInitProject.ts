@@ -1,12 +1,14 @@
 import { getWebContainer } from "@/config/webContainer";
 import { API_URL } from "@/lib/constants";
-import { getImportArtifact, mountFiles } from "@/lib/runtime";
-import { customToast, projectFilesMsg, projectInstructionsMsg } from "@/lib/utils";
+import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
+import { getImportArtifact, mountFiles, startShell } from "@/lib/runtime";
+import { customToast } from "@/lib/utils";
 import { actionExecutor } from "@/services/ActionExecutor";
 import { useFilesStore } from "@/store/filesStore";
+import { useGeneralStore } from "@/store/generalStore";
 import { usePreviewStore } from "@/store/previewStore";
 import { useProjectStore } from "@/store/projectStore";
-import { Artifact, ExistingProject, FileAction, NewProject, ShellAction } from "@repo/common/types";
+import { Artifact, ExistingProject, NewProject } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import { Message } from 'ai/react';
 import { useState } from "react";
@@ -19,6 +21,12 @@ export function useInitProject(
 ) {
     const [initializingProject, setInitializingProject] = useState(false);
     const { authenticatedFetch } = useFetch();
+    const { terminal, setShellProcess } = useGeneralStore(
+        useShallow(state => ({
+            terminal: state.terminal,
+            setShellProcess: state.setShellProcess
+        }))
+    );
     const { webContainer, setWebContainer } = usePreviewStore(
         useShallow(state => ({
             webContainer: state.webContainer,
@@ -45,6 +53,16 @@ export function useInitProject(
             setCurrentMessageId: state.setCurrentMessageId,
         }))
     );
+    async function initializeShell(webContainer: WebContainer) {
+        if (!terminal) return;
+        try {
+            const process = await startShell(terminal, webContainer);
+            setShellProcess(process);
+        } catch (error) {
+            terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
+            setShellProcess(null);
+        }
+    }
     async function initializeProject(projectId: string) {
         let container = webContainer;
         try {
@@ -53,6 +71,7 @@ export function useInitProject(
                 container = await getWebContainer();
                 setWebContainer(container);
             }
+            await initializeShell(container);
             const result = await authenticatedFetch(`${API_URL}/api/project/${projectId}`);
             const { messages, projectFiles } = result as ExistingProject;
             messages.forEach(message => {
@@ -75,21 +94,10 @@ export function useInitProject(
                         timestamp: new Date(message.createdAt).getTime()
                     });
                     assistantContent.artifact.actions.forEach(action => {
-                        const currentAction: FileAction | ShellAction = {
-                            id: crypto.randomUUID(),
-                            timestamp: Date.now(),
-                            ...action
-                        };
-                        if (currentAction.type === 'file') {
-                            addAction(message.id, {
-                                state: 'created',
-                                ...currentAction
-                            });
+                        if (action.type === 'file') {
+                            addAction(message.id, { state: 'created', ...action });
                         } else if (action.type === 'shell') {
-                            addAction(message.id, {
-                                state: 'completed',
-                                ...currentAction
-                            });
+                            addAction(message.id, { state: 'completed', ...action });
                         }
                     });
                 }
@@ -104,22 +112,14 @@ export function useInitProject(
                 content: JSON.stringify({ artifact: artifact })
             });
             await mountFiles(projectFiles, container);
-            updateProjectFiles(projectFiles.map(file => ({
-                type: 'file',
-                ...file,
-            })));
+            updateProjectFiles(projectFiles);
             setSelectedFile(projectFiles[0]?.filePath ?? '');
             currentActions.forEach(action => {
-                const currentAction: ShellAction = {
-                    id: crypto.randomUUID(),
-                    timestamp: Date.now(),
-                    ...action
-                }
                 addAction(currentMessageId, {
                     state: 'queued',
-                    ...currentAction
+                    ...action
                 });
-                actionExecutor.addAction(currentMessageId, currentAction);
+                actionExecutor.addAction(currentMessageId, action);
             });
         } catch (error) {
             if (error instanceof Error && error.message.includes("Project has not been initialized")) {
@@ -167,12 +167,7 @@ export function useInitProject(
             timestamp: Date.now()
         });
         // Add files to project store
-        updateProjectFiles(templateFiles.map(file => ({
-            id: crypto.randomUUID(),
-            type: 'file',
-            timestamp: Date.now(),
-            ...file,
-        })));
+        updateProjectFiles(templateFiles);
         await mountFiles(templateFiles, container);
         setCurrentMessageId(crypto.randomUUID());
         reload();
