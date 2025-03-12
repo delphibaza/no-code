@@ -44,11 +44,10 @@ export function useMessageParser() {
     const parseMessage = (content: string) => {
         try {
             const parsedData = parse(content);
-            if (!parsedData?.artifact) return null;
-
+            if (!parsedData?.artifact || !parsedData.artifact.actions) return null;
             return {
-                actions: parseActions(parsedData.artifact.actions ?? []),
-                actionsStreamed: !!(parsedData.artifact.endingContext)
+                actions: parseActions(parsedData.artifact.actions),
+                actionsStreamed: !!(parsedData.artifact?.endingContext)
             };
         } catch (error) {
             console.error('Failed to parse message:', error);

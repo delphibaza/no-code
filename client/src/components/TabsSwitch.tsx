@@ -96,7 +96,7 @@ export function TabsSwitch({ initializingProject }: { initializingProject: boole
                 </div>
 
                 {/* Terminal (only visible in code tab) */}
-                <div className={`${currentTab === 'code' ? 'block' : 'hidden'}`}>
+                <div className={`overflow-hidden h-[20vh] ${currentTab === 'code' ? 'block' : 'hidden'}`}>
                     <Terminal onTerminalReady={setTerminal} />
                 </div>
             </div>

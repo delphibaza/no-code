@@ -57,7 +57,6 @@ export const Terminal = memo(({ className, onTerminalReady, onTerminalResize, re
         <div className={
             cn(className,
                 'border-x px-4 pt-2 pb-4',
-                'overflow-x-hidden overflow-y-scroll h-[20vh]',
                 getLightOrDarkTheme(theme) === 'dark' ? 'bg-black' : 'bg-white'
             )}
             ref={terminalElementRef}

@@ -11,27 +11,23 @@ export function isNewFile(filePath: string, templateFiles: File[]) {
 
 export function parseActions(actions: (Partial<FileAction> | Partial<ShellAction>)[]): (FileAction | ShellAction)[] {
     return actions.map(action => {
-        if (action.type === 'file') {
+        if (action.type === 'file' && (action.id || action.id === 0) && action.filePath && action.content) {
             return {
                 id: action.id,
                 type: 'file',
-                filePath: action.filePath || '',
-                content: action.content || ''
+                filePath: action.filePath,
+                content: action.content
             } as FileAction;
-        } else if (action.type === 'shell') {
+        } else if (action.type === 'shell' && (action.id || action.id === 0) && action.command) {
             return {
                 id: action.id,
                 type: 'shell',
-                command: action.command || ''
+                command: action.command
             } as ShellAction;
         }
         return null;
     })
-        .filter(action => action !== null)
-        .filter(action => action.type === 'file'
-            ? !!(action.id && action.filePath && action.content)
-            : !!(action.id && action.command)
-        ) as (FileAction | ShellAction)[];
+        .filter(action => action !== null) as (FileAction | ShellAction)[];
 }
 
 export async function startShell(terminal: XTerm, webContainer: WebContainer) {

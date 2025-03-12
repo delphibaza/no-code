@@ -71,17 +71,15 @@ export function getTerminalTheme(theme: Theme) {
     background: '#ffffff',
     cursor: '#000000',
     cursorAccent: '#000000',
-    selectionBackground: '#000000',
-    selectionForeground: '#000000',
-    selectionInactiveBackground: '#000000',
+    selectionBackground: '#edebeb',
+    selectionInactiveBackground: '#ffffff',
   };
   const darkTheme = {
     foreground: '#ffffff',
     background: '#000000',
     cursor: '#ffffff',
     cursorAccent: '#ffffff',
-    selectionBackground: '#000000',
-    selectionForeground: '#000000',
+    selectionBackground: '#666666',
     selectionInactiveBackground: '#000000',
   };
   const darkOrLight = getLightOrDarkTheme(theme);
