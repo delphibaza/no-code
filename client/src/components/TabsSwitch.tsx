@@ -1,3 +1,4 @@
+import { customToast } from "@/lib/utils";
 import { useFilesStore } from "@/store/filesStore";
 import { useGeneralStore } from "@/store/generalStore";
 import { useProjectStore } from "@/store/projectStore";
@@ -7,15 +8,16 @@ import { useShallow } from "zustand/react/shallow";
 import { FileExplorer } from "./FileExplorer";
 import { Preview } from "./Preview";
 import { Terminal } from "./Terminal";
+import { TerminalSwitcher } from "./TerminalSwitcher";
 import { Button } from "./ui/button";
-import { customToast } from "@/lib/utils";
 
 export function TabsSwitch({ initializingProject }: { initializingProject: boolean }) {
-    const { setTerminal, currentTab, setCurrentTab } = useGeneralStore(
+    const { setTerminal, currentTab, setCurrentTab, activeTerminalType } = useGeneralStore(
         useShallow(state => ({
             setTerminal: state.setTerminal,
             currentTab: state.currentTab,
-            setCurrentTab: state.setCurrentTab
+            setCurrentTab: state.setCurrentTab,
+            activeTerminalType: state.activeTerminalType
         }))
     );
     const { currentProjectId } = useProjectStore(
@@ -95,9 +97,15 @@ export function TabsSwitch({ initializingProject }: { initializingProject: boole
                     <Preview />
                 </div>
 
-                {/* Terminal (only visible in code tab) */}
-                <div className={`overflow-hidden h-[20vh] ${currentTab === 'code' ? 'block' : 'hidden'}`}>
-                    <Terminal onTerminalReady={setTerminal} />
+                {/* Terminal section with switcher */}
+                <div className={`${currentTab === 'code' ? 'block' : 'hidden'}`}>
+                    <TerminalSwitcher />
+                    <div className={`h-[15vh] overflow-hidden border rounded`}>
+                        <Terminal
+                            key={`terminal-${activeTerminalType}`}
+                            onTerminalReady={(terminal) => setTerminal(terminal, activeTerminalType)}
+                        />
+                    </div>
                 </div>
             </div>
         </>

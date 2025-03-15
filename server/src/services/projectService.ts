@@ -5,9 +5,15 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { STARTER_TEMPLATES } from "../constants";
 import { enhancerPrompt } from "../prompts/enhancerPrompt";
-import { getTemplates, parseSelectedTemplate, starterTemplateSelectionPrompt } from "../prompts/starterTemplateSelection";
+import { parseSelectedTemplate, starterTemplateSelectionPrompt } from "../prompts/starterTemplateSelection";
 import { selectorModel } from "../providers";
-import { ApplicationError } from "../utils";
+import { getTemplate } from "../utils/getTemplate";
+import { ApplicationError } from "../utils/timeHeplers";
+
+export interface TemplateInfo {
+    name: string;
+    type: 'frontend' | 'backend';
+}
 
 export const createProject = async (name: string, userId: string) => {
     return await prisma.project.create({
@@ -56,23 +62,78 @@ export const getProject = async (projectId: string) => {
     });
 };
 
-export const getTemplateData = async (templateName: string): Promise<Template> => {
-    const templatePath = path.join(__dirname, 'cache', `${templateName}.json`);
+export const getTemplateData = async (templateNames: TemplateInfo[]): Promise<Template> => {
+    let combinedTemplateData: Template = {
+        templateFiles: [],
+        ignorePatterns: [],
+        templatePrompt: ''
+    };
 
-    try {
-        // Try to read from cache first
-        await fs.access(templatePath);
-        const data = await fs.readFile(templatePath, 'utf8');
-        return JSON.parse(data);
-    } catch {
-        // If cache read fails, fetch from GitHub
-        const temResp = await getTemplates(templateName);
-        if (!temResp) {
-            throw new Error("Unable to initialize the project. Please try again with a different prompt.");
+    const needsFrontendBackendSplit = templateNames.length > 1;
+
+    // Process each template (either from cache or GitHub)
+    for (const template of templateNames) {
+        let templateData: Template | null = null;
+
+        // Try to get template from cache
+        try {
+            const templatePath = path.join(__dirname, 'cache', `${template.name}.json`);
+            await fs.access(templatePath);
+            const data = await fs.readFile(templatePath, 'utf8');
+            templateData = JSON.parse(data) as Template;
+        } catch {
+            // If not in cache, fetch from GitHub
+            templateData = await getTemplate(template.name);
+            if (!templateData) {
+                throw new Error("Unable to initialize the project. Please try again with a different prompt.");
+            }
         }
-        return temResp;
+
+        // Merge template data with appropriate prefixes
+        mergeTemplateData(combinedTemplateData, templateData, template.type, needsFrontendBackendSplit);
     }
+
+    return combinedTemplateData;
 };
+
+/**
+ * Merges template data into the combined template with appropriate prefixes
+ */
+function mergeTemplateData(
+    combinedTemplate: Template,
+    templateToMerge: Template,
+    templateType: 'frontend' | 'backend' | 'fullstack',
+    needsFrontendBackendSplit: boolean
+): void {
+    // Determine folder prefix
+    const folderPrefix = needsFrontendBackendSplit ?
+        (templateType === 'backend' ? 'backend' : 'frontend') :
+        '';
+
+    // Add files with proper path prefixes
+    combinedTemplate.templateFiles.push(...templateToMerge.templateFiles.map(file => ({
+        ...file,
+        filePath: addPrefixIfNeeded(file.filePath, folderPrefix)
+    })));
+
+    // Add ignore patterns with proper path prefixes
+    combinedTemplate.ignorePatterns.push(...templateToMerge.ignorePatterns.map(pattern =>
+        addPrefixIfNeeded(pattern, folderPrefix)
+    ));
+
+    // Append template prompt
+    combinedTemplate.templatePrompt +=
+        (combinedTemplate.templatePrompt ? '\n\n' : '') +
+        (needsFrontendBackendSplit ? templateType + ' template prompt:\n' : '') +
+        templateToMerge.templatePrompt;
+}
+
+/**
+ * Adds a prefix to a path if needed
+ */
+function addPrefixIfNeeded(path: string, prefix: string): string {
+    return prefix ? `${prefix}/${path}` : path;
+}
 
 export async function validateProjectOwnership(projectId: string, userId: string) {
     const project = await prisma.project.findUnique({
@@ -91,13 +152,6 @@ export async function validateProjectOwnership(projectId: string, userId: string
     return project;
 }
 
-/**
-* Creates project files from template files
-* 
-* @param {string} projectId - Project identifier
-* @param {Array} templateFiles - Array of template file objects
-* @returns {Promise<void>}
-*/
 export async function createProjectFiles(projectId: string, templateFiles: Template['templateFiles']) {
     await prisma.file.createMany({
         data: templateFiles.map(file => ({
@@ -108,12 +162,6 @@ export async function createProjectFiles(projectId: string, templateFiles: Templ
     });
 }
 
-/**
- * Selects an appropriate template based on the enhanced prompt
- * 
- * @param {string} enhancedPrompt - The enhanced project description
- * @returns {Promise<Object>} Selected template info and token usage
- */
 export async function selectTemplate(enhancedPrompt: string) {
     const { text: templateXML, finishReason, usage } = await generateText({
         model: selectorModel,
@@ -121,26 +169,27 @@ export async function selectTemplate(enhancedPrompt: string) {
         prompt: enhancedPrompt
     });
 
-    // Then in your error handling:
     if (finishReason !== 'stop') {
         throw new ApplicationError("Error occurred while creating the project", 'TEMPLATE_ERROR');
     }
 
-    const { templateName, projectTitle } = parseSelectedTemplate(templateXML);
+    const { frontendTemplate, backendTemplate, projectTitle } = parseSelectedTemplate(templateXML);
 
-    if (!templateName) {
+    if (!frontendTemplate && !backendTemplate) {
         throw new ApplicationError("Error occurred while identifying a template", 'TEMPLATE_ERROR');
     }
 
-    return { templateName, projectTitle, usage };
+    const templates = [{
+        name: frontendTemplate,
+        type: 'frontend' as const
+    }, {
+        name: backendTemplate,
+        type: 'backend' as const
+    }].filter((t): t is TemplateInfo => t.name !== null);
+
+    return { templates, projectTitle, usage };
 }
 
-/**
-* Enhances the project prompt using the selector model
-* 
-* @param {string} projectName - Original project name/prompt
-* @returns {Promise<Object>} Enhanced prompt and token usage
-*/
 export async function enhanceProjectPrompt(projectName: string) {
     const { text, finishReason, usage } = await generateText({
         model: selectorModel,

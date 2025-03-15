@@ -11,7 +11,7 @@ import { getSystemPrompt } from "../prompts/systemPrompt";
 import { coderModel, google2FlashModel } from "../providers";
 import { enhanceProjectPrompt, validateProjectOwnership } from "../services/projectService";
 import { checkLimits, updateSubscription } from "../services/subscriptionService";
-import { ApplicationError, getDaysBetweenDates } from "../utils";
+import { ApplicationError, getDaysBetweenDates } from "../utils/timeHeplers";
 
 const router = express.Router();
 
@@ -185,7 +185,6 @@ router.post('/enhance-prompt', async (req, res) => {
 });
 
 router.get('/subscription', resetLimits, async (req, res) => {
-
     if (!req.plan) {
         res.status(403).json({ msg: "Unable to get token limits for the user" });
         return;

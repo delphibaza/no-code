@@ -19,7 +19,7 @@ export function buildHierarchy(files: File[]): Folders[] {
                     type: "file",
                     name: part,
                     content,
-                    filePath: currentPath
+                    filePath: filePath // Keep the original full path for file operations
                 });
             } else {
                 // Ensure the folder exists and add its path

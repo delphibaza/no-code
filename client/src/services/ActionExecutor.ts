@@ -12,8 +12,8 @@ interface Dependencies {
     addPreview: (preview: Omit<Preview, 'id'>) => string;
     setActivePreviewId: (id: string | null) => void;
     getWebContainer: () => WebContainer | null;
-    getTerminal: () => Terminal | null;
-    getShellProcess: () => WebContainerProcess | null;
+    getActiveTerminal: () => Terminal | null;
+    getActiveShellProcess: () => WebContainerProcess | null;
     setCurrentTab: (tab: 'code' | 'preview') => void;
     getPreviewByPath: (path: string) => Preview | undefined;
     updateActionStatus: (messageId: string, actionId: number, status: ActionState['state']) => void;
@@ -47,8 +47,8 @@ class ActionExecutor {
             while (this.actionQueue.length > 0) {
                 const item = this.actionQueue[0]; // Peek at the next action
                 const webContainer = this.deps.getWebContainer();
-                const terminal = this.deps.getTerminal();
-                const shellProcess = this.deps.getShellProcess();
+                const terminal = this.deps.getActiveTerminal();
+                const shellProcess = this.deps.getActiveShellProcess();
 
                 if (!webContainer || !terminal || !shellProcess) {
                     // push the action back to the queue
@@ -172,9 +172,9 @@ export const actionExecutor = new ActionExecutor({
     getWebContainer: () => usePreviewStore.getState().webContainer,
     addPreview: (preview) => usePreviewStore.getState().addPreview(preview),
     setActivePreviewId: (id) => usePreviewStore.getState().setActivePreviewId(id),
-    getTerminal: () => useGeneralStore.getState().terminal,
-    getShellProcess: () => useGeneralStore.getState().shellProcess,
+    getActiveTerminal: () => useGeneralStore.getState().getActiveTerminal(),
+    getActiveShellProcess: () => useGeneralStore.getState().getActiveShellProcess(),
     setCurrentTab: (tab) => useGeneralStore.getState().setCurrentTab(tab),
     getPreviewByPath: (path) => usePreviewStore.getState().getPreviewByPath(path),
     updateActionStatus: (messageId, actionId, status) => useProjectStore.getState().updateActionStatus(messageId, actionId, status)
-});      
+});

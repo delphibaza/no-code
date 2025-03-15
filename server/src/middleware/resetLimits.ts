@@ -1,7 +1,7 @@
 import prisma from '@repo/db/client';
 import { NextFunction, Request, Response } from 'express';
 import { getUserWithSubscription } from '../services/subscriptionService';
-import { setPlanData, shouldResetDaily, shouldResetMonthly } from '../utils';
+import { setPlanData, shouldResetDaily, shouldResetMonthly } from '../utils/timeHeplers';
 
 export async function resetLimits(req: Request, res: Response, next: NextFunction) {
     if (!req.auth.userId) {

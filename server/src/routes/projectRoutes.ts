@@ -4,9 +4,9 @@ import prisma from "@repo/db/client";
 import express, { Request, Response } from "express";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
-import { createProject, createProjectFiles, enhanceProjectPrompt, getProject, getTemplateData, selectTemplate } from "../services/projectService";
+import { createProject, createProjectFiles, enhanceProjectPrompt, getProject, getTemplateData, selectTemplate, TemplateInfo } from "../services/projectService";
 import { checkLimits, updateSubscription, updateTokenUsage } from "../services/subscriptionService";
-import { ApplicationError } from "../utils";
+import { ApplicationError } from "../utils/timeHeplers";
 
 const router = express.Router();
 
@@ -103,8 +103,8 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
         // Check the limits
         await updateTokenUsage(req.plan);
 
-        // Step 2: Select appropriate template based on the enhanced prompt
-        const { templateName, projectTitle, usage: templateUsage } = await selectTemplate(enhancedPrompt);
+        // Step 2: Select appropriate template(s) based on the enhanced prompt
+        const { templates, projectTitle, usage: templateUsage } = await selectTemplate(enhancedPrompt);
 
         // Update token usage and check limits
         req.plan.dailyTokensUsed += templateUsage.totalTokens;
@@ -113,7 +113,7 @@ router.post('/project/:projectId/generate', ensureUserExists, resetLimits, async
         await updateTokenUsage(req.plan);
 
         // Step 3: Get template data and create project files
-        const templateData = await getTemplateData(templateName);
+        const templateData = await getTemplateData(templates);
 
         if (project.files.length === 0) {
             await createProjectFiles(project.id, templateData.templateFiles);

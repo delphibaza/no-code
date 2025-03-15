@@ -21,8 +21,8 @@ export default function ProjectInfo() {
     const params = useParams();
     const { terminal, reasoning } = useGeneralStore(
         useShallow(state => ({
-            terminal: state.terminal,
-            reasoning: state.reasoning
+            reasoning: state.reasoning,
+            terminal: state.terminals.get(state.activeTerminalType)?.terminal || null
         }))
     );
     const { customFetch } = useFetch();

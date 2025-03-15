@@ -1,5 +1,3 @@
-import { Request } from 'express';
-
 export function getDateTenYearsFromNow(): Date {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();

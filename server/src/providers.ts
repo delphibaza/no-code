@@ -33,6 +33,12 @@ const openaiNineteen: ModelConfig = {
     apiKey: process.env.NINETEEN_API_KEY,
     baseURL: 'https://api.nineteen.ai/v1',
 };
+const openaiNovita: ModelConfig = {
+    provider: 'openai',
+    model: 'deepseek/deepseek-r1-turbo',
+    apiKey: process.env.NOVITA_API_KEY,
+    baseURL: 'https://api.novita.ai/v3/openai',
+};
 
 export const google2FlashModel = google('gemini-2.0-flash-001');
 
@@ -55,6 +61,6 @@ function getInstance(config: ModelConfig) {
 export const selectorModel = getInstance(openaiGROQ)(openaiGROQ.model as string);
 
 export const coderModel = wrapLanguageModel({
-    model: getInstance(openaiNineteen)(openaiNineteen.model as string),
+    model: getInstance(openaiNovita)(openaiNovita.model as string),
     middleware: extractReasoningMiddleware({ tagName: 'think' }),
 });

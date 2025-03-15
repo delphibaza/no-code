@@ -148,3 +148,8 @@ function _stripIndents(value: string) {
         .trimStart()
         .replace(/[\r\n]$/, '');
 }
+export interface TemplateResult {
+    templateFiles: Array<{ name: string; filePath: string; content: string }>;
+    ignorePatterns: string[];
+    templatePrompt: string;
+}
