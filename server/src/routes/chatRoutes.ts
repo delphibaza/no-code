@@ -8,7 +8,7 @@ import { MAX_TOKENS } from "../constants";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
-import { coderModel, google2FlashModel } from "../providers";
+import { coderModel, reasoningModel } from "../providers";
 import { enhanceProjectPrompt, validateProjectOwnership } from "../services/projectService";
 import { checkLimits, updateSubscription } from "../services/subscriptionService";
 import { ApplicationError, getDaysBetweenDates } from "../utils/timeHeplers";
@@ -44,7 +44,7 @@ router.post('/chat', ensureUserExists, resetLimits, async (req, res) => {
             execute: async dataStreamWriter => {
                 // dataStreamWriter.writeData('initialized call');
                 const result = streamText({
-                    model: reasoning ? coderModel : google2FlashModel,
+                    model: reasoning ? reasoningModel : coderModel,
                     system: getSystemPrompt(),
                     messages: messages,
                     experimental_transform: smoothStream(),

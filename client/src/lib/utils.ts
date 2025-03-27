@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { getSystemTheme, Theme } from "@/components/ui/theme-provider";
 import { FileAction } from "@repo/common/types";
 import { clsx, type ClassValue } from "clsx";
@@ -25,13 +26,20 @@ export const installCommands = ['npm install', 'yarn install', 'pnpm install', '
 
 export const devCommands = ['npm run dev', 'npm run start', 'npm start', 'yarn dev', 'yarn start', 'pnpm dev', 'pnpm start', 'pnpm run dev', 'pnpm run start'];
 
+export const buildCommands = ['npm run build', 'yarn build', 'pnpm build'];
+
 export function isInstallCommand(command: string) {
-  return installCommands.some(cmd => cmd === command)
+  return installCommands.some(cmd => cmd === command.trim());
 }
 
 export function isDevCommand(command: string) {
-  return devCommands.some(cmd => cmd === command)
+  return devCommands.some(cmd => cmd === command.trim());
 }
+
+export function isBuildCommand(command: string) {
+  return buildCommands.some(cmd => cmd === command.trim());
+}
+
 export const planDetails = {
   free: {
     name: "Free",
@@ -91,4 +99,32 @@ export function getTerminalTheme(theme: Theme) {
     default:
       return darkTheme;
   }
+}
+
+/**
+ * Cleans webcontainer URLs from stack traces to show relative paths instead
+ */
+export function cleanStackTrace(stackTrace: string): string {
+  // Function to clean a single URL
+  const cleanUrl = (url: string): string => {
+    const regex = /^https?:\/\/[^\/]+\.webcontainer-api\.io(\/.*)?$/;
+
+    if (!regex.test(url)) {
+      return url;
+    }
+
+    const pathRegex = /^https?:\/\/[^\/]+\.webcontainer-api\.io\/(.*?)$/;
+    const match = url.match(pathRegex);
+
+    return match?.[1] || '';
+  };
+
+  // Split the stack trace into lines and process each line
+  return stackTrace
+    .split('\n')
+    .map((line) => {
+      // Match any URL in the line that contains webcontainer-api.io
+      return line.replace(/(https?:\/\/[^\/]+\.webcontainer-api\.io\/[^\s\)]+)/g, (match) => cleanUrl(match));
+    })
+    .join('\n');
 }

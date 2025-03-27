@@ -3,7 +3,7 @@ import {
     SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { Outlet } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";

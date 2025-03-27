@@ -1,9 +1,9 @@
+import { webcontainer } from "@/config/webContainer";
 import { API_URL } from "@/lib/constants";
 import { mountFiles } from "@/lib/runtime";
 import { FileAction } from "@repo/common/types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { usePreviewStore } from "./previewStore";
 
 interface FilesStore {
     projectFiles: Omit<FileAction, 'id' | 'type'>[];
@@ -105,9 +105,9 @@ export const useFilesStore = create<FilesStore>()(
 
             saveModifiedFile: async (projectId: string, filePath: string) => {
                 const state = get();
-                const webContainer = usePreviewStore.getState().webContainer;
+                const globalWebContainer = await webcontainer;
 
-                if (!webContainer) {
+                if (!globalWebContainer) {
                     return { success: false, error: "WebContainer not initialized" };
                 }
 
@@ -118,7 +118,7 @@ export const useFilesStore = create<FilesStore>()(
 
                 try {
                     // Mount file to WebContainer
-                    await mountFiles(file, webContainer);
+                    await mountFiles(file, globalWebContainer);
 
                     // Save to backend
                     const response = await fetch(`${API_URL}/api/saveFiles`, {

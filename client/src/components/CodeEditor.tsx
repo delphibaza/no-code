@@ -1,8 +1,8 @@
 import { codeEditorOptions } from "@/config/codeEditorOptions";
 import { getLanguageExtension, SupportedLanguages } from "@/lib/getLanguageExtension";
 import { getLightOrDarkTheme } from "@/lib/utils";
-import { useFilesStore } from "@/store/filesStore";
-import { useGeneralStore } from "@/store/generalStore";
+import { useFilesStore } from "@/stores/files";
+import { useGeneralStore } from "@/stores/general";
 import { EditorView } from "@codemirror/view";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror";
@@ -21,9 +21,10 @@ function codeEditorTheme(theme: Theme) {
             return vscodeDark;
     }
 }
-export function CodeEditor({ code, language = 'javascript' }: {
+export function CodeEditor({ code, language = 'javascript', readonly }: {
     code: string,
-    language?: SupportedLanguages
+    language?: SupportedLanguages,
+    readonly: boolean
 }) {
     const { theme } = useTheme();
     const { wordWrap } = useGeneralStore(
@@ -53,10 +54,12 @@ export function CodeEditor({ code, language = 'javascript' }: {
         <CodeMirror
             ref={editorRef}
             value={code}
-            height="65vh"
+            // TODO: fix height
+            height="60vh"
             style={{
-                fontSize: '12px'
+                fontSize: '12px',
             }}
+            readOnly={readonly}
             theme={codeEditorTheme(theme)}
             extensions={[
                 getLanguageExtension(language),

@@ -1,6 +1,5 @@
 import { Artifact, ExistingProject, File, FileAction, MessageHistory, ShellAction } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
-import type { Terminal as XTerm } from "@xterm/xterm";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
 import { chatHistoryMsg, projectFilesMsg } from "./prompts";
 import { isDevCommand } from "./utils";
@@ -30,29 +29,6 @@ export function parseActions(actions: (Partial<FileAction> | Partial<ShellAction
         .filter(action => action !== null) as (FileAction | ShellAction)[];
 }
 
-export async function startShell(terminal: XTerm, webContainer: WebContainer) {
-    const args: string[] = [];
-    const process = await webContainer.spawn('/bin/jsh', ['--osc', ...args], {
-        terminal: {
-            cols: terminal.cols ?? 80,
-            rows: terminal.rows ?? 15,
-        },
-    });
-    process.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        })
-    );
-
-    const input = process.input.getWriter();
-    terminal.onData((data) => {
-        input.write(data);
-    });
-
-    return process;
-}
 export async function mountFiles(files: File | File[], webContainerInstance: WebContainer) {
     const filesArray = Array.isArray(files) ? files : [files];
     const hierarchy = buildHierarchy(filesArray);

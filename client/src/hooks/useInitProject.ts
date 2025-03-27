@@ -1,13 +1,11 @@
-import { getWebContainer } from "@/config/webContainer";
+import { webcontainer } from "@/config/webContainer";
 import { API_URL } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
-import { getImportArtifact, mountFiles, startShell } from "@/lib/runtime";
+import { getImportArtifact, mountFiles } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
-import { actionExecutor } from "@/services/ActionExecutor";
-import { useFilesStore } from "@/store/filesStore";
-import { useGeneralStore } from "@/store/generalStore";
-import { usePreviewStore } from "@/store/previewStore";
-import { useProjectStore } from "@/store/projectStore";
+import { actionRunner } from "@/services/action-runner";
+import { useFilesStore } from "@/stores/files";
+import { useProjectStore } from "@/stores/project";
 import { Artifact, ExistingProject, NewProject } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import { Message } from 'ai/react';
@@ -21,18 +19,6 @@ export function useInitProject(
 ) {
     const [initializingProject, setInitializingProject] = useState(false);
     const { authenticatedFetch } = useFetch();
-    const { terminal, setShellProcess } = useGeneralStore(
-        useShallow(state => ({
-            terminal: state.terminal,
-            setShellProcess: state.setShellProcess
-        }))
-    );
-    const { webContainer, setWebContainer } = usePreviewStore(
-        useShallow(state => ({
-            webContainer: state.webContainer,
-            setWebContainer: state.setWebContainer
-        }))
-    );
     const { setSelectedFile, updateProjectFiles } = useFilesStore(
         useShallow(state => ({
             updateProjectFiles: state.updateProjectFiles,
@@ -53,25 +39,13 @@ export function useInitProject(
             setCurrentMessageId: state.setCurrentMessageId,
         }))
     );
-    async function initializeShell(webContainer: WebContainer) {
-        if (!terminal) return;
-        try {
-            const process = await startShell(terminal, webContainer);
-            setShellProcess(process);
-        } catch (error) {
-            terminal.write('Failed to spawn shell\n\n' + (error as Error)?.message);
-            setShellProcess(null);
-        }
-    }
     async function initializeProject(projectId: string) {
-        let container = webContainer;
+        const container = await webcontainer;
         try {
             setInitializingProject(true);
             if (!container) {
-                container = await getWebContainer();
-                setWebContainer(container);
+                throw new Error("WebContainer not initialized");
             }
-            await initializeShell(container);
             const result = await authenticatedFetch(`${API_URL}/api/project/${projectId}`);
             const { messages, projectFiles } = result as ExistingProject;
             messages.forEach(message => {
@@ -119,7 +93,7 @@ export function useInitProject(
                     state: 'queued',
                     ...action
                 });
-                actionExecutor.addAction(currentMessageId, action);
+                actionRunner.addAction(currentMessageId, action);
             });
         } catch (error) {
             if (error instanceof Error && error.message.includes("Project has not been initialized")) {

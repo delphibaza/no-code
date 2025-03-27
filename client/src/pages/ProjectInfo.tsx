@@ -1,3 +1,4 @@
+import ChatAlert from "@/components/ChatAlert";
 import { ChatInput } from "@/components/ChatInput";
 import { TabsSwitch } from "@/components/TabsSwitch";
 import { Workbench } from "@/components/Workbench";
@@ -7,9 +8,9 @@ import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
 import { constructMessages } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
-import { useFilesStore } from "@/store/filesStore";
-import { useGeneralStore } from "@/store/generalStore";
-import { useProjectStore } from "@/store/projectStore";
+import { useFilesStore } from "@/stores/files";
+import { useGeneralStore } from "@/stores/general";
+import { useProjectStore } from "@/stores/project";
 import { useChat } from 'ai/react';
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -19,10 +20,11 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
     const params = useParams();
-    const { terminal, reasoning } = useGeneralStore(
+    const { actionAlert, reasoning, setActionAlert } = useGeneralStore(
         useShallow(state => ({
+            actionAlert: state.actionAlert,
             reasoning: state.reasoning,
-            terminal: state.terminals.get(state.activeTerminalType)?.terminal || null
+            setActionAlert: state.setActionAlert
         }))
     );
     const { customFetch } = useFetch();
@@ -58,7 +60,7 @@ export default function ProjectInfo() {
         },
         fetch: customFetch,
         sendExtraMessageFields: true,
-        experimental_throttle: 100,
+        experimental_throttle: 50,
         onFinish: async (_, { finishReason }) => {
             if (finishReason !== 'stop') {
                 customToast('An error occurred while processing your request. Please try again.');
@@ -76,11 +78,11 @@ export default function ProjectInfo() {
     const { initializeProject, initializingProject } = useInitProject(setMessages, reload);
 
     useEffect(() => {
-        if (params.projectId && terminal) {
+        if (params.projectId) {
             setCurrentProjectId(params.projectId);
             initializeProject(params.projectId);
         }
-    }, [params.projectId, terminal]);
+    }, [params.projectId]);
 
     const handleNewMessage = useMessageParser();
 
@@ -92,7 +94,7 @@ export default function ProjectInfo() {
         }
     }, [messages]);
 
-    function handleSubmit() {
+    function handleSubmit(input: string) {
         upsertMessage({ id: crypto.randomUUID(), role: 'user', content: input, timestamp: Date.now() });
         if (!currentMessageId || !projectFiles.length) return;
         const newMessages = constructMessages(input, currentMessageId, projectFiles, messageHistory, ignorePatterns);
@@ -113,7 +115,19 @@ export default function ProjectInfo() {
                 ) : (
                     <div className="flex flex-col gap-y-5 col-span-4">
                         <Workbench />
-                        <div className="flex-1">
+                        <div className="flex-1 relative">
+                            {actionAlert && (
+                                <div className="absolute bottom-full left-0 w-full z-10">
+                                    <ChatAlert
+                                        alert={actionAlert}
+                                        clearAlert={() => setActionAlert(null)}
+                                        postMessage={(message) => {
+                                            handleSubmit(message);
+                                            setActionAlert(null);
+                                        }}
+                                    />
+                                </div>
+                            )}
                             <ChatInput
                                 placeholder="How can we refine it..."
                                 handleSubmit={handleSubmit}
@@ -127,7 +141,10 @@ export default function ProjectInfo() {
                         </div>
                     </div>
                 )}
-                <TabsSwitch initializingProject={initializingProject} />
+                <TabsSwitch
+                    initializingProject={initializingProject}
+                    isStreaming={isLoading}
+                />
             </div>
         </>
     );

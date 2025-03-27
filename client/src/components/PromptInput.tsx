@@ -1,7 +1,7 @@
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { customToast } from "@/lib/utils";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { PromptSchema } from "@repo/common/zod";
 import { useState } from "react";
 import { Toaster } from "react-hot-toast";

@@ -1,35 +1,21 @@
-import { usePreviewStore } from "@/store/previewStore";
-import { Preview } from "@repo/common/types";
-import { ChevronDown, ChevronUp, MonitorIcon, ServerIcon, Unplug } from "lucide-react";
+import { usePreviewStore } from "@/stores/previews";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "./ui/button";
 
 export function ProcessSwitcher() {
     const [isExpanded, setIsExpanded] = useState(false);
-    const { previews, activePreviewId, setActivePreviewId } = usePreviewStore(
+    const { previews, activePreviewIndex, setActivePreviewIndex } = usePreviewStore(
         useShallow((state) => ({
             previews: state.previews,
-            activePreviewId: state.activePreviewId,
-            setActivePreviewId: state.setActivePreviewId
+            activePreviewIndex: state.activePreviewIndex,
+            setActivePreviewIndex: state.setActivePreviewIndex
         }))
     );
     const previewList = Array.from(previews.values());
-    const activePreview = previewList.find(p => p.id === activePreviewId);
+    const activePreview = previewList[activePreviewIndex];
     if (!previewList.length || !activePreview) return null;
-
-    // Determine if a preview is frontend or backend based on its path
-    const getPreviewType = (preview: Preview) => {
-        if (preview.cwd.startsWith('/home/project/backend')) {
-            return { type: 'backend', icon: <ServerIcon className="h-3 w-3" /> };
-        } else if (preview.cwd.startsWith('/home/project/frontend')) {
-            return { type: 'frontend', icon: <MonitorIcon className="h-3 w-3" /> };
-        } else {
-            return { type: 'app', icon: <Unplug className="h-3 w-3" /> };
-        }
-    };
-
-    const activePreviewType = getPreviewType(activePreview);
 
     return (
         <div className="relative">
@@ -39,11 +25,8 @@ export function ProcessSwitcher() {
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center rounded-md gap-2 text-muted-foreground hover:text-foreground"
             >
-                {activePreviewType.icon}
-                <span className="text-xs capitalize">
-                    {activePreviewType.type === 'app'
-                        ? `Port ${activePreview.port}`
-                        : `${activePreviewType.type} (${activePreview.port})`}
+                <span className="text-xs">
+                    {activePreview.port}
                 </span>
                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
@@ -52,24 +35,20 @@ export function ProcessSwitcher() {
                 <div className="absolute top-full left-0 z-50 mt-1 w-40 rounded-md border bg-popover shadow-md">
                     <div className="text-sm font-bold px-3 py-2">Available Servers</div>
                     {previewList.map((preview) => {
-                        const previewType = getPreviewType(preview);
                         return (
                             <div
-                                key={preview.id}
+                                key={preview.port}
                                 onClick={() => {
-                                    setActivePreviewId(preview.id);
+                                    setActivePreviewIndex(previewList.indexOf(preview));
                                     setIsExpanded(false);
                                 }}
-                                className={`cursor-pointer px-3 py-2 text-sm flex items-center gap-2 ${activePreviewId === preview.id
+                                className={`cursor-pointer px-3 py-2 text-sm flex items-center gap-2 ${activePreviewIndex === previewList.indexOf(preview)
                                     ? "text-blue-500 font-medium"
                                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                     }`}
                             >
-                                {previewType.icon}
-                                <span className="text-xs capitalize">
-                                    {previewType.type === 'app'
-                                        ? `Port ${preview.port}`
-                                        : `${previewType.type} (${preview.port})`}
+                                <span className="text-xs">
+                                    {preview.port}
                                 </span>
                             </div>
                         );

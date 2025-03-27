@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { Loader2, MessageCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -44,7 +44,7 @@ export function AppSidebar() {
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const data = await authenticatedFetch(`${API_URL}/api/projects`);
+        const data = await authenticatedFetch(`${API_URL}/api/projects?limit=30&page=0`);
         setProjects(data.projects);
       } catch (error) {
         console.error(error instanceof Error
@@ -80,7 +80,7 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar ref={menuRef} variant="floating">
+    <Sidebar ref={menuRef} variant="sidebar">
       <SidebarHeader>
         <SidebarMenuButton size="lg">
           <Logo />

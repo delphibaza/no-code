@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
 import { useEffect, useRef } from "react";

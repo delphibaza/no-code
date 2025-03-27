@@ -27,6 +27,7 @@ const openaiGROQ: ModelConfig = {
     apiKey: process.env.GROQ_API_KEY,
     baseURL: 'https://api.groq.com/openai/v1',
 };
+const googleModels = ['gemini-2.0-flash-001', 'gemini-2.5-pro-exp-03-25'];
 const openaiNineteen: ModelConfig = {
     provider: 'openai',
     model: 'casperhansen/deepseek-r1-distill-qwen-32b-awq',
@@ -35,12 +36,10 @@ const openaiNineteen: ModelConfig = {
 };
 const openaiNovita: ModelConfig = {
     provider: 'openai',
-    model: 'deepseek/deepseek-r1-turbo',
+    model: ['deepseek/deepseek-r1-turbo', 'deepseek/deepseek-v3-0324'],
     apiKey: process.env.NOVITA_API_KEY,
     baseURL: 'https://api.novita.ai/v3/openai',
 };
-
-export const google2FlashModel = google('gemini-2.0-flash-001');
 
 function getInstance(config: ModelConfig) {
     switch (config.provider) {
@@ -59,8 +58,8 @@ function getInstance(config: ModelConfig) {
     }
 };
 export const selectorModel = getInstance(openaiGROQ)(openaiGROQ.model as string);
-
-export const coderModel = wrapLanguageModel({
-    model: getInstance(openaiNovita)(openaiNovita.model as string),
+export const coderModel = getInstance(openaiNovita)(openaiNovita.model[1]);
+export const reasoningModel = wrapLanguageModel({
+    model: getInstance(openaiNovita)(openaiNovita.model[0]),
     middleware: extractReasoningMiddleware({ tagName: 'think' }),
 });

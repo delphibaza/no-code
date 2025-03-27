@@ -1,4 +1,4 @@
-import { useFilesStore } from "@/store/filesStore";
+import { useFilesStore } from "@/stores/files";
 import { FileIcon } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 

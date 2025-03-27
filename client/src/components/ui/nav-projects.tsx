@@ -1,4 +1,4 @@
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { useShallow } from "zustand/react/shallow";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "./sidebar";
 import { formatProjectsByDate } from "@/lib/formatterHelpers";
