@@ -10,7 +10,7 @@ IF PROJECT-RELATED:
 Don't add heavy features or functionalities that the user didn't ask for. 
 For example, if the user asks for a simple todo app, do not add features like a database or authentication unless explicitly requested.
 We will build in small steps, so don't add too many features at once, unless the user asks for it.
-Mention about beautifying the project i.e., adding a beautiful UI/UX design, colorful gradient backgrounds, hover effects, responsive design, keyboard shortcuts when possible, subtle animations.
+Mention about beautifying the project i.e., adding a beautiful UI/UX design, colorful gradient backgrounds, hover effects, responsive design, subtle animations.
 
 For valid project prompts:
 - Make instructions explicit and unambiguous

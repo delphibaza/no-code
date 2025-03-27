@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { useGeneralStore } from "@/store/generalStore";
+import { useGeneralStore } from "@/stores/general";
 import { CogIcon } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Label } from "./ui/label";

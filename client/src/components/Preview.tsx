@@ -1,15 +1,15 @@
-import { usePreviewStore } from "@/store/previewStore";
+import { usePreviewStore } from "@/stores/previews";
 import { useShallow } from "zustand/react/shallow";
 import { ProcessSwitcher } from "./ProcessSwitcher";
 
 export function Preview() {
-    const { activePreview } = usePreviewStore(
+    const { activePreviewIndex, previews } = usePreviewStore(
         useShallow((state) => ({
-            activePreview: state.activePreviewId
-                ? state.previews.get(state.activePreviewId) ?? null
-                : null,
+            previews: state.previews,
+            activePreviewIndex: state.activePreviewIndex
         }))
     );
+    const activePreview = previews[activePreviewIndex];
 
     if (!activePreview) {
         return (

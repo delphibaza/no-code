@@ -2,11 +2,11 @@ import { File, stripIndents } from "@repo/common/types";
 import { minimatch } from "minimatch";
 
 export function projectFilesMsg(files: File[], ignorePatterns: string[]) {
-    // Filter out files that match any of the ignore patterns
-    const filteredFiles = ignorePatterns
-        ? files.filter(file => !ignorePatterns.some(pattern => minimatch(file.filePath, pattern)))
-        : files;
-    return stripIndents`Project Files:
+   // Filter out files that match any of the ignore patterns
+   const filteredFiles = ignorePatterns
+      ? files.filter(file => !ignorePatterns.some(pattern => minimatch(file.filePath, pattern)))
+      : files;
+   return stripIndents`Project Files:
   The following is a list of all project files and their complete contents that are currently visible and accessible to you.
   ${filteredFiles.map(file => `
     ${file.filePath}:
@@ -15,8 +15,8 @@ export function projectFilesMsg(files: File[], ignorePatterns: string[]) {
     \`\`\``)}
   These are the files that are not being shown to you:
   ${files.filter(file => !filteredFiles.includes(file)).
-            map(file => file.filePath)
-            .join(', ')}`
+         map(file => file.filePath)
+         .join(', ')}`
 };
 
 export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
@@ -51,6 +51,7 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
      - Each file must be production-ready
   
   5. EXECUTION SEQUENCE
+     VERY IMPORTANT - For full stack projects, you need to first change the directory to frontend or backend using the \`cd\` command.
      Step 1: Dependencies (Remember: By default, the packages are not installed)
      - Run appropriate install command (Ex: npm install, yarn install, pnpm install, etc.)
      
@@ -66,6 +67,7 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
   ${enhancedPrompt}
   
   VALIDATION CHECKLIST:
+  ✓ Commands are run in the respective directories
   ✓ Complete, working code (no placeholders)
   ✓ Dependencies updated before install
   ✓ npm install runs first
@@ -86,6 +88,6 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
 
 
 export function chatHistoryMsg() {
-    return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
+   return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
   Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated. But, always give the appropriate application start command.`
 };

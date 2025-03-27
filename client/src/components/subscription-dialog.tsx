@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import useFetch from "@/hooks/useFetch"
 import { API_URL } from "@/lib/constants"
 import { planDetails } from "@/lib/utils"
-import { useProjectStore } from "@/store/projectStore"
+import { useProjectStore } from "@/stores/project"
 import { BarChart3, Check, CreditCard, Gauge, Info, Loader2, Zap } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useShallow } from "zustand/react/shallow"

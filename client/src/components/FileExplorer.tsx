@@ -1,7 +1,7 @@
 import { buildHierarchy } from "@/lib/formatterHelpers";
 import { getLanguageFromFileExtension } from "@/lib/getLanguageExtension";
 import { findFileContent } from "@/lib/utils";
-import { useFilesStore } from "@/store/filesStore";
+import { useFilesStore } from "@/stores/files";
 import { Folders } from "@repo/common/types";
 import { FolderIcon } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -11,7 +11,7 @@ import { FolderComponent } from "./FolderComponent";
 
 function RenderStructure({ files }: { files: Folders[] }) {
     return (
-        <div style={{ scrollbarWidth: 'none' }} className="md:max-h-[60vh] overflow-y-auto">
+        <div style={{ scrollbarWidth: 'none' }} className="md:max-h-[70vh] overflow-y-auto">
             {files.map((file) => {
                 if (file.type === "folder") {
                     return (
@@ -33,7 +33,7 @@ function RenderStructure({ files }: { files: Folders[] }) {
     );
 }
 
-export function FileExplorer() {
+export function FileExplorer({ readonly }: { readonly: boolean }) {
     const { projectFiles, selectedFile, isFileModified } = useFilesStore(
         useShallow(state => ({
             projectFiles: state.projectFiles,
@@ -42,6 +42,7 @@ export function FileExplorer() {
         }))
     );
     const folders = buildHierarchy(projectFiles);
+
     return (
         <div className="grid grid-cols-10 border">
             <div className="col-span-2 bg-primary-foreground rounded-sm flex flex-col">
@@ -60,6 +61,7 @@ export function FileExplorer() {
                 <CodeEditor
                     code={findFileContent(projectFiles, selectedFile ?? '') ?? ""}
                     language={getLanguageFromFileExtension(selectedFile ?? '')}
+                    readonly={readonly || !selectedFile || !projectFiles.length}
                 />
             </div>
         </div>

@@ -13,6 +13,7 @@ const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
     running: <Loader2 className="h-4 w-4 animate-spin text-gray-500" />,
     completed: <Check className="h-4 w-4 text-green-500" />,
     error: <X className="h-4 w-4 text-red-500" />,
+    aborted: <X className="h-4 w-4 text-red-500" />,
 };
 export const ShellActionDisplay = memo(({ action }: { action: ShellActionState }) => {
 

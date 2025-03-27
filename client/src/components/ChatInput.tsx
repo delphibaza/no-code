@@ -3,7 +3,7 @@ import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { formatNumber } from "@/lib/formatterHelpers";
 import { cn, customToast } from "@/lib/utils";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore } from "@/stores/project";
 import { CircleStop, CornerDownLeft, RotateCcw, WandSparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { memo, useState } from "react";
@@ -28,7 +28,7 @@ export const ChatInput = memo(({
     error
 }: {
     placeholder: string,
-    handleSubmit: () => void
+    handleSubmit: (input: string) => void
     input: string,
     setInput: React.Dispatch<React.SetStateAction<string>>
     isLoading: boolean
@@ -42,7 +42,7 @@ export const ChatInput = memo(({
         {
             show: Boolean(!isLoading),
             icon: <CornerDownLeft className="size-4" />,
-            onClick: handleSubmit
+            onClick: () => handleSubmit(input)
         },
         {
             show: Boolean(isLoading && stop),
@@ -139,7 +139,7 @@ export const ChatInput = memo(({
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            handleSubmit();
+                            handleSubmit(input);
                         }
                     }}
                 />

@@ -1,66 +1,86 @@
-import { cn, getLightOrDarkTheme, getTerminalTheme } from '@/lib/utils';
+import { getTerminalTheme } from '@/lib/utils';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Terminal as XTerm } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
-import { memo, useEffect, useRef } from "react";
+import { forwardRef, memo, useEffect, useImperativeHandle, useRef } from "react";
 import { useTheme } from './ui/theme-provider';
+
+export interface TerminalRef {
+    reloadStyles: () => void;
+}
 export interface TerminalProps {
     className?: string;
     readonly?: boolean;
+    id: string;
     onTerminalReady?: (terminal: XTerm) => void;
     onTerminalResize?: (cols: number, rows: number) => void;
 }
 
-export const Terminal = memo(({ className, onTerminalReady, onTerminalResize, readonly }: TerminalProps) => {
-    const terminalElementRef = useRef<HTMLDivElement>(null);
-    const terminalRef = useRef<XTerm>(null);
-    const { theme } = useTheme();
+export const Terminal = memo(
+    forwardRef<TerminalRef, TerminalProps>(
+        ({ className, onTerminalReady, id, onTerminalResize, readonly }, ref) => {
+            const terminalElementRef = useRef<HTMLDivElement>(null);
+            const terminalRef = useRef<XTerm | null>(null);
+            const { theme } = useTheme();
 
-    useEffect(() => {
-        const element = terminalElementRef.current!;
-        const fitAddon = new FitAddon();
-        const webLinksAddon = new WebLinksAddon();
+            // Initialize terminal - only runs once
+            useEffect(() => {
+                const element = terminalElementRef.current;
+                if (!element) return;
 
-        const terminal = new XTerm({
-            cursorBlink: true,
-            convertEol: true,
-            disableStdin: readonly,
-            theme: getTerminalTheme(theme),
-            fontSize: 12,
-            fontFamily: 'Menlo, courier-new, courier, monospace',
-        });
-        terminalRef.current = terminal;
-        terminal.loadAddon(fitAddon);
-        terminal.loadAddon(webLinksAddon);
-        terminal.open(element);
+                const fitAddon = new FitAddon();
+                const webLinksAddon = new WebLinksAddon();
 
-        const resizeObserver = new ResizeObserver(() => {
-            fitAddon.fit();
-            onTerminalResize?.(terminal.cols, terminal.rows);
-        });
+                const terminal = new XTerm({
+                    cursorBlink: true, convertEol: true, disableStdin: readonly,
+                    theme: getTerminalTheme(theme),
+                    fontSize: 12,
+                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                });
 
-        resizeObserver.observe(element);
-        onTerminalReady?.(terminal);
+                terminalRef.current = terminal;
+                terminal.loadAddon(fitAddon);
+                terminal.loadAddon(webLinksAddon);
+                terminal.open(element);
 
-        return () => {
-            resizeObserver.disconnect();
-        };
-    }, []);
+                const resizeObserver = new ResizeObserver(() => {
+                    fitAddon.fit();
+                    onTerminalResize?.(terminal.cols, terminal.rows);
+                });
+                resizeObserver.observe(element);
 
-    useEffect(() => {
-        const terminal = terminalRef.current!;
-        terminal.options.theme = getTerminalTheme(theme);
-    }, [theme]);
+                console.log(`Attach [${id}]`);
 
-    return (
-        <div className={
-            cn(className,
-                'border-x px-4 pt-2 pb-4',
-                getLightOrDarkTheme(theme) === 'dark' ? 'bg-black' : 'bg-white'
-            )}
-            ref={terminalElementRef}
-        />
-    );
-});
+                onTerminalReady?.(terminal);
+
+                return () => {
+                    resizeObserver.disconnect();
+                    terminal.dispose();
+                };
+            }, []);
+
+            // Update theme when it changes
+            useEffect(() => {
+                const terminal = terminalRef.current!;
+
+                // we render a transparent cursor in case the terminal is readonly
+                terminal.options.theme = readonly ? { ...getTerminalTheme(theme), cursor: '#00000000' } : getTerminalTheme(theme);
+
+                terminal.options.disableStdin = readonly;
+            }, [theme, readonly]);
+
+            useImperativeHandle(ref, () => {
+                return {
+                    reloadStyles: () => {
+                        const terminal = terminalRef.current!;
+                        terminal.options.theme = readonly ? { ...getTerminalTheme(theme), cursor: '#00000000' } : getTerminalTheme(theme);
+                    },
+                };
+            }, [theme, readonly]);
+
+            return <div className={className} ref={terminalElementRef} />;
+        }
+    ));
+
 Terminal.displayName = 'Terminal';

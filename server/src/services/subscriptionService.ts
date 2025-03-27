@@ -1,6 +1,6 @@
 import { PlanInfo } from "@repo/common/types";
 import prisma from "@repo/db/client";
-import { ApplicationError } from "../utils";
+import { ApplicationError } from "../utils/timeHeplers";
 
 export async function getUserWithSubscription(userId: string) {
     const userWithSubscription = await prisma.user.findUnique({

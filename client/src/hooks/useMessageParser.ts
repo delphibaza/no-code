@@ -1,9 +1,9 @@
 import { isNewFile, parseActions } from "@/lib/runtime";
 import { removeTrailingNewlines } from "@/lib/utils";
-import { actionExecutor } from "@/services/ActionExecutor";
-import { useFilesStore } from "@/store/filesStore";
-import { useGeneralStore } from "@/store/generalStore";
-import { useProjectStore } from "@/store/projectStore";
+import { actionRunner } from "@/services/action-runner";
+import { useFilesStore } from "@/stores/files";
+import { useGeneralStore } from "@/stores/general";
+import { useProjectStore } from "@/stores/project";
 import { FileAction, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
@@ -157,7 +157,7 @@ export function useMessageParser() {
                     command: lastStreamedAction.command
                 });
             }
-            actionExecutor.addAction(currentMessageId, lastStreamedAction);
+            actionRunner.addAction(currentMessageId, lastStreamedAction);
         }
     }, [lastStreamedAction?.id]);
 

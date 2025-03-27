@@ -30,9 +30,11 @@ export type ShellAction = {
     id: number;
     type: 'shell';
     command: string;
+    abort?: () => void;
+    abortSignal?: AbortSignal;
 }
 export type FileState = "creating" | "created" | "updating" | "updated";
-export type ShellState = "queued" | "running" | "completed" | "error";
+export type ShellState = "queued" | "running" | "completed" | "error" | "aborted";
 export type FileActionState = {
     id: number;
     type: 'file';
@@ -81,10 +83,8 @@ export interface Directory {
     directory: Record<string, ContentFile | Directory>;
 }
 export interface Preview {
-    id: string;
     port: number;
     ready: boolean;
-    cwd: string;
     baseUrl: string;
 }
 export type Project = {
@@ -123,6 +123,15 @@ export type SubscriptionUsage = {
     peakUsage: number;
     dailyAverage: number;
 };
+export interface ITerminal {
+    readonly cols?: number;
+    readonly rows?: number;
+
+    reset: () => void;
+    write: (data: string) => void;
+    onData: (cb: (data: string) => void) => void;
+    input: (data: string) => void;
+}
 export type Files = Record<string, ContentFile | Directory>;
 export const cwd = 'project';
 export const WORK_DIR = `/home/${cwd}`;
@@ -147,4 +156,9 @@ function _stripIndents(value: string) {
         .join('\n')
         .trimStart()
         .replace(/[\r\n]$/, '');
+}
+export interface TemplateResult {
+    templateFiles: Array<{ name: string; filePath: string; content: string }>;
+    ignorePatterns: string[];
+    templatePrompt: string;
 }
