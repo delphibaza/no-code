@@ -1,8 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router";
+import MainLayout from "./components/MainLayout";
 import { ThemeProvider } from "./components/ui/theme-provider";
 import Home from "./pages/Home";
 import ProjectInfo from "./pages/ProjectInfo";
-import MainLayout from "./components/MainLayout";
 
 export default function App() {
   return (
