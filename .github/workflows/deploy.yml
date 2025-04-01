@@ -25,7 +25,6 @@ jobs:
       # Build client
       - name: Build frontend
         run: |
-          echo "NODE_ENV=production" > client/.env
           echo "VITE_API_URL=${{ secrets.API_URL }}" >> client/.env
           echo "VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> client/.env
           npm run build:client
