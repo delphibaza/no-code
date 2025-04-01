@@ -6,7 +6,7 @@
     "build": "npx esbuild ./src/index.ts  --bundle --platform=node --outfile=./dist/index.js && npm run copy-cache",
     "dev": "npx nodemon",
     "lint": "eslint --cache --ext \".js,.ts,.tsx\" index.ts",
-    "copy-cache": "xcopy /E /I /Y src\\cache dist\\cache",
+    "copy-cache": "cp -r src/cache dist/",
     "start": "node dist/index.js"
   },
   "dependencies": {
