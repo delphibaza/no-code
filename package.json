@@ -9,7 +9,7 @@
   "scripts": {
     "build:client": "npm run build -w client",
     "build:server": "npm run build -w server",
-    "build:prisma": "npm run build -w packages/prisma",
+    "build:db": "npm run build -w packages/db",
     "build:zod": "npm run build -w packages/zod",
     "build": "run-s build:*",
     "dev:client": "npm run dev -w client",
