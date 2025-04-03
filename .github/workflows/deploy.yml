@@ -68,12 +68,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd no-code
-            sudo npm install -g pm2 serve
+            npm install -g pm2 serve
             pm2 stop no-code-client || true
             pm2 stop no-code-server || true
             pm2 delete no-code-client || true
             pm2 delete no-code-server || true
-            pm2 start serve -n no-code-client -- client/dist --listen 5173
-            pm2 start node server/dist/index.js -n no-code-server
+            pm2 serve -n no-code-client client/dist 5173 --spa
+            cd server
+            pm2 start -n no-code-server dist/index.js
             pm2 save
-            sudo systemctl restart nginx
