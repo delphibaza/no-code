@@ -26,6 +26,9 @@ export function Preview() {
                 src={activePreview.baseUrl}
                 className="flex-1 w-full border-t-2 h-full"
                 title="preview"
+                allow="cross-origin-isolated"
+                loading="eager"
+                sandbox="allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation allow-same-origin"
             />
         </div>
     );

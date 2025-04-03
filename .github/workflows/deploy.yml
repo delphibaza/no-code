@@ -17,25 +17,16 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install Dependencies
-        run: |
-          rm -rf package-lock.json
-          npm install
-
-      # Build client
-      - name: Build frontend
+      - name: Add client environment variables
         run: |
           echo "VITE_API_URL=${{ secrets.API_URL }}" >> client/.env
           echo "VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> client/.env
-          npm run build:client
 
-      # Add DB URL
       - name: Add DB URL
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> packages/db/.env
 
-      # Build server
-      - name: Build backend
+      - name: Add server environment variables
         run: |
           echo "GITHUB_ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }}" > server/.env
           echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> server/.env
@@ -47,9 +38,18 @@ jobs:
           echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> server/.env
           echo "NODE_ENV=production" >> server/.env
           echo "PORT=3000" >> server/.env
-          npm run build:server
 
-      # SSH into EC2 instance
+      - name: Install dependencies
+        run: |
+          rm -rf package-lock.json
+          npm install
+
+      - name: Build client
+        run: npm run build:client
+
+      - name: Build server
+        run: npm run build:server
+
       - name: Copy files into EC2 instance
         uses: appleboy/scp-action@master
         with:
@@ -59,8 +59,7 @@ jobs:
           source: "."
           target: "./no-code"
 
-      # Deploy to VM
-      - name: SSH into EC2 instance and deploy with pm2
+      - name: Deploy with pm2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
