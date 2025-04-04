@@ -95,6 +95,79 @@ npm run build
 4. Live preview updates as changes are made
 5. Projects can be saved and resumed later
 
+## Deployment and Hosting Process
+
+1. Install Nginx on your server:
+
+```bash
+sudo apt update
+sudo apt install nginx
+```
+
+2. Copy the configuration file to Nginx sites-available:
+
+```bash
+sudo cp nginx.conf /etc/nginx/sites-available/no-code
+```
+
+3. Edit the configuration file to replace placeholders:
+
+```bash
+sudo nano /etc/nginx/sites-available/no-code
+
+Replace:
+
+- your-frontend-domain.com with your actual frontend domain
+- your-api-domain.com with your actual API domain
+- Update SSL certificate paths if needed 
+
+4. Create a symbolic link to enable the site:
+```bash
+sudo ln -s /etc/nginx/sites-available/no-code /etc/nginx/sites-enabled/
+```
+
+5. Test Nginx configuration:
+
+```bash
+sudo nginx -t
+```
+
+6. If the test passes Reload Nginx to apply changes:
+
+```bash
+sudo systemctl reload nginx
+```
+
+7. Configure SSL: This configuration assumes you have SSL certificates from Let's Encrypt. If you don't have them yet, you can obtain them using Certbot:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-frontend-domain.com -d your-api-domain.com
+```
+
+8. Set up automatic SSL certificate renewal:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+## Common Issues
+
+### CORS Errors
+
+If you're experiencing CORS errors, make sure:
+
+- The Access-Control-Allow-Origin header in the API server block matches your frontend domain exactly
+- Your backend isn't also setting CORS headers (which would cause duplicates)
+
+### WebContainer Issues
+
+For WebContainers to work properly, the frontend server must have these headers:
+
+- Cross-Origin-Embedder-Policy: require-corp
+- Cross-Origin-Opener-Policy: same-origin
+If WebContainers aren't working, check that these headers are being sent correctly.
+
 ## 📦 Available Scripts (for development)
 
 - `npm run dev`: Start development environment
@@ -125,9 +198,3 @@ Key entities:
 3. Commit your changes
 4. Push to the branch
 5. Open a Pull Request
-
-## 🚨 Common Issues
-
-- If you encounter build errors, try running `npm run clean` followed by `npm install`
-- For database issues, ensure PostgreSQL is running and connection strings are correct.
-- Web Container requires a modern browser with WebAssembly support.
