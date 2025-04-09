@@ -6,68 +6,88 @@ import toast from "react-hot-toast";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function removeTrailingNewlines(str: string): string {
-  return str.replace(/(\n|\r|\r\n|```)+$/, '');
-};
+  return str.replace(/(\n|\r|\r\n|```)+$/, "");
+}
 
-export function findFileContent(files: Omit<FileAction, 'id' | 'type'>[], selectedFileName: string): string | undefined {
+export function findFileContent(
+  files: Omit<FileAction, "id" | "type">[],
+  selectedFileName: string,
+): string | undefined {
   for (const file of files) {
     if (file.filePath === selectedFileName) {
-      return file.content
+      return file.content;
     }
   }
   return undefined; // Return undefined if not found
-};
+}
 
-export const installCommands = ['npm install', 'yarn install', 'pnpm install', 'npm i'];
+export const installCommands = [
+  "npm install",
+  "yarn install",
+  "pnpm install",
+  "npm i",
+];
 
-export const devCommands = ['npm run dev', 'npm run start', 'npm start', 'yarn dev', 'yarn start', 'pnpm dev', 'pnpm start', 'pnpm run dev', 'pnpm run start'];
-
-export const buildCommands = ['npm run build', 'yarn build', 'pnpm build'];
+export const devCommands = [
+  "npm run dev",
+  "npm run start",
+  "npm start",
+  "yarn dev",
+  "yarn start",
+  "pnpm dev",
+  "pnpm start",
+  "pnpm run dev",
+  "pnpm run start",
+];
 
 export function isInstallCommand(command: string) {
-  return installCommands.some(cmd => cmd === command.trim());
+  return installCommands.some((cmd) => cmd === command.trim());
 }
 
 export function isDevCommand(command: string) {
-  return devCommands.some(cmd => cmd === command.trim());
-}
-
-export function isBuildCommand(command: string) {
-  return buildCommands.some(cmd => cmd === command.trim());
+  return devCommands.some((cmd) => cmd === command.trim());
 }
 
 export const planDetails = {
   free: {
     name: "Free",
     color: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-    features: ["150K tokens per day", "1Million tokens per month", "Basic features"],
+    features: [
+      "150K tokens per day",
+      "1Million tokens per month",
+      "Basic features",
+    ],
   },
   pro: {
     name: "Pro",
     color: "bg-blue-100 text-blue-900 hover:bg-blue-200",
-    features: ["250K tokens per day", "10Million tokens per month", "Advanced features"],
-  }
-}
+    features: [
+      "250K tokens per day",
+      "10Million tokens per month",
+      "Advanced features",
+    ],
+  },
+};
 
 export function customToast(msg: string) {
   return toast.error(msg, {
     style: {
-      borderRadius: '25px',
-      background: '#333',
-      color: '#fff',
-      paddingTop: '3px',
-      paddingBottom: '3px',
+      borderRadius: "25px",
+      background: "#333",
+      color: "#fff",
+      paddingTop: "3px",
+      paddingBottom: "3px",
     },
-  })
-};
+  });
+}
 
 export function getLightOrDarkTheme(theme: Theme) {
   let darkOrLight = theme;
-  if (darkOrLight === 'system') {
+  if (darkOrLight === "system") {
     darkOrLight = getSystemTheme();
   }
   return darkOrLight;
@@ -75,26 +95,26 @@ export function getLightOrDarkTheme(theme: Theme) {
 
 export function getTerminalTheme(theme: Theme) {
   const lightTheme = {
-    foreground: '#000000',
-    background: '#ffffff',
-    cursor: '#000000',
-    cursorAccent: '#000000',
-    selectionBackground: '#edebeb',
-    selectionInactiveBackground: '#ffffff',
+    foreground: "#000000",
+    background: "#ffffff",
+    cursor: "#000000",
+    cursorAccent: "#000000",
+    selectionBackground: "#edebeb",
+    selectionInactiveBackground: "#ffffff",
   };
   const darkTheme = {
-    foreground: '#ffffff',
-    background: '#000000',
-    cursor: '#ffffff',
-    cursorAccent: '#ffffff',
-    selectionBackground: '#666666',
-    selectionInactiveBackground: '#000000',
+    foreground: "#ffffff",
+    background: "#000000",
+    cursor: "#ffffff",
+    cursorAccent: "#ffffff",
+    selectionBackground: "#666666",
+    selectionInactiveBackground: "#000000",
   };
   const darkOrLight = getLightOrDarkTheme(theme);
   switch (darkOrLight) {
-    case 'dark':
+    case "dark":
       return darkTheme;
-    case 'light':
+    case "light":
       return lightTheme;
     default:
       return darkTheme;
@@ -116,15 +136,18 @@ export function cleanStackTrace(stackTrace: string): string {
     const pathRegex = /^https?:\/\/[^\/]+\.webcontainer-api\.io\/(.*?)$/;
     const match = url.match(pathRegex);
 
-    return match?.[1] || '';
+    return match?.[1] || "";
   };
 
   // Split the stack trace into lines and process each line
   return stackTrace
-    .split('\n')
+    .split("\n")
     .map((line) => {
       // Match any URL in the line that contains webcontainer-api.io
-      return line.replace(/(https?:\/\/[^\/]+\.webcontainer-api\.io\/[^\s\)]+)/g, (match) => cleanUrl(match));
+      return line.replace(
+        /(https?:\/\/[^\/]+\.webcontainer-api\.io\/[^\s\)]+)/g,
+        (match) => cleanUrl(match),
+      );
     })
-    .join('\n');
+    .join("\n");
 }

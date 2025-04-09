@@ -2,22 +2,28 @@ import { File, stripIndents } from "@repo/common/types";
 import { minimatch } from "minimatch";
 
 export function projectFilesMsg(files: File[], ignorePatterns: string[]) {
-   // Filter out files that match any of the ignore patterns
-   const filteredFiles = ignorePatterns
-      ? files.filter(file => !ignorePatterns.some(pattern => minimatch(file.filePath, pattern)))
-      : files;
-   return stripIndents`Project Files:
+  // Filter out files that match any of the ignore patterns
+  const filteredFiles = ignorePatterns
+    ? files.filter(
+        (file) =>
+          !ignorePatterns.some((pattern) => minimatch(file.filePath, pattern)),
+      )
+    : files;
+  return stripIndents`Project Files:
   The following is a list of all project files and their complete contents that are currently visible and accessible to you.
-  ${filteredFiles.map(file => `
+  ${filteredFiles.map(
+    (file) => `
     ${file.filePath}:
     \`\`\`
     ${file.content}
-    \`\`\``)}
+    \`\`\``,
+  )}
   These are the files that are not being shown to you:
-  ${files.filter(file => !filteredFiles.includes(file)).
-         map(file => file.filePath)
-         .join(', ')}`
-};
+  ${files
+    .filter((file) => !filteredFiles.includes(file))
+    .map((file) => file.filePath)
+    .join(", ")}`;
+}
 
 export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
   ⚠️ STRICT IMPLEMENTATION REQUIREMENTS
@@ -86,8 +92,7 @@ export const projectInstructionsMsg = (enhancedPrompt: string) => stripIndents`
   
   Treat these as strict requirements. Any deviation will result in rejection.`;
 
-
 export function chatHistoryMsg() {
-   return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
-  Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated. But, always give the appropriate application start command.`
-};
+  return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
+  Please reference this context to inform your future responses and maintain conversation continuity. Only install dependencies if the dependency management file (Ex:package.json) has been updated. But, always give the appropriate application start command.`;
+}

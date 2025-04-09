@@ -56,7 +56,6 @@ export interface Template {
     templatePrompt: string;
 }
 export interface Artifact {
-    id: string;
     title: string;
     initialContext: string;
     actions: (FileAction | ShellAction)[];

@@ -1,13 +1,13 @@
-import react from "@vitejs/plugin-react"
-import path from "path"
-import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react";
+import path from "path";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   server: {
     headers: {
       "Cross-Origin-Embedder-Policy": "require-corp",
-      "Cross-Origin-Opener-Policy": "same-origin"
-    }
+      "Cross-Origin-Opener-Policy": "same-origin",
+    },
   },
   plugins: [react()],
   resolve: {
@@ -15,4 +15,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});

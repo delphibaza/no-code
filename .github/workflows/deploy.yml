@@ -67,6 +67,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd no-code
+
+            # Source NVM to ensure npm is available
+            source ~/.nvm/nvm.sh
+            
             npm install -g pm2 serve
             pm2 stop no-code-client || true
             pm2 stop no-code-server || true
