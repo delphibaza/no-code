@@ -11,7 +11,7 @@ import { getSystemPrompt } from "../prompts/systemPrompt";
 import { coderModel, reasoningModel } from "../providers";
 import { enhanceProjectPrompt, validateProjectOwnership } from "../services/projectService";
 import { checkLimits, updateSubscription } from "../services/subscriptionService";
-import { ApplicationError, getDaysBetweenDates } from "../utils/timeHeplers";
+import { ApplicationError, getDaysBetweenDates } from "../utils/timeHelpers";
 
 const router = express.Router();
 

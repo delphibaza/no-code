@@ -6,7 +6,7 @@ import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { createProject, createProjectFiles, enhanceProjectPrompt, getProject, getTemplateData, selectTemplate, TemplateInfo } from "../services/projectService";
 import { checkLimits, updateSubscription, updateTokenUsage } from "../services/subscriptionService";
-import { ApplicationError } from "../utils/timeHeplers";
+import { ApplicationError } from "../utils/timeHelpers";
 
 const router = express.Router();
 

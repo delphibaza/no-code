@@ -8,7 +8,7 @@ import { enhancerPrompt } from "../prompts/enhancerPrompt";
 import { parseSelectedTemplate, starterTemplateSelectionPrompt } from "../prompts/starterTemplateSelection";
 import { selectorModel } from "../providers";
 import { getTemplate } from "../utils/getTemplate";
-import { ApplicationError } from "../utils/timeHeplers";
+import { ApplicationError } from "../utils/timeHelpers";
 
 export interface TemplateInfo {
     name: string;

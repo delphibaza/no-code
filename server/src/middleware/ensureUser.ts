@@ -2,7 +2,7 @@ import { clerkClient } from '@clerk/express';
 import prisma from '@repo/db/client';
 import { NextFunction, Request, Response } from 'express';
 import { getUserWithSubscription } from '../services/subscriptionService';
-import { getDateTenYearsFromNow, setPlanData } from '../utils/timeHeplers';
+import { getDateTenYearsFromNow, setPlanData } from '../utils/timeHelpers';
 
 export async function ensureUserExists(req: Request, res: Response, next: NextFunction) {
     // Get the `userId` from the `Auth` object
