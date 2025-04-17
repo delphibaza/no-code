@@ -7,6 +7,7 @@ import useFetch from "@/hooks/useFetch";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
+import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
 import { constructMessages } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
 import { useFilesStore } from "@/stores/files";
@@ -26,12 +27,13 @@ export default function ProjectInfo() {
       actionAlert: state.actionAlert,
       reasoning: state.reasoning,
       setActionAlert: state.setActionAlert,
-    })),
+    }))
   );
   const { customFetch } = useFetch();
   const {
     messageHistory,
     currentMessageId,
+    currentProjectState,
     refreshTokens,
     upsertMessage,
     setCurrentMessageId,
@@ -42,17 +44,18 @@ export default function ProjectInfo() {
       messageHistory: state.messageHistory,
       currentMessageId: state.currentMessageId,
       refreshTokens: state.refreshTokens,
+      currentProjectState: state.currentProjectState,
       upsertMessage: state.upsertMessage,
       setRefreshTokens: state.setRefreshTokens,
       setCurrentProjectId: state.setCurrentProjectId,
       setCurrentMessageId: state.setCurrentMessageId,
-    })),
+    }))
   );
   const { ignorePatterns, projectFiles } = useFilesStore(
     useShallow((state) => ({
       projectFiles: state.projectFiles,
       ignorePatterns: state.ignorePatterns,
-    })),
+    }))
   );
   const {
     messages,
@@ -75,7 +78,7 @@ export default function ProjectInfo() {
     onFinish: async (_, { finishReason }) => {
       if (finishReason !== "stop") {
         customToast(
-          "An error occurred while processing your request. Please try again.",
+          "An error occurred while processing your request. Please try again."
         );
         return;
       }
@@ -84,14 +87,14 @@ export default function ProjectInfo() {
     onError: (error) => {
       customToast(
         JSON.parse(error.message)?.msg ??
-          "An error occurred while processing your request. Please try again.",
+          "An error occurred while processing your request. Please try again."
       );
     },
   });
 
   const { initializeProject, initializingProject } = useInitProject(
     setMessages,
-    reload,
+    reload
   );
 
   useEffect(() => {
@@ -118,15 +121,58 @@ export default function ProjectInfo() {
       content: input,
       timestamp: Date.now(),
     });
-    if (!currentMessageId || !projectFiles.length) return;
-    const newMessages = constructMessages(
-      input,
-      currentMessageId,
-      projectFiles,
-      messageHistory,
-      ignorePatterns,
-    );
-    setMessages(newMessages);
+    // blank template projects do not have a currentMessageId yet
+    // Since, they do not have any messages from user or assistant yet
+    if (
+      (currentProjectState !== "blankTemplate" && !currentMessageId) ||
+      !projectFiles.length
+    )
+      return;
+    if (currentProjectState === "blankTemplate") {
+      // Get the template prompt that was added earlier while initializing
+      const templatePrompt = messageHistory.find(
+        (message) => message.role === "data"
+      );
+      if (!templatePrompt) return;
+      const messages = [
+        {
+          id: "1",
+          role: "user" as const,
+          content: projectFilesMsg(projectFiles, ignorePatterns),
+        },
+        ...(templatePrompt
+          ? [
+              {
+                id: "2",
+                role: "user" as const,
+                content: templatePrompt.content,
+              },
+              {
+                id: "3",
+                role: "user" as const,
+                content: projectInstructionsMsg(input),
+              },
+            ]
+          : [
+              {
+                id: "2",
+                role: "user" as const,
+                content: projectInstructionsMsg(input),
+              },
+            ]),
+      ];
+      setMessages(messages);
+    } else {
+      if (!currentMessageId) return;
+      const newMessages = constructMessages(
+        input,
+        currentMessageId,
+        projectFiles,
+        messageHistory,
+        ignorePatterns
+      );
+      setMessages(newMessages);
+    }
     reload();
     setCurrentMessageId(crypto.randomUUID());
     setInput("");

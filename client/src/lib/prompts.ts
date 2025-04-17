@@ -1,4 +1,5 @@
-import { File, stripIndents } from "@repo/common/types";
+import { File } from "@repo/common/types";
+import { stripIndents } from "@repo/common/constants";
 import { minimatch } from "minimatch";
 
 export function projectFilesMsg(files: File[], ignorePatterns: string[]) {

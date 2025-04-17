@@ -1,5 +1,4 @@
-import { stripIndents } from "@repo/common/types";
-import { StarterTemplate } from "../constants";
+import { StarterTemplate, stripIndents } from "@repo/common/constants";
 
 export const starterTemplateSelectionPrompt = (templates: StarterTemplate[]) => stripIndents`
 You are an experienced developer who helps people choose the best starter template for their projects.
@@ -14,7 +13,7 @@ Response Format:
 <selection>
   <frontendTemplate>{selected frontend template name or 'none' if project is backend-only}</frontendTemplate>
   <backendTemplate>{selected backend template name or 'none' if project is frontend-only}</backendTemplate>
-  <projectTitle>{Small project title in 25 characters or less}</projectTitle>
+  <projectTitle>{Small project title in 4 words or less}</projectTitle>
 </selection>
 Examples:
 <example>

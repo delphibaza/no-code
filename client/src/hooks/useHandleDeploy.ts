@@ -9,9 +9,9 @@ import { useVercelStore } from "@/stores/vercel";
 import {
   Artifact,
   MessageHistory,
-  ShellAction,
-  WORK_DIR,
+  ShellAction
 } from "@repo/common/types";
+import { WORK_DIR } from "@repo/common/constants";
 import { WebContainer } from "@webcontainer/api";
 import { useState } from "react";
 import toast from "react-hot-toast";

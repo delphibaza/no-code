@@ -2,10 +2,10 @@ import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import chatRoutes from "./routes/chatRoutes";
-import fileRoutes from "./routes/fileRoutes";
-import projectRoutes from "./routes/projectRoutes";
+import chatRoutes from "./routes/chat";
+import fileRoutes from "./routes/file";
 import netlifyDeploy from "./routes/netlifyDeploy";
+import projectRoutes from "./routes/project";
 import vercelDeploy from "./routes/vercelDeploy";
 dotenv.config();
 

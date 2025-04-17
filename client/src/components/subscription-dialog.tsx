@@ -38,15 +38,22 @@ export default function SubscriptionDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { authenticatedFetch } = useFetch();
-  const { subscriptionData, setSubscriptionData, refreshTokens } =
-    useProjectStore(
-      useShallow((state) => ({
-        subscriptionData: state.subscriptionData,
-        setSubscriptionData: state.setSubscriptionData,
-        refreshTokens: state.refreshTokens,
-        setRefreshTokens: state.setRefreshTokens,
-      })),
-    );
+  const {
+    subscriptionData,
+    currentProjectId,
+    refreshTokens,
+    setSubscriptionData,
+    setCurrentProjectState,
+  } = useProjectStore(
+    useShallow((state) => ({
+      currentProjectId: state.currentProjectId,
+      subscriptionData: state.subscriptionData,
+      refreshTokens: state.refreshTokens,
+      setCurrentProjectState: state.setCurrentProjectState,
+      setSubscriptionData: state.setSubscriptionData,
+      setRefreshTokens: state.setRefreshTokens,
+    }))
+  );
   const plan = subscriptionData?.plan
     ? planDetails[subscriptionData.plan as keyof typeof planDetails]
     : null;
@@ -57,6 +64,11 @@ export default function SubscriptionDialog() {
       try {
         const data = await authenticatedFetch(`${API_URL}/api/subscription`);
         setSubscriptionData(data);
+        // Fetch project state
+        const projectState = await authenticatedFetch(
+          `${API_URL}/api/project-state/${currentProjectId}`
+        );
+        setCurrentProjectState(projectState.state);
       } catch (error) {
         console.error("Error fetching subscription data:", error);
       } finally {
@@ -128,7 +140,7 @@ export default function SubscriptionDialog() {
                     </span>
                     <p className="font-medium">
                       {new Date(
-                        subscriptionData.startDate,
+                        subscriptionData.startDate
                       ).toLocaleDateString()}
                     </p>
                   </div>

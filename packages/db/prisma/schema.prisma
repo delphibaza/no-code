@@ -54,15 +54,16 @@ model Subscription {
 }
 
 model Project {
-  id        String       @id @default(cuid())
-  name      String
-  state     ProjectState @default(new)
-  createdAt DateTime     @default(now())
-  userId    String
-  files     File[]
-  messages  Message[]
+  id           String       @id @default(cuid())
+  name         String
+  state        ProjectState @default(new)
+  templateName String?
+  createdAt    DateTime     @default(now())
+  userId       String
+  files        File[]
+  messages     Message[]
   // Deletes project if user is deleted
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -116,4 +117,5 @@ enum ProjectState {
   new
   inProgress
   existing
+  blankTemplate
 }

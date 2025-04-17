@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "exports": {
     "./types": "./types/index.ts",
-    "./zod": "./zod/index.ts"
+    "./zod": "./zod/index.ts",
+    "./constants": "./constants/index.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -13,6 +14,7 @@
   "main": "dist/index.js",
   "license": "ISC",
   "dependencies": {
+    "react-icons": "^5.5.0",
     "zod": "^3.23.8"
   }
 }

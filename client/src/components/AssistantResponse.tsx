@@ -1,9 +1,10 @@
+import { cn } from "@/lib/utils";
 import { ActionState } from "@repo/common/types";
 import { parse } from "best-effort-json-parser";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronRight, Loader } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { FileActionDisplay, ShellActionDisplay } from "./ActionDisplay";
-import { Button } from "./ui/button";
 
 function parseContent(content: string) {
   try {
@@ -11,6 +12,84 @@ function parseContent(content: string) {
   } catch {
     return null;
   }
+}
+export function Reasoning({
+  reasoning,
+  isReasoning,
+}: {
+  reasoning: string;
+  isReasoning: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const variants = {
+    collapsed: {
+      height: 0,
+      opacity: 0,
+      marginTop: 0,
+      marginBottom: 0,
+    },
+    expanded: {
+      height: "auto",
+      opacity: 1,
+      marginTop: "1rem",
+      marginBottom: 0,
+    },
+  };
+
+  useEffect(() => {
+    if (!isReasoning) {
+      setIsExpanded(false);
+    }
+  }, [isReasoning]);
+
+  return (
+    <div className="flex flex-col">
+      {isReasoning ? (
+        <div className="flex flex-row gap-2 items-center">
+          <div className="font-medium text-sm">Reasoning</div>
+          <Loader className="w-4 h-4 animate-spin" />
+        </div>
+      ) : (
+        <div className="flex flex-row gap-2 items-center">
+          <div className="font-medium text-sm">Reasoned for a few seconds</div>
+          <button
+            className={cn(
+              "cursor-pointer rounded-full dark:hover:bg-zinc-800 hover:bg-zinc-200",
+              {
+                "dark:bg-zinc-800 bg-zinc-200": isExpanded,
+              }
+            )}
+            onClick={() => {
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            key="reasoning"
+            className="text-sm dark:text-zinc-400 text-zinc-600 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
+            initial="collapsed"
+            animate="expanded"
+            exit="collapsed"
+            variants={variants}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            {reasoning}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export function AssistantResponse({
@@ -22,31 +101,15 @@ export function AssistantResponse({
   actions: ActionState[];
   reasoning?: string;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const parsedContent = parseContent(content);
 
   return (
     <div className="flex flex-col gap-y-4 bg-[#F5F5F5] dark:bg-gray-800 text-sm/6 rounded-lg px-4 py-3">
       {reasoning && (
-        <Button
-          onClick={() => setIsExpanded(!isExpanded)}
-          variant="outline"
-          className="w-full flex items-center justify-between px-4"
-        >
-          <div>Thinking...</div>
-          <div>
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </div>
-        </Button>
-      )}
-      {isExpanded && (
-        <div className="bg-primary-foreground px-2 py-2 text-sm italic">
-          {reasoning}
-        </div>
+        <Reasoning
+          reasoning={reasoning}
+          isReasoning={!parsedContent?.artifact?.initialContext}
+        />
       )}
       <div className="break-words overflow-wrap-anywhere whitespace-pre-wrap min-w-0 flex-1">
         {parsedContent?.artifact?.initialContext ?? ""}
@@ -58,7 +121,7 @@ export function AssistantResponse({
               <FileActionDisplay key={action.id} action={action} />
             ) : (
               <ShellActionDisplay key={action.id} action={action} />
-            ),
+            )
           )}
         </div>
       )}
