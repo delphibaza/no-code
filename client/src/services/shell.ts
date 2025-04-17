@@ -31,7 +31,7 @@ export async function newShellProcess(
   const args: string[] = [];
 
   // we spawn a JSH process with a fallback cols and rows in case the process is not attached yet to a visible terminal
-  const process = await webcontainer.spawn("/bin/jsh", ["--osc", ...args], {
+  const process = await webcontainer.spawn("jsh", ["--osc", ...args], {
     terminal: {
       cols: terminal.cols ?? 80,
       rows: terminal.rows ?? 15,
@@ -104,7 +104,12 @@ export class BoltShell {
     );
     this.#process = process;
     this.#outputStream = output.getReader();
+    // wait until we see the interactive OSC for only 10 seconds otherwise start to execute
+    const timeout = setTimeout(() => {
+      this.#initialized?.();
+    }, 10000);
     await this.waitTillOscCode("interactive");
+    clearTimeout(timeout);
     this.#initialized?.();
   }
 
@@ -169,7 +174,7 @@ export class BoltShell {
     const args: string[] = [];
 
     // we spawn a JSH process with a fallback cols and rows in case the process is not attached yet to a visible terminal
-    const process = await webcontainer.spawn("/bin/jsh", ["--osc", ...args], {
+    const process = await webcontainer.spawn("jsh", ["--osc", ...args], {
       terminal: {
         cols: terminal.cols ?? 80,
         rows: terminal.rows ?? 15,

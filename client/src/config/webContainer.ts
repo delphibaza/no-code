@@ -1,5 +1,5 @@
 import { cleanStackTrace } from "@/lib/utils";
-import { cwd } from "@repo/common/types";
+import { cwd } from "@repo/common/constants";
 import { WebContainer } from "@webcontainer/api";
 
 let webContainerInstance: WebContainer | null = null;

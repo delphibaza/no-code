@@ -1,4 +1,4 @@
-import { STARTER_TEMPLATES } from "../constants";
+import { STARTER_TEMPLATES } from "@repo/common/constants";
 import { getGitHubRepoContent } from "./getRepoContent";
 
 export async function getTemplate(templateName: string) {

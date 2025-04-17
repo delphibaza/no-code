@@ -61,9 +61,9 @@ export function shouldResetMonthly(lastReset: Date): boolean {
 }
 // Define a custom error class with code property
 export class ApplicationError extends Error {
-    code: string;
+    code: number;
 
-    constructor(message: string, code: string) {
+    constructor(message: string, code: number) {
         super(message);
         this.name = 'ApplicationError';
         this.code = code;

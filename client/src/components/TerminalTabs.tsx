@@ -117,7 +117,7 @@ export const TerminalTabs = memo(({ readonly }: { readonly?: boolean }) => {
                     onClick={() => setActiveTerminal(index)}
                   >
                     <div className="i-ph:terminal-window-duotone text-base" />
-                    Bolt Terminal
+                    AI Terminal
                   </button>
                 ) : (
                   <button

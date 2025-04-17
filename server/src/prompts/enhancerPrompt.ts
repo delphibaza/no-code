@@ -1,4 +1,4 @@
-import { stripIndents } from "@repo/common/types";
+import { stripIndents } from "@repo/common/constants";
 
 export const enhancerPrompt = () =>
   stripIndents`You are a professional prompt engineer specializing in crafting precise, effective prompts.

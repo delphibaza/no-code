@@ -1,4 +1,3 @@
-import { google } from '@ai-sdk/google';
 import { createGroq } from '@ai-sdk/groq';
 import { createOpenAI } from '@ai-sdk/openai';
 import {
@@ -23,7 +22,7 @@ const openaiOvh: ModelConfig = {
 };
 const openaiGROQ: ModelConfig = {
     provider: 'groq',
-    model: 'qwen-2.5-coder-32b',
+    model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
     apiKey: process.env.GROQ_API_KEY,
     baseURL: 'https://api.groq.com/openai/v1',
 };

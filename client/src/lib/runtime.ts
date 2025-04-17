@@ -1,6 +1,5 @@
 import {
   Artifact,
-  ExistingProject,
   File,
   FileAction,
   MessageHistory,
@@ -9,14 +8,13 @@ import {
 import type { WebContainer } from "@webcontainer/api";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
 import { chatHistoryMsg, projectFilesMsg } from "./prompts";
-import { isDevCommand } from "./utils";
 
 export function isNewFile(filePath: string, templateFiles: File[]) {
   return templateFiles.every((file) => file.filePath !== filePath);
 }
 
 export function parseActions(
-  actions: (Partial<FileAction> | Partial<ShellAction>)[],
+  actions: (Partial<FileAction> | Partial<ShellAction>)[]
 ): (FileAction | ShellAction)[] {
   return actions
     .map((action) => {
@@ -50,7 +48,7 @@ export function parseActions(
 
 export async function mountFiles(
   files: File | File[],
-  webContainerInstance: WebContainer,
+  webContainerInstance: WebContainer
 ) {
   const filesArray = Array.isArray(files) ? files : [files];
   const hierarchy = buildHierarchy(filesArray);
@@ -63,7 +61,7 @@ export function constructMessages(
   currentMessageId: string,
   projectFiles: File[],
   messageHistory: MessageHistory[],
-  ignorePatterns: string[],
+  ignorePatterns: string[]
 ) {
   // Initialize with system messages
   const payload: MessageHistory[] = [
@@ -123,30 +121,13 @@ export function constructMessages(
   return payload;
 }
 
-export function getImportArtifact(messages: ExistingProject["messages"]) {
-  const recentAssistantMessage = messages.findLastIndex(
-    (m) => m.role === "assistant",
-  );
-  const lastShellCommand = (
-    messages[recentAssistantMessage].content as { artifact: Artifact }
-  ).artifact.actions.findLast((action) => action.type === "shell")?.command;
-
-  // Determine start command
-  const startCommand =
-    lastShellCommand && isDevCommand(lastShellCommand)
-      ? lastShellCommand
-      : "npm run dev";
-
+export function getImportArtifact(files: File[]) {
+  const { setupCommand } = detectSetupCommand(files);
   const currentActions: ShellAction[] = [
     {
       id: 0,
       type: "shell",
-      command: "npm install",
-    },
-    {
-      id: 1,
-      type: "shell",
-      command: startCommand,
+      command: setupCommand,
     },
   ];
   const artifact: Artifact = {
@@ -159,3 +140,33 @@ export function getImportArtifact(messages: ExistingProject["messages"]) {
   };
   return { artifact, currentActions };
 }
+
+export const detectSetupCommand = (files: File[]) => {
+  function getFileContent(name: string) {
+    return files.find((f) => f.filePath.endsWith(name))?.content;
+  }
+  const packageJson = getFileContent("package.json");
+
+  if (!packageJson) {
+    return { setupCommand: "npm install && npm run dev" };
+  }
+
+  const scripts = JSON.parse(packageJson)?.scripts || {};
+  // Check for preferred commands in priority order
+  const preferredCommands = ["dev", "start", "preview"];
+  const availableCommand = preferredCommands.find((cmd) => scripts[cmd]);
+
+  if (availableCommand) {
+    return {
+      setupCommand: `npm install && npm run ${availableCommand}`,
+    };
+  }
+
+  if (getFileContent("index.html")) {
+    return {
+      setupCommand: "npx --yes serve",
+    };
+  }
+  // Hardcoded default for unknown project types
+  return { setupCommand: "npm install && npm run dev" };
+};

@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const promptSchema = z.object({
-    prompt: z.string().min(2, "Please provide some prompt")
+    prompt: z.string().min(2, "Please provide some prompt"),
+    templateName: z.string().optional()
 });
 export const messageSchema = z.object({
     id: z.string(),

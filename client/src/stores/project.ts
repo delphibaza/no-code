@@ -9,7 +9,10 @@ import { create } from "zustand";
 interface ProjectState {
   projects: Project[];
   currentProjectId: string | null;
-  // messageId, message with json string
+  // inprogress are the projects that are currently being generated/new ones
+  currentProjectState: "existing" | "blankTemplate" | "inProgress";
+  // messageId, message with json string (actions inside the json may be duplicated)
+  // But they are needed for existing projects, since we are storing only json in the db
   messageHistory: MessageHistory[];
   // messageId, actions
   actions: Map<string, ActionState[]>;
@@ -23,6 +26,9 @@ interface ProjectState {
   addProject: (project: Project) => void;
   setSubscriptionData: (usage: SubscriptionUsage) => void;
   setCurrentProjectId: (projectId: string) => void;
+  setCurrentProjectState: (
+    state: "existing" | "blankTemplate" | "inProgress"
+  ) => void;
   setRefreshTokens: (refreshTokens: boolean) => void;
   setRefreshProjects: (refreshProjects: boolean) => void;
   upsertMessage: (message: MessageHistory) => void;
@@ -42,6 +48,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   messageHistory: [],
   projects: [],
   currentProjectId: null,
+  currentProjectState: "inProgress",
   subscriptionData: null,
   refreshTokens: false,
   refreshProjects: false,
@@ -60,6 +67,8 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   setRefreshTokens: (refreshTokens) => set({ refreshTokens }),
 
   setRefreshProjects: (refreshProjects) => set({ refreshProjects }),
+
+  setCurrentProjectState: (state) => set({ currentProjectState: state }),
 
   upsertMessage: (message) =>
     set((state) => {

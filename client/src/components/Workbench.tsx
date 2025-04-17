@@ -10,25 +10,45 @@ export function Workbench() {
     useShallow((state) => ({
       actions: state.actions,
       messageHistory: state.messageHistory,
-    })),
+    }))
   );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isNotAtBottom = () => {
+    const container = containerRef.current;
+    if (!container) return false;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    // Return true if the user is NOT at the bottom
+    return scrollHeight - scrollTop - clientHeight > 50;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Scroll to bottom only if user is at the bottom,
+    // if the user has scrolled up, only scroll down if a new message is added
+    if (!isNotAtBottom()) {
+      scrollToBottom();
+    }
   }, [messageHistory]); // Scroll when messages change
 
-  const filteredMessageHistory = messageHistory.filter(
-    (message) => message.role === "user" || message.role === "assistant",
-  );
+  useEffect(() => {
+    scrollToBottom();
+  }, [messageHistory.length]);
+
+  const filteredMessageHistory = messageHistory
+    .filter(
+      (message) => message.role === "user" || message.role === "assistant"
+    )
+    .sort((a, b) => a.timestamp - b.timestamp);
 
   return (
     <div
       style={{ scrollbarWidth: "none" }}
       className="md:h-[70vh] overflow-y-auto space-y-3"
+      ref={containerRef}
     >
       {filteredMessageHistory.map((message) =>
         message.role === "user" ? (
@@ -40,7 +60,7 @@ export function Workbench() {
             content={message.content}
             actions={actions.get(message.id) || []}
           />
-        ),
+        )
       )}
       <div className="w-0 h-0" ref={messagesEndRef} />
     </div>
