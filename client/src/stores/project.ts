@@ -9,8 +9,9 @@ import { create } from "zustand";
 interface ProjectState {
   projects: Project[];
   currentProjectId: string | null;
-  // inprogress are the projects that are currently being generated/new ones
-  currentProjectState: "existing" | "blankTemplate" | "inProgress";
+  // existing are the projects that are already generated
+  // new are the projects that are currently being generated/new ones
+  currentProjectState: "existing" | "blankTemplate" | "new" | null;
   // messageId, message with json string (actions inside the json may be duplicated)
   // But they are needed for existing projects, since we are storing only json in the db
   messageHistory: MessageHistory[];
@@ -27,7 +28,7 @@ interface ProjectState {
   setSubscriptionData: (usage: SubscriptionUsage) => void;
   setCurrentProjectId: (projectId: string) => void;
   setCurrentProjectState: (
-    state: "existing" | "blankTemplate" | "inProgress"
+    state: "existing" | "blankTemplate" | "new"
   ) => void;
   setRefreshTokens: (refreshTokens: boolean) => void;
   setRefreshProjects: (refreshProjects: boolean) => void;
@@ -40,6 +41,7 @@ interface ProjectState {
     actionId: number,
     status: ActionState["state"]
   ) => void;
+  abortAllActions: () => void;
 }
 
 export const useProjectStore = create<ProjectState>()((set, get) => ({
@@ -48,7 +50,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   messageHistory: [],
   projects: [],
   currentProjectId: null,
-  currentProjectState: "inProgress",
+  currentProjectState: null,
   subscriptionData: null,
   refreshTokens: false,
   refreshProjects: false,
@@ -122,5 +124,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       ) as ActionState[];
       actions.set(messageId, newActions);
       return { actions };
+    }),
+
+  abortAllActions: () =>
+    set((state) => {
+      if (!state.currentMessageId) return {};
+      return {
+        actions: new Map(state.actions).set(state.currentMessageId, []),
+      };
     }),
 }));

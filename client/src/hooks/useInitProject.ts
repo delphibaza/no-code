@@ -1,5 +1,5 @@
 import { webcontainer } from "@/config/webContainer";
-import { API_URL } from "@/lib/constants";
+import { API_URL, IMPORT_ARTIFACT_ID } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
 import { getImportArtifact, mountFiles } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
@@ -57,12 +57,12 @@ export function useInitProject(
     projectFiles: File[],
     container: WebContainer
   ) {
-    const currentMessageId = "import-artifact";
+    const currentMessageId = IMPORT_ARTIFACT_ID;
     setCurrentMessageId(currentMessageId);
     const { artifact, currentActions } = getImportArtifact(projectFiles);
     upsertMessage({
       id: currentMessageId,
-      role: "assistant",
+      role: "assistant", // Role is assistant because workbench component ignores data role messages
       timestamp: Date.now(),
       content: JSON.stringify({ artifact: artifact }),
     });
@@ -87,25 +87,27 @@ export function useInitProject(
       }
       const response = await customFetch(
         `${API_URL}/api/project/${projectId}`,
-        {
-          method: "POST",
-        }
+        { method: "POST" }
       );
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message ?? "Failed to initialize project");
       }
-      if (data.state === "existing") {
-        setCurrentProjectState("existing");
-        await initializeExistingProject(data, container);
-      } else if (data.state === "inProgress") {
-        setCurrentProjectState("inProgress");
-        await initializeNewProject(data, container);
-      } else if (data.state === "blankTemplate") {
-        setCurrentProjectState("blankTemplate");
-        await initializeBlankTemplate(data, container);
-      } else {
-        throw new Error("Invalid project state");
+      switch (data.state) {
+        case "existing":
+          setCurrentProjectState("existing");
+          await initializeExistingProject(data, container);
+          break;
+        case "new":
+          setCurrentProjectState("new");
+          await initializeNewProject(data, container);
+          break;
+        case "blankTemplate":
+          setCurrentProjectState("blankTemplate");
+          await initializeBlankTemplate(data, container);
+          break;
+        default:
+          throw new Error("Invalid project state");
       }
     } catch (error) {
       customToast(
@@ -123,7 +125,7 @@ export function useInitProject(
     data: ExistingProject,
     container: WebContainer
   ) {
-    const { messages, projectFiles } = data;
+    const { messages, projectFiles, ignorePatterns } = data;
     messages.forEach((message) => {
       if (message.role === "user") {
         // For user messages, content is always { text: string }
@@ -152,6 +154,7 @@ export function useInitProject(
         });
       }
     });
+    setIgnorePatterns(ignorePatterns);
     await setupImportArtifact(projectFiles, container);
   }
 
@@ -187,12 +190,15 @@ export function useInitProject(
     // Store ignore patterns for further use
     setIgnorePatterns(ignorePatterns);
     setMessages(messages as Message[]);
-    upsertMessage({
-      id: crypto.randomUUID(),
-      role: "data",
-      content: templatePrompt,
-      timestamp: Date.now(),
-    });
+    // Store template prompt for further use, if available
+    if (templatePrompt) {
+      upsertMessage({
+        id: crypto.randomUUID(),
+        role: "data",
+        content: templatePrompt,
+        timestamp: Date.now(),
+      });
+    }
     // Add files to project store
     updateProjectFiles(templateFiles);
     await mountFiles(templateFiles, container);
@@ -209,12 +215,15 @@ export function useInitProject(
     const { templateFiles, templatePrompt, ignorePatterns } = data;
     // Store ignore patterns for further use
     setIgnorePatterns(ignorePatterns);
-    upsertMessage({
-      id: crypto.randomUUID(),
-      role: "data",
-      content: templatePrompt,
-      timestamp: Date.now(),
-    });
+    // Store template prompt for further use, if available
+    if (templatePrompt) {
+      upsertMessage({
+        id: crypto.randomUUID(),
+        role: "data",
+        content: templatePrompt,
+        timestamp: Date.now(),
+      });
+    }
     await setupImportArtifact(templateFiles, container);
   }
 

@@ -17,7 +17,7 @@ export function TemplateShowcase({ onPromptSelect }: TemplateShowcaseProps) {
           icon: t.icon,
           onTemplateClick: () =>
             onPromptSelect(
-              `Create a blank project using \`${t.name}\` template`,
+              `Create a blank project using \`${t.label}\` template`,
               t.name
             ),
         }))}
