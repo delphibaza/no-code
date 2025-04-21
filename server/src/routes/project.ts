@@ -101,20 +101,20 @@ router.post(
       }
 
       // If the project has already generated, return the existing project
-      if (
-        project.state === "existing" ||
-        project.messages.length !== 1 ||
-        project.messages[0].role !== "user"
-      ) {
+      if (project.state === "existing") {
         res.json({
           state: "existing",
           messages: project.messages,
           projectFiles: project.files,
+          ignorePatterns: project.ignorePatterns,
         });
         return;
       }
       // If the user has selected a blank template
-      if (project.state === "blankTemplate" && project.templateName) {
+      if (project.state === "blankTemplate") {
+        if (!project.templateName) {
+          throw new ApplicationError("Template not found", 404);
+        }
         const templateName = project.templateName.trim();
         // Try to get template from cache
         let templateData: Template | null = null;
@@ -142,15 +142,6 @@ router.post(
           ignorePatterns: templateData.ignorePatterns,
         } as BlankTemplateProject);
         return;
-      }
-
-      // Logic to generate a new project,
-      // continue only if the project state is new or inProgress
-      if (project.state !== "new" && project.state !== "inProgress") {
-        throw new ApplicationError(
-          "Project is not in a state to be generated",
-          403
-        );
       }
 
       if (!req.plan) {
@@ -200,12 +191,12 @@ router.post(
         await createProjectFiles(project.id, templateData.templateFiles);
       }
 
-      // Update the project with new title and state
+      // Update the project with new title
       await prisma.project.update({
         where: { id: projectId },
         data: {
-          state: "inProgress",
           name: projectTitle ?? project.name.slice(0, 25),
+          ignorePatterns: templateData.ignorePatterns,
         },
       });
 
@@ -213,7 +204,7 @@ router.post(
       await updateSubscription(req.plan);
 
       res.json({
-        state: "inProgress",
+        state: "new",
         enhancedPrompt: enhancedPrompt,
         templateFiles: templateData.templateFiles,
         templatePrompt: templateData.templatePrompt,

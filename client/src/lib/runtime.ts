@@ -6,6 +6,7 @@ import {
   ShellAction,
 } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
+import { IMPORT_ARTIFACT_ID } from "./constants";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
 import { chatHistoryMsg, projectFilesMsg } from "./prompts";
 
@@ -79,34 +80,32 @@ export function constructMessages(
     },
   ];
   messageHistory.forEach((message, currentIndex) => {
-    const isImportArtifact = message.id === "import-artifact";
-
     // Skip import-artifact messages
-    if (isImportArtifact) {
+    if (message.id === IMPORT_ARTIFACT_ID) {
       return;
     }
     const nextMessage = messageHistory[currentIndex + 1];
     if (message.id === currentMessageId) {
-      const upperMessage = `Assistant Response to Message #${currentIndex}`;
+      const upperPart = `Assistant Response to Message #${currentIndex}`;
       payload.push({
         ...message,
-        content: `${upperMessage}\n ${message.content}`,
+        content: `${upperPart}\n${message.content}`,
       });
     } else if (nextMessage?.id === currentMessageId) {
-      const upperMessage = `Previous Message #${currentIndex + 1}`;
-      const lowerMessage = `(Assistant response below)`;
+      const upperPart = `Previous Message #${currentIndex + 1}`;
+      const lowerPart = `(Assistant response below)`;
       payload.push({
         ...message,
         role: "user",
-        content: `${upperMessage}\n ${message.content} \n ${lowerMessage}`,
+        content: `${upperPart}\n${message.content}\n${lowerPart}`,
       });
     } else if (message.role !== "assistant") {
-      const upperMessage = `Previous Message #${currentIndex + 1}`;
-      const lowerMessage = `(Assistant response omitted)`;
+      const upperPart = `Previous Message #${currentIndex + 1}`;
+      const lowerPart = `(Assistant response omitted)`;
       payload.push({
         ...message,
         role: "user",
-        content: `${upperMessage}\n ${message.content} \n ${lowerMessage}`,
+        content: `${upperPart}\n${message.content}\n${lowerPart}`,
       });
     }
     currentIndex++;

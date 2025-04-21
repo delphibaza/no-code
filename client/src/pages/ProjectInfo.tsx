@@ -4,13 +4,11 @@ import { TabsSwitch } from "@/components/TabsSwitch";
 import { BackgroundDots } from "@/components/ui/background-dots";
 import { Workbench } from "@/components/Workbench";
 import useFetch from "@/hooks/useFetch";
+import { useHandleSubmit } from "@/hooks/useHandleSubmit";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
-import { constructMessages } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
-import { useFilesStore } from "@/stores/files";
 import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
 import { useChat } from "ai/react";
@@ -30,40 +28,26 @@ export default function ProjectInfo() {
     }))
   );
   const { customFetch } = useFetch();
-  const {
-    messageHistory,
-    currentMessageId,
-    currentProjectState,
-    refreshTokens,
-    upsertMessage,
-    setCurrentMessageId,
-    setCurrentProjectId,
-    setRefreshTokens,
-  } = useProjectStore(
-    useShallow((state) => ({
-      messageHistory: state.messageHistory,
-      currentMessageId: state.currentMessageId,
-      refreshTokens: state.refreshTokens,
-      currentProjectState: state.currentProjectState,
-      upsertMessage: state.upsertMessage,
-      setRefreshTokens: state.setRefreshTokens,
-      setCurrentProjectId: state.setCurrentProjectId,
-      setCurrentMessageId: state.setCurrentMessageId,
-    }))
-  );
-  const { ignorePatterns, projectFiles } = useFilesStore(
-    useShallow((state) => ({
-      projectFiles: state.projectFiles,
-      ignorePatterns: state.ignorePatterns,
-    }))
-  );
+  const { refreshTokens, setCurrentProjectId, setRefreshTokens } =
+    useProjectStore(
+      useShallow((state) => ({
+        messageHistory: state.messageHistory,
+        currentMessageId: state.currentMessageId,
+        refreshTokens: state.refreshTokens,
+        currentProjectState: state.currentProjectState,
+        upsertMessage: state.upsertMessage,
+        setRefreshTokens: state.setRefreshTokens,
+        setCurrentProjectId: state.setCurrentProjectId,
+        setCurrentMessageId: state.setCurrentMessageId,
+      }))
+    );
   const {
     messages,
     input,
-    setInput,
     error,
     isLoading,
     stop,
+    setInput,
     reload,
     setMessages,
   } = useChat({
@@ -96,6 +80,8 @@ export default function ProjectInfo() {
     setMessages,
     reload
   );
+  const { handleSend } = useHandleSubmit(setMessages, reload, setInput);
+  const { handleNewMessage } = useMessageParser();
 
   useEffect(() => {
     if (params.projectId) {
@@ -104,79 +90,12 @@ export default function ProjectInfo() {
     }
   }, [params.projectId]);
 
-  const handleNewMessage = useMessageParser();
-
   useEffect(() => {
-    if (messages.length === 0) return;
     const recentMessage = messages.at(-1);
     if (recentMessage) {
       handleNewMessage(recentMessage);
     }
   }, [messages]);
-
-  function handleSubmit(input: string) {
-    upsertMessage({
-      id: crypto.randomUUID(),
-      role: "user",
-      content: input,
-      timestamp: Date.now(),
-    });
-    // blank template projects do not have a currentMessageId yet
-    // Since, they do not have any messages from user or assistant yet
-    if (
-      (currentProjectState !== "blankTemplate" && !currentMessageId) ||
-      !projectFiles.length
-    )
-      return;
-    if (currentProjectState === "blankTemplate") {
-      // Get the template prompt that was added earlier while initializing
-      const templatePrompt = messageHistory.find(
-        (message) => message.role === "data"
-      );
-      if (!templatePrompt) return;
-      const messages = [
-        {
-          id: "1",
-          role: "user" as const,
-          content: projectFilesMsg(projectFiles, ignorePatterns),
-        },
-        ...(templatePrompt
-          ? [
-              {
-                id: "2",
-                role: "user" as const,
-                content: templatePrompt.content,
-              },
-              {
-                id: "3",
-                role: "user" as const,
-                content: projectInstructionsMsg(input),
-              },
-            ]
-          : [
-              {
-                id: "2",
-                role: "user" as const,
-                content: projectInstructionsMsg(input),
-              },
-            ]),
-      ];
-      setMessages(messages);
-    } else {
-      if (!currentMessageId) return;
-      const newMessages = constructMessages(
-        input,
-        currentMessageId,
-        projectFiles,
-        messageHistory,
-        ignorePatterns
-      );
-      setMessages(newMessages);
-    }
-    reload();
-    setCurrentMessageId(crypto.randomUUID());
-    setInput("");
-  }
 
   return (
     <>
@@ -197,7 +116,7 @@ export default function ProjectInfo() {
                       alert={actionAlert}
                       clearAlert={() => setActionAlert(null)}
                       postMessage={(message) => {
-                        handleSubmit(message);
+                        handleSend(message);
                         setActionAlert(null);
                       }}
                     />
@@ -205,7 +124,7 @@ export default function ProjectInfo() {
                 )}
                 <ChatInput
                   placeholder="How can we refine it..."
-                  handleSubmit={handleSubmit}
+                  handleSubmit={handleSend}
                   input={input}
                   setInput={setInput}
                   isLoading={isLoading}

@@ -182,5 +182,5 @@ export function useMessageParser() {
     }
   }, [lastStreamedAction?.id]);
 
-  return handleNewMessage;
+  return { handleNewMessage };
 }

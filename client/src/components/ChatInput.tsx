@@ -70,16 +70,27 @@ export const ChatInput = memo(
   }) => {
     const { authenticatedFetch } = useFetch();
     const [enhancing, setEnhancing] = useState(false);
+    const { subscriptionData, abortAllActions } = useProjectStore(
+      useShallow((state) => ({
+        subscriptionData: state.subscriptionData,
+        abortAllActions: state.abortAllActions,
+      }))
+    );
     const buttonConfigs: ButtonConfig[] = [
       {
-        show: Boolean(!isLoading),
+        show: Boolean(!isLoading && input),
         icon: <CornerDownLeft className="size-4" />,
         onClick: () => handleSubmit(input),
       },
       {
         show: Boolean(isLoading && stop),
         icon: <CircleStop className="size-4" />,
-        onClick: stop || (() => {}),
+        onClick: stop
+          ? () => {
+              stop();
+              abortAllActions();
+            }
+          : () => {},
       },
       {
         show: Boolean(error && reload),
@@ -98,23 +109,18 @@ export const ChatInput = memo(
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ prompt: input }),
-          },
+          }
         );
         setInput(result.enhancedPrompt);
       } catch (error) {
         customToast(
-          error instanceof Error ? error.message : "Failed to enhance prompt",
+          error instanceof Error ? error.message : "Failed to enhance prompt"
         );
       } finally {
         setEnhancing(false);
       }
     }
 
-    const { subscriptionData } = useProjectStore(
-      useShallow((state) => ({
-        subscriptionData: state.subscriptionData,
-      })),
-    );
     const activeButton = buttonConfigs.find((config) => config.show);
 
     return (
@@ -123,7 +129,7 @@ export const ChatInput = memo(
           <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 dark:shadow-sky-400 text-center -top-5 px-2 border border-gray-200 dark:border-gray-600 bg-[#F5F5F5] dark:bg-gray-800 rounded-t-md text-[12px]">
             {formatNumber(
               subscriptionData.tokenUsage.daily.limit -
-                subscriptionData.tokenUsage.daily.used,
+                subscriptionData.tokenUsage.daily.used
             )}{" "}
             daily tokens left out of{" "}
             {formatNumber(subscriptionData.tokenUsage.daily.limit)} tokens
@@ -141,7 +147,7 @@ export const ChatInput = memo(
               "relative pl-4 pr-12 py-2 rounded-lg whitespace-pre-wrap",
               "transition-shadow duration-300",
               "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background",
-              "bg-white dark:bg-slate-900 text-black dark:text-white",
+              "bg-white dark:bg-slate-900 text-black dark:text-white"
             )}
             placeholder={placeholder}
             value={input}
@@ -179,7 +185,7 @@ export const ChatInput = memo(
         )}
       </div>
     );
-  },
+  }
 );
 
 ChatInput.displayName = "ChatInput";

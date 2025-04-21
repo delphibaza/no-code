@@ -50,12 +50,16 @@ export default function HomePage() {
           templateName: templateName,
         } as PromptSchema),
       });
-      upsertMessage({
-        id: crypto.randomUUID(),
-        role: "user",
-        timestamp: Date.now(),
-        content: input,
-      });
+      // Don't add user message if template is selected
+      // to reduce the number of messages
+      if (!templateName) {
+        upsertMessage({
+          id: crypto.randomUUID(),
+          role: "user",
+          timestamp: Date.now(),
+          content: input,
+        });
+      }
       navigate(`/project/${data.projectId}`);
     } catch (error) {
       const errorMessage =

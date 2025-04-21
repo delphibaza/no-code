@@ -69,6 +69,7 @@ export interface Artifact {
 export type ExistingProject = {
   state: "existing";
   projectFiles: File[];
+  ignorePatterns: string[];
   messages: {
     id: string;
     role: Exclude<Role, "data">;
@@ -81,7 +82,7 @@ export type BlankTemplateProject = Template & {
   state: "blankTemplate";
 };
 export type NewProject = Template & {
-  state: "inProgress";
+  state: "new";
   enhancedPrompt: string;
 };
 export interface ContentFile {
