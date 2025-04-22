@@ -19,9 +19,9 @@ import {
   selectTemplate,
 } from "../services/projectService";
 import {
+  checkAndUpdateTokenUsage,
   checkLimits,
   updateSubscription,
-  updateTokenUsage,
 } from "../services/subscriptionService";
 import { getTemplate } from "../utils/getTemplate";
 import { ApplicationError } from "../utils/timeHelpers";
@@ -112,6 +112,7 @@ router.post(
       }
       // If the user has selected a blank template
       if (project.state === "blankTemplate") {
+        // Blank template needs a template name
         if (!project.templateName) {
           throw new ApplicationError("Template not found", 404);
         }
@@ -133,6 +134,20 @@ router.post(
           if (!templateData) {
             throw new ApplicationError("Unable to retrieve template", 404);
           }
+        }
+        // Create project files
+        if (project.files.length === 0) {
+          await createProjectFiles(project.id, templateData.templateFiles);
+        }
+        // Store ignore patterns if not already stored
+        if (
+          project.ignorePatterns.length === 0 &&
+          templateData.ignorePatterns.length > 0
+        ) {
+          await prisma.project.update({
+            where: { id: project.id },
+            data: { ignorePatterns: templateData.ignorePatterns },
+          });
         }
         // Not returning the enhanced prompt unlike for a new project
         res.json({
@@ -169,7 +184,7 @@ router.post(
       req.plan.monthlyTokensUsed += enhanceUsage.totalTokens;
 
       // Check the limits
-      await updateTokenUsage(req.plan);
+      await checkAndUpdateTokenUsage(req.plan);
 
       // Step 2: Select appropriate template(s) based on the enhanced prompt
       const {
@@ -182,14 +197,14 @@ router.post(
       req.plan.dailyTokensUsed += templateUsage.totalTokens;
       req.plan.monthlyTokensUsed += templateUsage.totalTokens;
 
-      await updateTokenUsage(req.plan);
+      // Check the limits
+      await checkAndUpdateTokenUsage(req.plan);
 
       // Step 3: Get template data and create project files
       const templateData = await getTemplateData(templates);
 
-      if (project.files.length === 0) {
-        await createProjectFiles(project.id, templateData.templateFiles);
-      }
+      // Create project files
+      await createProjectFiles(project.id, templateData.templateFiles);
 
       // Update the project with new title
       await prisma.project.update({
@@ -200,7 +215,7 @@ router.post(
         },
       });
 
-      // Persist updated token usage
+      // Persist updated token usage to the database
       await updateSubscription(req.plan);
 
       res.json({
@@ -297,7 +312,6 @@ router.get("/project-state/:projectId", async (req, res) => {
       state: project.state,
     });
   } catch (error) {
-    console.error("Failed to get project state:", error);
     if (error instanceof ApplicationError) {
       res.status(error.code).json({ msg: error.message });
       return;

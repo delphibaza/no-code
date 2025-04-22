@@ -149,7 +149,7 @@ class ActionRunner {
       this.deps.updateActionStatus(
         messageId,
         action.id,
-        action.abortSignal?.aborted ? "aborted" : "error",
+        action.abortSignal?.aborted ? "aborted" : "completed",
       );
     } catch (error) {
       if (action.abortSignal?.aborted) {
@@ -212,10 +212,10 @@ class ActionRunner {
     }
 
     const resp = await shell.executeCommand(action.command, () => {
-      console.debug(`[${action.type}]:Aborting Action\n\n`, action);
+      console.log(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort?.();
     });
-    console.debug(
+    console.log(
       `${action.type} Shell Response: [exit code:${resp?.exitCode}]`,
     );
 

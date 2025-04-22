@@ -73,10 +73,11 @@ export async function updateSubscription(planInfo: PlanInfo) {
  * @returns {Promise<void>}
  * @throws {Error} If token limits are exceeded
  */
-export async function updateTokenUsage(plan: PlanInfo) {
+export async function checkAndUpdateTokenUsage(plan: PlanInfo) {
   const limitsCheck = checkLimits(plan);
 
   if (!limitsCheck.success) {
+    // Update token usage if limits are exceeded
     await updateSubscription(plan);
     throw new ApplicationError(
       limitsCheck.message ?? "You have reached your token limit",
