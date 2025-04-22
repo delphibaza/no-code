@@ -123,11 +123,8 @@ export function constructMessages(
 export function getImportArtifact(files: File[]) {
   const { setupCommand } = detectSetupCommand(files);
   const currentActions: ShellAction[] = [
-    {
-      id: 0,
-      type: "shell",
-      command: setupCommand,
-    },
+    { id: 0, type: "shell", command: "npm install" },
+    { id: 1, type: "shell", command: setupCommand },
   ];
   const artifact: Artifact = {
     title: "Importing Project",
@@ -147,7 +144,7 @@ export const detectSetupCommand = (files: File[]) => {
   const packageJson = getFileContent("package.json");
 
   if (!packageJson) {
-    return { setupCommand: "npm install && npm run dev" };
+    return { setupCommand: "npm run dev" };
   }
 
   const scripts = JSON.parse(packageJson)?.scripts || {};
@@ -157,7 +154,7 @@ export const detectSetupCommand = (files: File[]) => {
 
   if (availableCommand) {
     return {
-      setupCommand: `npm install && npm run ${availableCommand}`,
+      setupCommand: `npm run ${availableCommand}`,
     };
   }
 
@@ -167,5 +164,5 @@ export const detectSetupCommand = (files: File[]) => {
     };
   }
   // Hardcoded default for unknown project types
-  return { setupCommand: "npm install && npm run dev" };
+  return { setupCommand: "npm run dev" };
 };

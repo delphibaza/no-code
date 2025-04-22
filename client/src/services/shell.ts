@@ -31,7 +31,7 @@ export async function newShellProcess(
   const args: string[] = [];
 
   // we spawn a JSH process with a fallback cols and rows in case the process is not attached yet to a visible terminal
-  const process = await webcontainer.spawn("jsh", ["--osc", ...args], {
+  const process = await webcontainer.spawn("/bin/jsh", ["--osc", ...args], {
     terminal: {
       cols: terminal.cols ?? 80,
       rows: terminal.rows ?? 15,
@@ -174,7 +174,7 @@ export class BoltShell {
     const args: string[] = [];
 
     // we spawn a JSH process with a fallback cols and rows in case the process is not attached yet to a visible terminal
-    const process = await webcontainer.spawn("jsh", ["--osc", ...args], {
+    const process = await webcontainer.spawn("/bin/jsh", ["--osc", ...args], {
       terminal: {
         cols: terminal.cols ?? 80,
         rows: terminal.rows ?? 15,

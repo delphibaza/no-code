@@ -2,6 +2,7 @@ import { PromptInput } from "@/components/PromptInput";
 import { TemplateShowcase } from "@/components/TemplateShowcase";
 import { BackgroundDots } from "@/components/ui/background-dots";
 import { Badge } from "@/components/ui/badge";
+import { ExamplePrompts } from "@/components/ExamplePrompts";
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { customToast } from "@/lib/utils";
@@ -79,7 +80,7 @@ export default function HomePage() {
           animate="animate"
           variants={stagger}
         >
-          <section className="py-16 md:py-24">
+          <section className="py-16">
             <div className="container px-4 md:px-6">
               <motion.div
                 className="flex flex-col items-center gap-4 text-center"
@@ -167,6 +168,9 @@ export default function HomePage() {
                     handleSubmit={handleSubmit}
                     isLoading={isLoading}
                   />
+
+                  {/* Example Prompts UI */}
+                  <ExamplePrompts onPromptClick={handleSubmit} />
 
                   {/* Template Showcase Component */}
                   <motion.div
