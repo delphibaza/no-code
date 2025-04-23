@@ -25,7 +25,7 @@ export function useInitProject(
   ) => void,
   reload: () => Promise<string | null | undefined>
 ) {
-  const [initializingProject, setInitializingProject] = useState(false);
+  const [initializingProject, setInitializingProject] = useState(true);
   const { customFetch } = useFetch();
   const { setSelectedFile, updateProjectFiles, setIgnorePatterns } =
     useFilesStore(
@@ -81,7 +81,6 @@ export function useInitProject(
   async function initializeProject(projectId: string) {
     const container = await webcontainer;
     try {
-      setInitializingProject(true);
       if (!container) {
         throw new Error("WebContainer not initialized");
       }

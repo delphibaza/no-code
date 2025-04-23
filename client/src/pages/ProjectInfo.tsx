@@ -101,9 +101,9 @@ export default function ProjectInfo() {
     <>
       <Toaster />
       <BackgroundDots>
-        <div className="w-full pr-2 pl-8 pt-2 max-h-screen max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
+        <div className="w-full pr-2 pl-8 pt-2 h-full max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
           {initializingProject ? (
-            <div className="flex col-span-12 h-full md:h-[90vh] items-center justify-center">
+            <div className="flex col-span-12 h-full md:h-[85vh] items-center justify-center">
               <Loader2 className="animate-spin size-5" />
             </div>
           ) : (

@@ -6,12 +6,12 @@ import { actionRunner } from "@/services/action-runner";
 import { useNetlifyStore } from "@/stores/netlify";
 import { useProjectStore } from "@/stores/project";
 import { useVercelStore } from "@/stores/vercel";
+import { WORK_DIR } from "@repo/common/constants";
 import {
   Artifact,
   MessageHistory,
   ShellAction
 } from "@repo/common/types";
-import { WORK_DIR } from "@repo/common/constants";
 import { WebContainer } from "@webcontainer/api";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -93,9 +93,9 @@ export function useHandleDeploy() {
       return;
     }
 
+    const messageId = "build-" + Date.now();
     try {
       setDeployingTo(platform);
-      const messageId = "build-" + Date.now();
       setCurrentMessageId(messageId);
 
       // Create a shell action for the build command
@@ -131,10 +131,6 @@ export function useHandleDeploy() {
 
       // Run the action
       const buildOutput = await actionRunner.runBuildAction();
-      if (!buildOutput || buildOutput.exitCode !== 0) {
-        updateActionStatus(messageId, 0, "error");
-        throw new Error("Project build failed");
-      }
 
       updateActionStatus(messageId, 0, "completed");
 
@@ -327,6 +323,7 @@ export function useHandleDeploy() {
         }),
       });
     } catch (error) {
+      updateActionStatus(messageId, 0, "error");
       console.error(`${platform} deploy error:`, error);
       toast.error(`${platformName} deployment failed`);
     } finally {

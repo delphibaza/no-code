@@ -8,6 +8,7 @@ import { terminalStore } from "@/stores/terminal";
 import { ActionState, FileAction, ShellAction } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import { BoltShell } from "./shell";
+
 export interface ActionAlert {
   type: string;
   title: string;
@@ -49,7 +50,7 @@ interface Dependencies {
   updateActionStatus: (
     messageId: string,
     actionId: number,
-    status: ActionState["state"],
+    status: ActionState["state"]
   ) => void;
   webcontainerPromise: Promise<WebContainer>;
   getShellTerminal: () => BoltShell;
@@ -106,7 +107,7 @@ class ActionRunner {
           break;
         }
         case "start": {
-          // making the start app non blocking
+          // making the start app non blocking, knowingly not waiting for the start command to complete
           this.#runStartAction({
             ...action,
             abort: () => {
@@ -116,7 +117,7 @@ class ActionRunner {
             abortSignal: abortController.signal,
           })
             .then(() =>
-              this.deps.updateActionStatus(messageId, action.id, "completed"),
+              this.deps.updateActionStatus(messageId, action.id, "completed")
             )
             .catch((err: Error) => {
               if (action.abortSignal?.aborted) {
@@ -149,7 +150,7 @@ class ActionRunner {
       this.deps.updateActionStatus(
         messageId,
         action.id,
-        action.abortSignal?.aborted ? "aborted" : "completed",
+        action.abortSignal?.aborted ? "aborted" : "completed"
       );
     } catch (error) {
       if (action.abortSignal?.aborted) {
@@ -195,7 +196,7 @@ class ActionRunner {
       console.error(`Shell Action Failed: ${action.command}`, resp?.output);
       throw new ActionCommandError(
         `Failed To Execute Shell Command`,
-        resp?.output || "No Output Available",
+        resp?.output || "No Output Available"
       );
     }
   }
@@ -215,15 +216,13 @@ class ActionRunner {
       console.log(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort?.();
     });
-    console.log(
-      `${action.type} Shell Response: [exit code:${resp?.exitCode}]`,
-    );
+    console.log(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
     if (resp?.exitCode != 0) {
       console.error(`Failed to start application\n\n`, resp);
       throw new ActionCommandError(
         "Failed To Start Application",
-        resp?.output || "No Output Available",
+        resp?.output || "No Output Available"
       );
     }
     return resp;
@@ -238,7 +237,7 @@ class ActionRunner {
     try {
       await mountFiles(
         { filePath: action.filePath, content: action.content },
-        webcontainer,
+        webcontainer
       );
       console.debug(`File written ${action.filePath}`);
     } catch (error) {
@@ -259,20 +258,54 @@ class ActionRunner {
         write(data) {
           output += data;
         },
-      }),
+      })
     );
 
     const exitCode = await buildProcess.exit;
 
     if (exitCode !== 0) {
-      throw new ActionCommandError(
-        "Build Failed",
-        output || "No Output Available",
-      );
+      this.deps.onAlert?.({
+        type: "error",
+        title: "Build Failed",
+        description: "Your project build failed",
+        content: output || "No Output Available",
+      });
+      throw new Error("Build failed");
     }
 
-    // Get the build output directory path
-    const buildDir = nodePath.join(webcontainer.workdir, "dist");
+    // Check for common build directories
+    const commonBuildDirs = [
+      "dist",
+      "build",
+      ".next",
+      "public",
+      "out",
+      "output",
+    ];
+    let buildDir = "";
+
+    // Try to find the first existing build directory
+    for (const dir of commonBuildDirs) {
+      const dirPath = nodePath.join(webcontainer.workdir, dir);
+
+      try {
+        await webcontainer.fs.readdir(dirPath);
+        buildDir = dirPath;
+        console.log(`Found build directory: ${buildDir}`);
+        break;
+      } catch (error) {
+        // Directory doesn't exist, try the next one
+        console.log(
+          `Build directory ${dir} not found, trying next option. ${error}`
+        );
+      }
+    }
+
+    // If no build directory was found, use the default (dist)
+    if (!buildDir) {
+      buildDir = nodePath.join(webcontainer.workdir, "dist");
+      console.log(`No build directory found, defaulting to: ${buildDir}`);
+    }
 
     return {
       path: buildDir,
@@ -281,6 +314,7 @@ class ActionRunner {
     };
   }
 }
+
 export const actionRunner = new ActionRunner({
   updateActionStatus: (messageId, actionId, status) =>
     useProjectStore.getState().updateActionStatus(messageId, actionId, status),
