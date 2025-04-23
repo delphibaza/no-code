@@ -42,6 +42,7 @@ export const devCommands = [
   "pnpm start",
   "pnpm run dev",
   "pnpm run start",
+  "node index.js",
 ];
 
 export function isInstallCommand(command: string) {

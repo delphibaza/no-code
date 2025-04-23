@@ -4,14 +4,14 @@ import {
   ShellActionState,
   ShellState,
 } from "@repo/common/types";
-import { Check, CircleDashed, Loader2, X } from "lucide-react";
+import { Check, CircleDashed, Loader2, Terminal, X } from "lucide-react";
 import { memo } from "react";
 
-const getCommandText = (command: string) => {
-  if (isInstallCommand(command)) return "Install dependencies";
-  if (isDevCommand(command)) return "Start application";
-  return "Run command";
-};
+function getCommandType(command: string) {
+  if (isInstallCommand(command)) return "install";
+  if (isDevCommand(command)) return "start";
+  return "run";
+}
 const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
   queued: <CircleDashed className="h-4 w-4 text-gray-600" />,
   running: <Loader2 className="h-4 w-4 animate-spin text-gray-500" />,
@@ -21,18 +21,29 @@ const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
 };
 export const ShellActionDisplay = memo(
   ({ action }: { action: ShellActionState }) => {
+    const commandType = getCommandType(action.command);
     return (
       <div className="flex flex-col gap-y-2">
         <div className="flex items-center gap-x-2">
-          {ACTION_ICONS[action.state]}
-          <div>{getCommandText(action.command)}</div>
+          {action.state === "running" && commandType === "start" ? (
+            <Terminal className="h-4 w-4" />
+          ) : (
+            ACTION_ICONS[action.state]
+          )}
+          <div>
+            {commandType === "start"
+              ? "Start application"
+              : commandType === "install"
+              ? "Install dependencies"
+              : "Run command"}
+          </div>
         </div>
         <code className="px-3 py-4 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm">
           {action.command}
         </code>
       </div>
     );
-  },
+  }
 );
 
 export const FileActionDisplay = memo(
@@ -55,7 +66,7 @@ export const FileActionDisplay = memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 ShellActionDisplay.displayName = "ShellActionDisplay";
