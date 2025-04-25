@@ -130,7 +130,6 @@ export class BoltShell {
     }
 
     const state = this.executionState; // get the current state
-
     if (state && state?.abort) {
       state.abort();
     }

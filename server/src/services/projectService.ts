@@ -145,9 +145,11 @@ export async function validateProjectOwnership(
   if (!project) {
     throw new ApplicationError("Project not found", 404);
   }
-
   if (project.userId !== userId) {
-    throw new ApplicationError("You are not allowed to access this project", 403);
+    throw new ApplicationError(
+      "You are not allowed to access this project",
+      403
+    );
   }
 
   return project;

@@ -25,7 +25,7 @@ export interface TerminalProps {
 
 export const Terminal = memo(
   forwardRef<TerminalRef, TerminalProps>(
-    ({ className, onTerminalReady, id, onTerminalResize, readonly }, ref) => {
+    ({ className, onTerminalReady, id, onTerminalResize }, ref) => {
       const terminalElementRef = useRef<HTMLDivElement>(null);
       const terminalRef = useRef<XTerm | null>(null);
       const { theme } = useTheme();
@@ -41,7 +41,6 @@ export const Terminal = memo(
         const terminal = new XTerm({
           cursorBlink: true,
           convertEol: true,
-          disableStdin: readonly,
           theme: getTerminalTheme(theme),
           fontSize: 12,
           fontFamily: 'Menlo, Monaco, "Courier New", monospace',
@@ -71,29 +70,25 @@ export const Terminal = memo(
       // Update theme when it changes
       useEffect(() => {
         const terminal = terminalRef.current!;
+        terminal.options.theme = getTerminalTheme(theme);
+      }, [theme]);
 
-        // we render a transparent cursor in case the terminal is readonly
-        terminal.options.theme = readonly
-          ? { ...getTerminalTheme(theme), cursor: "#00000000" }
-          : getTerminalTheme(theme);
-
-        terminal.options.disableStdin = readonly;
-      }, [theme, readonly]);
-
-      useImperativeHandle(ref, () => {
-        return {
-          reloadStyles: () => {
-            const terminal = terminalRef.current!;
-            terminal.options.theme = readonly
-              ? { ...getTerminalTheme(theme), cursor: "#00000000" }
-              : getTerminalTheme(theme);
-          },
-        };
-      }, [theme, readonly]);
+      useImperativeHandle(
+        ref,
+        () => {
+          return {
+            reloadStyles: () => {
+              const terminal = terminalRef.current!;
+              terminal.options.theme = getTerminalTheme(theme);
+            },
+          };
+        },
+        [theme]
+      );
 
       return <div className={className} ref={terminalElementRef} />;
-    },
-  ),
+    }
+  )
 );
 
 Terminal.displayName = "Terminal";

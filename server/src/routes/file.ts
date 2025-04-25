@@ -14,9 +14,15 @@ router.post("/saveFiles", async (req: Request, res: Response) => {
     });
     return;
   }
+  if (!req.auth.userId) {
+    res.status(401).json({
+      msg: "Unauthorized",
+    });
+    return;
+  }
   const { projectId, files } = validation.data;
   try {
-    await validateProjectOwnership(projectId, req.auth.userId!);
+    await validateProjectOwnership(projectId, req.auth.userId);
     await prisma.$transaction(
       files.map((file) =>
         prisma.file.upsert({

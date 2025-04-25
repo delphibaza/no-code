@@ -1,4 +1,4 @@
-import { isNewFile, parseActions } from "@/lib/runtime";
+import { parseActions } from "@/lib/runtime";
 import { removeTrailingNewlines } from "@/lib/utils";
 import { actionRunner } from "@/services/action-runner";
 import { useFilesStore } from "@/stores/files";
@@ -17,21 +17,15 @@ export function useMessageParser() {
   const [lastStreamedAction, setLastStreamedAction] = useState<
     FileAction | ShellAction | null
   >(null);
-  const {
-    currentMessageId,
-    upsertMessage,
-    addAction,
-    updateActionStatus,
-    getActionStatus,
-  } = useProjectStore(
-    useShallow((state) => ({
-      currentMessageId: state.currentMessageId,
-      upsertMessage: state.upsertMessage,
-      getActionStatus: state.getActionStatus,
-      addAction: state.addAction,
-      updateActionStatus: state.updateActionStatus,
-    }))
-  );
+  const { currentMessageId, upsertMessage, addAction, updateActionStatus } =
+    useProjectStore(
+      useShallow((state) => ({
+        currentMessageId: state.currentMessageId,
+        upsertMessage: state.upsertMessage,
+        addAction: state.addAction,
+        updateActionStatus: state.updateActionStatus,
+      }))
+    );
   const { selectedFile, projectFiles, updateProjectFiles, setSelectedFile } =
     useFilesStore(
       useShallow((state) => ({
@@ -146,9 +140,7 @@ export function useMessageParser() {
         id: streamingAction.id,
         type: "file",
         filePath: streamingAction.filePath,
-        state: isNewFile(streamingAction.filePath, projectFiles)
-          ? "creating"
-          : "updating",
+        state: "creating",
       });
     }
     if (
@@ -162,14 +154,7 @@ export function useMessageParser() {
   useEffect(() => {
     if (lastStreamedAction && currentMessageId && projectFiles.length > 0) {
       if (lastStreamedAction.type === "file") {
-        const prevStatus = getActionStatus(lastStreamedAction.id);
-        updateActionStatus(
-          currentMessageId,
-          lastStreamedAction.id,
-          prevStatus === "creating" || prevStatus === "created"
-            ? "created"
-            : "updated"
-        );
+        updateActionStatus(currentMessageId, lastStreamedAction.id, "created");
       } else if (lastStreamedAction.type === "shell") {
         addAction(currentMessageId, {
           id: lastStreamedAction.id,

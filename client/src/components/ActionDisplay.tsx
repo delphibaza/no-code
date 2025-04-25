@@ -1,10 +1,11 @@
+import { Spinner } from "@/assets/icons/spinner";
 import { isDevCommand, isInstallCommand } from "@/lib/utils";
 import {
   FileActionState,
   ShellActionState,
   ShellState,
 } from "@repo/common/types";
-import { Check, CircleDashed, Loader2, Terminal, X } from "lucide-react";
+import { Check, CircleDashed, Terminal, X } from "lucide-react";
 import { memo } from "react";
 
 function getCommandType(command: string) {
@@ -14,7 +15,7 @@ function getCommandType(command: string) {
 }
 const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
   queued: <CircleDashed className="h-4 w-4 text-gray-600" />,
-  running: <Loader2 className="h-4 w-4 animate-spin text-gray-500" />,
+  running: <Spinner />,
   completed: <Check className="h-4 w-4 text-green-500" />,
   error: <X className="h-4 w-4 text-red-500" />,
   aborted: <X className="h-4 w-4 text-red-500" />,
@@ -56,7 +57,7 @@ export const FileActionDisplay = memo(
     return (
       <div className="flex items-center gap-x-2">
         {isInProgress ? (
-          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+          <Spinner />
         ) : (
           <Check className="h-4 w-4 text-green-500" />
         )}

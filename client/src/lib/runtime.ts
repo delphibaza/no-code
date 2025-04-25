@@ -10,10 +10,6 @@ import { IMPORT_ARTIFACT_ID } from "./constants";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
 import { chatHistoryMsg, projectFilesMsg } from "./prompts";
 
-export function isNewFile(filePath: string, templateFiles: File[]) {
-  return templateFiles.every((file) => file.filePath !== filePath);
-}
-
 export function parseActions(
   actions: (Partial<FileAction> | Partial<ShellAction>)[]
 ): (FileAction | ShellAction)[] {

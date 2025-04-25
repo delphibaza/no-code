@@ -9,15 +9,15 @@ export function FileComponent({
   name: string;
   filePath: string;
 }) {
-  const { selectedFile, setSelectedFile, isFileModified } = useFilesStore(
+  const { selectedFile, setSelectedFile, modifiedFiles } = useFilesStore(
     useShallow((state) => ({
       selectedFile: state.selectedFile,
       setSelectedFile: state.setSelectedFile,
-      isFileModified: state.isFileModified,
+      modifiedFiles: state.modifiedFiles,
     })),
   );
   const isSelected = selectedFile === filePath;
-  const isModified = isFileModified(filePath);
+  const isModified = modifiedFiles.has(filePath);
 
   return (
     <div
