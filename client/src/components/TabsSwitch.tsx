@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import useFetch from "@/hooks/useFetch";
 import { useHandleDeploy } from "@/hooks/useHandleDeploy";
 import { customToast } from "@/lib/utils";
 import { useFilesStore } from "@/stores/files";
@@ -47,7 +48,7 @@ const TabButton = memo(
     >
       {label}
     </Button>
-  ),
+  )
 );
 TabButton.displayName = "TabButton";
 
@@ -63,26 +64,28 @@ export function TabsSwitch({
       currentTab: state.currentTab,
       setCurrentTab: state.setCurrentTab,
       showTerminal: state.showTerminal,
-    })),
+    }))
   );
   const { currentProjectId } = useProjectStore(
     useShallow((state) => ({
       currentProjectId: state.currentProjectId,
-    })),
+    }))
   );
-  const { saveModifiedFile, resetFile, selectedFile, isFileModified } =
+  const { modifiedFiles, selectedFile, saveModifiedFile, resetFile } =
     useFilesStore(
       useShallow((state) => ({
+        modifiedFiles: state.modifiedFiles,
         selectedFile: state.selectedFile,
         saveModifiedFile: state.saveModifiedFile,
         resetFile: state.resetFile,
-        isFileModified: state.isFileModified,
-      })),
+      }))
     );
+  const { customFetch } = useFetch();
   const { deployingTo, hasNetlifyToken, hasVercelToken, handleDeploy } =
     useHandleDeploy();
-  const showFileActions = selectedFile && isFileModified(selectedFile);
+  const showFileActions = selectedFile && modifiedFiles.has(selectedFile);
   const DEFAULT_EDITOR_SIZE = 100 - DEFAULT_TERMINAL_SIZE;
+
   return (
     <>
       <Toaster />
@@ -174,6 +177,7 @@ export function TabsSwitch({
                       const result = await saveModifiedFile(
                         currentProjectId,
                         selectedFile,
+                        customFetch
                       );
                       if (result.success) {
                         toast.success("File saved successfully");

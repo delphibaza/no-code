@@ -20,10 +20,10 @@ interface FilesStore {
   setIgnorePatterns: (patterns: string[]) => void;
   markFileAsModified: (filePath: string) => void;
   resetFile: (filePath: string) => void;
-  isFileModified: (filePath: string) => boolean;
   saveModifiedFile: (
     projectId: string,
     filePath: string,
+    fetchFn: typeof fetch
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -106,9 +106,11 @@ export const useFilesStore = create<FilesStore>()(
         };
       }),
 
-    isFileModified: (filePath) => get().modifiedFiles.has(filePath),
-
-    saveModifiedFile: async (projectId: string, filePath: string) => {
+    saveModifiedFile: async (
+      projectId: string,
+      filePath: string,
+      customFetch: typeof fetch
+    ) => {
       const state = get();
       const globalWebContainer = await webcontainer;
 
@@ -126,7 +128,7 @@ export const useFilesStore = create<FilesStore>()(
         await mountFiles(file, globalWebContainer);
 
         // Save to backend
-        const response = await fetch(`${API_URL}/api/saveFiles`, {
+        const response = await customFetch(`${API_URL}/api/saveFiles`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

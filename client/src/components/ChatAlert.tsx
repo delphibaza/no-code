@@ -78,7 +78,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                   size="sm"
                   variant="default"
                 >
-                  Ask Bolt
+                  Ask AI
                 </Button>
                 <Button onClick={clearAlert} variant="outline" size="sm">
                   Dismiss

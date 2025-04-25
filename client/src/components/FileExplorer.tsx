@@ -37,11 +37,11 @@ function RenderStructure({ files }: { files: Folders[] }) {
 }
 
 export function FileExplorer({ readonly }: { readonly: boolean }) {
-  const { projectFiles, selectedFile, isFileModified } = useFilesStore(
+  const { projectFiles, selectedFile, modifiedFiles } = useFilesStore(
     useShallow((state) => ({
       projectFiles: state.projectFiles,
       selectedFile: state.selectedFile,
-      isFileModified: state.isFileModified,
+      modifiedFiles: state.modifiedFiles,
     })),
   );
   const folders = buildHierarchy(projectFiles);
@@ -54,7 +54,7 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
             <FolderIcon className="h-4" />
             Files
           </div>
-          {selectedFile && isFileModified(selectedFile) && (
+          {selectedFile && modifiedFiles.has(selectedFile) && (
             <div className="w-2 h-2 rounded-full bg-yellow-400" />
           )}
         </div>

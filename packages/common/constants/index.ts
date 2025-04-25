@@ -10,7 +10,7 @@ export interface StarterTemplate {
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
     name: "bolt-vite-react",
-    label: "React + Vite + TypeScript",
+    label: "React + Vite + TypeScript Starter",
     description:
       "React starter template powered by Vite for fast development experience",
     githubRepo: "thecodacus/bolt-vite-react-ts-template",
@@ -19,7 +19,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-nextjs-shadcn",
-    label: "Next.js with shadcn/ui",
+    label: "Next.js with shadcn/ui Starter",
     description:
       "Next.js starter fullstack template integrated with shadcn/ui components and styling system",
     githubRepo: "thecodacus/bolt-nextjs-shadcn-template",
@@ -28,7 +28,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-express-simple",
-    label: "Express.js",
+    label: "Express.js Starter",
     description: "Express.js starter template in JavaScript",
     githubRepo: "stackblitz/starters",
     folder: "express-simple",
@@ -37,7 +37,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-node",
-    label: "Node.js",
+    label: "Node.js Starter",
     description: "Node.js starter template with JavaScript",
     githubRepo: "stackblitz/starters",
     folder: "node",
@@ -55,7 +55,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-vue",
-    label: "Vue.js",
+    label: "Vue.js Starter",
     description:
       "Vue.js starter template with modern tooling and best practices",
     githubRepo: "thecodacus/bolt-vue-template",
@@ -64,7 +64,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-remix-ts",
-    label: "Remix TypeScript",
+    label: "Remix TypeScript Starter",
     description:
       "Remix framework starter with TypeScript for full-stack web applications",
     githubRepo: "thecodacus/bolt-remix-ts-template",
@@ -73,7 +73,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-astro-basic",
-    label: "Astro Basic",
+    label: "Astro Basic Starter",
     description:
       "Lightweight Astro starter template for building fast static websites",
     githubRepo: "thecodacus/bolt-astro-basic-template",
@@ -82,7 +82,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-sveltekit",
-    label: "SvelteKit",
+    label: "SvelteKit Starter",
     description:
       "SvelteKit starter template for building fast, efficient web applications",
     githubRepo: "bolt-sveltekit-template",
@@ -91,7 +91,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-qwik-ts",
-    label: "Qwik TypeScript",
+    label: "Qwik TypeScript Starter",
     description:
       "Qwik framework starter with TypeScript for building resumable applications",
     githubRepo: "thecodacus/bolt-qwik-ts-template",
@@ -100,7 +100,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "vanilla-vite",
-    label: "Vanilla + Vite",
+    label: "Vanilla + Vite Starter",
     description:
       "Minimal Vite starter template for vanilla JavaScript projects",
     githubRepo: "thecodacus/vanilla-vite-template",
@@ -109,7 +109,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
   },
   {
     name: "bolt-slidev",
-    label: "Slidev Presentation",
+    label: "Slidev Presentation Starter",
     description:
       "Slidev starter template for creating developer-friendly presentations using Markdown",
     githubRepo: "thecodacus/bolt-slidev-template",

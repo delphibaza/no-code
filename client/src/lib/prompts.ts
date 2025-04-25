@@ -36,7 +36,8 @@ export const projectInstructionsMsg = (currTask: string) => stripIndents`
   YOUR CURRENT TASK: ${currTask}
   VALIDATION CHECKLIST:
   ✓ For full-stack projects: Commands are run in the respective directories (Ex: run commands in the frontend and backend directories by running the \`cd\` command)
-  ✓ Follow the order of operations mentioned above
+  ✓ Follow the order of operations mentioned above.
+  ✓ Make the code modular i.e. don't generate a single file with all the code. Divide the code into multiple files.
   Don'ts:
   ✗ Don't give install command after file changes, the install command must be the first command.
   ✗ Don't give placeholder/commented code, incomplete implementations, TODO comments, example/template code
@@ -47,5 +48,5 @@ export function chatHistoryMsg() {
   return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
   Please reference this context to inform your future responses and maintain conversation continuity.
   Only install dependencies if the dependency management file (Ex:package.json) has been updated. 
-  Application start command is not required.`;
+  But importantly always give the application start command even if you fix an error.`;
 }

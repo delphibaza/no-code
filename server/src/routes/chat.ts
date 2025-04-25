@@ -53,7 +53,7 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           system: getSystemPrompt(),
           messages: messages,
           experimental_transform: smoothStream(),
-          maxTokens: 8192,
+          maxTokens: 12000,
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
               // Update token usage and check limits

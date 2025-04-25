@@ -58,7 +58,7 @@ export default function ProjectInfo() {
     },
     fetch: customFetch,
     sendExtraMessageFields: true,
-    experimental_throttle: 50,
+    experimental_throttle: 75,
     onFinish: async (_, { finishReason }) => {
       if (finishReason !== "stop") {
         customToast(

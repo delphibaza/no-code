@@ -2,19 +2,6 @@ import { cleanStackTrace } from "@/lib/utils";
 import { cwd } from "@repo/common/constants";
 import { WebContainer } from "@webcontainer/api";
 
-let webContainerInstance: WebContainer | null = null;
-
-export const getWebContainer = async (): Promise<WebContainer> => {
-  if (!webContainerInstance) {
-    webContainerInstance = await WebContainer.boot({
-      coep: "credentialless",
-      workdirName: cwd,
-      forwardPreviewErrors: true, // Enable error forwarding from iframes
-    });
-  }
-  return webContainerInstance;
-};
-
 interface WebContainerContext {
   loaded: boolean;
 }
@@ -40,7 +27,7 @@ if (!import.meta.env.SSR) {
         return WebContainer.boot({
           coep: "credentialless",
           workdirName: cwd,
-          forwardPreviewErrors: true, // Enable error forwarding from iframes
+          forwardPreviewErrors: true, // Enable error forwarding from iframes,
         });
       })
       .then(async (webcontainer) => {
@@ -65,10 +52,18 @@ if (!import.meta.env.SSR) {
                 ? "Unhandled Promise Rejection"
                 : "Uncaught Exception",
               description: message.message,
-              content: `Error occurred at ${message.pathname}${message.search}${message.hash}\nPort: ${message.port}\n\nStack trace:\n${cleanStackTrace(message.stack || "")}`,
+              content: `Error occurred at ${message.pathname}${message.search}${
+                message.hash
+              }\nPort: ${message.port}\n\nStack trace:\n${cleanStackTrace(
+                message.stack || ""
+              )}`,
               source: "preview",
             });
           }
+        });
+
+        webcontainer.on("error", (error) => {
+          console.log("WebContainer error:", error);
         });
 
         webcontainer.on("server-ready", (port, url) => {
