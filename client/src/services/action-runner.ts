@@ -16,7 +16,11 @@ export interface ActionAlert {
   content: string;
   source?: "terminal" | "preview"; // Add source to differentiate between terminal and preview errors
 }
-
+function outputHasError(output: string) {
+  const lowerCaseOutput = output.toLowerCase();
+  const errorWords = ["error", "failed", "abort", "timeout", "not found"];
+  return errorWords.some((word) => lowerCaseOutput.includes(word));
+}
 class ActionCommandError extends Error {
   readonly _output: string;
   readonly _header: string;
@@ -80,9 +84,19 @@ class ActionRunner {
   // Public method to add a new action
   public addAction(messageId: string, action: FileAction | ShellAction) {
     // Queue the action execution
-    this.addToExecutionQueue(async () => {
-      await this.#executeAction(messageId, action);
-    });
+    if (action.type === "shell" && action.command.includes("&&")) {
+      const commands = action.command.split("&&");
+      commands.forEach((command) => {
+        this.addToExecutionQueue(
+          async () =>
+            await this.#executeAction(messageId, { ...action, command })
+        );
+      });
+    } else {
+      this.addToExecutionQueue(
+        async () => await this.#executeAction(messageId, action)
+      );
+    }
   }
 
   async #executeAction(messageId: string, action: FileAction | ShellAction) {
@@ -90,40 +104,39 @@ class ActionRunner {
       await this.#runFileAction(action);
       return;
     }
+    // we need to create a new abort controller for each action
     const abortController = new AbortController();
+    const modifiedAction: ShellAction = {
+      ...action,
+      abort: () => {
+        abortController.abort();
+        this.deps.updateActionStatus(messageId, action.id, "aborted");
+      },
+      abortSignal: abortController.signal,
+    };
     this.deps.updateActionStatus(messageId, action.id, "running");
     const type = isDevCommand(action.command) ? "start" : "shell";
     try {
       switch (type) {
         case "shell": {
-          await this.#runShellAction({
-            ...action,
-            abort: () => {
-              abortController.abort();
-              this.deps.updateActionStatus(messageId, action.id, "aborted");
-            },
-            abortSignal: abortController.signal,
-          });
+          await this.#runShellAction(modifiedAction);
           break;
         }
         case "start": {
           // making the start app non blocking, knowingly not waiting for the start command to complete
-          this.#runStartAction({
-            ...action,
-            abort: () => {
-              abortController.abort();
-              this.deps.updateActionStatus(messageId, action.id, "aborted");
-            },
-            abortSignal: abortController.signal,
-          })
+          this.#runStartAction(modifiedAction)
             .then(() =>
               this.deps.updateActionStatus(messageId, action.id, "completed")
             )
             .catch((err: Error) => {
-              if (action.abortSignal?.aborted) {
+              if (modifiedAction.abortSignal?.aborted) {
                 return;
               }
-              this.deps.updateActionStatus(messageId, action.id, "aborted");
+              this.deps.updateActionStatus(
+                messageId,
+                modifiedAction.id,
+                "error"
+              );
               console.error(`[${action.type}]:Action failed\n\n`, err);
 
               if (!(err instanceof ActionCommandError)) {
@@ -149,15 +162,15 @@ class ActionRunner {
 
       this.deps.updateActionStatus(
         messageId,
-        action.id,
-        action.abortSignal?.aborted ? "aborted" : "completed"
+        modifiedAction.id,
+        modifiedAction.abortSignal?.aborted ? "aborted" : "completed"
       );
     } catch (error) {
-      if (action.abortSignal?.aborted) {
+      if (modifiedAction.abortSignal?.aborted) {
         return;
       }
-      this.deps.updateActionStatus(messageId, action.id, "error");
-      console.error(`[${action.type}]:Action failed\n\n`, error);
+      this.deps.updateActionStatus(messageId, modifiedAction.id, "error");
+      console.error(`[${modifiedAction.type}]:Action failed\n\n`, error);
 
       if (!(error instanceof ActionCommandError)) {
         return;
@@ -193,7 +206,6 @@ class ActionRunner {
     console.log(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
     if (resp?.exitCode != 0) {
-      console.error(`Shell Action Failed: ${action.command}`, resp?.output);
       throw new ActionCommandError(
         `Failed To Execute Shell Command`,
         resp?.output || "No Output Available"
@@ -218,8 +230,11 @@ class ActionRunner {
     });
     console.log(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
-    if (resp?.exitCode != 0) {
-      console.error(`Failed to start application\n\n`, resp);
+    if (outputHasError(resp?.output || "")) {
+      console.log(
+        `Failed To Start Application: ${action.command}`,
+        resp?.output
+      );
       throw new ActionCommandError(
         "Failed To Start Application",
         resp?.output || "No Output Available"
@@ -239,7 +254,7 @@ class ActionRunner {
         { filePath: action.filePath, content: action.content },
         webcontainer
       );
-      console.debug(`File written ${action.filePath}`);
+      console.log(`File written ${action.filePath}`);
     } catch (error) {
       console.error("Failed to write file\n\n", error);
       throw error;

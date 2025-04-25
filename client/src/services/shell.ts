@@ -104,12 +104,8 @@ export class BoltShell {
     );
     this.#process = process;
     this.#outputStream = output.getReader();
-    // wait until we see the interactive OSC for only 10 seconds otherwise start to execute
-    const timeout = setTimeout(() => {
-      this.#initialized?.();
-    }, 10000);
+    // wait until we see the interactive OSC code
     await this.waitTillOscCode("interactive");
-    clearTimeout(timeout);
     this.#initialized?.();
   }
 
@@ -133,7 +129,6 @@ export class BoltShell {
     if (state && state?.abort) {
       state.abort();
     }
-
     /*
      * interrupt the current execution
      */

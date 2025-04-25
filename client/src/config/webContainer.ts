@@ -62,6 +62,10 @@ if (!import.meta.env.SSR) {
           }
         });
 
+        webcontainer.on("error", (error) => {
+          console.log("WebContainer error:", error);
+        });
+
         webcontainer.on("server-ready", (port, url) => {
           const { addPreview } = usePreviewStore.getState();
           addPreview({ port, ready: true, baseUrl: url });

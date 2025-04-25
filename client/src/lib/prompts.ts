@@ -48,5 +48,5 @@ export function chatHistoryMsg() {
   return stripIndents`Below is the conversation history, including all previous messages along with the most recent assistant response. 
   Please reference this context to inform your future responses and maintain conversation continuity.
   Only install dependencies if the dependency management file (Ex:package.json) has been updated. 
-  Application start command is not required.`;
+  But importantly always give the application start command even if you fix an error.`;
 }
