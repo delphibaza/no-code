@@ -52,21 +52,16 @@ const TabButton = memo(
 );
 TabButton.displayName = "TabButton";
 
-export function TabsSwitch({
-  initializingProject,
-  isStreaming,
-}: {
-  initializingProject: boolean;
-  isStreaming: boolean;
-}) {
-  const { currentTab, showTerminal, setCurrentTab, setShowTerminal } = useGeneralStore(
-    useShallow((state) => ({
-      currentTab: state.currentTab,
-      showTerminal: state.showTerminal,
-      setCurrentTab: state.setCurrentTab,
-      setShowTerminal: state.setShowTerminal,
-    }))
-  );
+export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
+  const { currentTab, showTerminal, setCurrentTab, setShowTerminal } =
+    useGeneralStore(
+      useShallow((state) => ({
+        currentTab: state.currentTab,
+        showTerminal: state.showTerminal,
+        setCurrentTab: state.setCurrentTab,
+        setShowTerminal: state.setShowTerminal,
+      }))
+    );
   const currentProjectId = useProjectStore(
     useShallow((state) => state.currentProjectId)
   );
@@ -78,9 +73,7 @@ export function TabsSwitch({
     <motion.div
       initial="closed"
       animate="open"
-      className={`col-span-8 border bg-gray-100 dark:bg-gray-800 rounded-lg h-full ${
-        initializingProject ? "hidden" : "block"
-      }`}
+      className={`col-span-8 border bg-primary-foreground rounded-lg h-full`}
     >
       <div className="flex items-center justify-between px-2 pt-2 pb-2 pr-6 rounded-t-lg">
         {/* Tab Switch Buttons */}
@@ -168,7 +161,7 @@ export function TabsSwitch({
         </div>
       </div>
 
-      <div className="relative h-[calc(100%-2.5rem)] overflow-hidden">
+      <div className="relative h-[calc(100%-3.5rem)] overflow-hidden">
         {/* Code Tab Content */}
         <motion.div
           key="code-tab"
@@ -191,20 +184,20 @@ export function TabsSwitch({
                 </div>
               </ResizablePanel>
 
-              {showTerminal && (
-                <>
-                  <ResizableHandle className="h-[2px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600" />
-                  <ResizablePanel
-                    defaultSize={DEFAULT_TERMINAL_SIZE}
-                    minSize={10}
-                    className="min-h-0"
-                  >
-                    <div className="h-full w-full overflow-hidden">
-                      <TerminalTabs readonly={isStreaming} />
-                    </div>
-                  </ResizablePanel>
-                </>
-              )}
+              <ResizableHandle
+                className={`h-[2px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 ${
+                  showTerminal ? "block" : "hidden"
+                }`}
+              />
+              <ResizablePanel
+                defaultSize={DEFAULT_TERMINAL_SIZE}
+                minSize={10}
+                className={`min-h-0 ${showTerminal ? "block" : "hidden"}`}
+              >
+                <div className="h-full w-full overflow-hidden">
+                  <TerminalTabs readonly={isStreaming} />
+                </div>
+              </ResizablePanel>
             </ResizablePanelGroup>
           </div>
         </motion.div>

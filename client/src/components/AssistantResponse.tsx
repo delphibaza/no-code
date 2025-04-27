@@ -196,7 +196,7 @@ export function AssistantResponse({
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="flex flex-col gap-y-4 bg-[#F5F5F5] dark:bg-gray-800 text-sm/6 rounded-lg px-4 py-3">
+    <div className="flex flex-col gap-y-4 bg-[#f7f7f7] dark:bg-gray-800 text-sm/6 rounded-lg px-4 py-3">
       {reasoning && (
         <Reasoning
           reasoning={reasoning}

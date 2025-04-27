@@ -4,7 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 export function UserMessage({ content }: { content: string }) {
   const { user, isLoaded } = useUser();
   return (
-    <div className="flex items-center gap-x-4 text-sm bg-[#F5F5F5] dark:bg-gray-800 rounded-lg px-4 py-4">
+    <div className="flex items-center gap-x-4 text-sm bg-[#f7f7f7] dark:bg-gray-800 rounded-lg px-4 py-4">
       <div className="flex-shrink-0">
         <Avatar>
           <AvatarImage src={user?.imageUrl} />

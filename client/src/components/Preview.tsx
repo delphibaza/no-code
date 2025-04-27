@@ -13,7 +13,7 @@ export function Preview() {
 
   if (!activePreview) {
     return (
-      <div className="flex items-center justify-center h-full border-2 text-sm">
+      <div className="flex items-center justify-center h-full text-sm">
         No preview available!
       </div>
     );
@@ -24,7 +24,7 @@ export function Preview() {
       <ProcessSwitcher />
       <iframe
         src={activePreview.baseUrl}
-        className="flex-1 w-full border-t-2 h-full"
+        className="flex-1 w-full h-full"
         title="preview"
         allow="cross-origin-isolated"
         loading="eager"

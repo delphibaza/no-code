@@ -47,7 +47,7 @@ export function Workbench() {
   return (
     <div
       style={{ scrollbarWidth: "none" }}
-      className="md:h-[70vh] overflow-y-auto space-y-3"
+      className="md:h-[70vh] h-full overflow-y-auto space-y-3"
       ref={containerRef}
     >
       {filteredMessageHistory.map((message) =>
