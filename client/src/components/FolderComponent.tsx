@@ -1,5 +1,6 @@
-import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { ChevronRight, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function FolderComponent({
   name,
@@ -13,15 +14,36 @@ export function FolderComponent({
   return (
     <div>
       <div
-        className="flex items-center gap-x-1 px-1 py-1 text-sm cursor-pointer hover:bg-gray-100 text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary dark:hover:bg-zinc-700"
+        className={cn(
+          "group flex items-center gap-x-1.5 px-2 py-1 text-sm cursor-pointer",
+          "hover:bg-muted/50 text-muted-foreground hover:text-foreground",
+          "transition-colors duration-150 ease-in-out"
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
         <ChevronRight
-          className={`h-4 transition-transform ${isOpen ? "rotate-90" : ""} dark:text-gray-400 dark:hover:text-primary dark:hover:bg-zinc-700`}
+          className={cn(
+            "h-3.5 w-3.5 text-muted-foreground transition-transform duration-150",
+            isOpen && "rotate-90"
+          )}
         />
-        {name}
+        <div className="flex items-center gap-x-1.5">
+          {isOpen ? (
+            <FolderOpenIcon className="h-4 w-4 text-amber-500" />
+          ) : (
+            <FolderIcon className="h-4 w-4 text-amber-500" />
+          )}
+          <span className="truncate">{name}</span>
+        </div>
       </div>
-      {isOpen && <div className="pl-2">{children}</div>}
+      <div
+        className={cn(
+          "pl-4 overflow-hidden transition-all duration-200 ease-in-out",
+          isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        {isOpen && children}
+      </div>
     </div>
   );
 }

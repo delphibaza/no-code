@@ -84,19 +84,9 @@ class ActionRunner {
   // Public method to add a new action
   public addAction(messageId: string, action: FileAction | ShellAction) {
     // Queue the action execution
-    if (action.type === "shell" && action.command.includes("&&")) {
-      const commands = action.command.split("&&");
-      commands.forEach((command) => {
-        this.addToExecutionQueue(
-          async () =>
-            await this.#executeAction(messageId, { ...action, command })
-        );
-      });
-    } else {
-      this.addToExecutionQueue(
-        async () => await this.#executeAction(messageId, action)
-      );
-    }
+    this.addToExecutionQueue(async () => {
+      await this.#executeAction(messageId, action);
+    });
   }
 
   async #executeAction(messageId: string, action: FileAction | ShellAction) {
@@ -230,7 +220,7 @@ class ActionRunner {
     });
     console.log(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
-    if (outputHasError(resp?.output || "")) {
+    if (resp?.exitCode != 0 && outputHasError(resp?.output || "")) {
       console.log(
         `Failed To Start Application: ${action.command}`,
         resp?.output

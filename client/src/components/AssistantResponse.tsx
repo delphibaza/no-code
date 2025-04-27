@@ -1,10 +1,14 @@
 import { cn } from "@/lib/utils";
+import { useFilesStore } from "@/stores/files";
+import { useGeneralStore } from "@/stores/general";
 import { ActionState } from "@repo/common/types";
 import { parse } from "best-effort-json-parser";
 import { ChevronDown, ChevronRight, Loader } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { FileActionDisplay, ShellActionDisplay } from "./ActionDisplay";
+import { Button } from "./ui/button";
 
 function parseContent(content: string) {
   try {
@@ -13,7 +17,8 @@ function parseContent(content: string) {
     return null;
   }
 }
-export function Reasoning({
+
+function Reasoning({
   reasoning,
   isReasoning,
 }: {
@@ -92,6 +97,89 @@ export function Reasoning({
   );
 }
 
+function HTMLContent({ content }: { content?: string }) {
+  if (!content) return null;
+  return (
+    <div
+      className="break-words overflow-wrap-anywhere whitespace-pre-line min-w-0 flex-1"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+}
+
+function ActionsPanel({
+  title,
+  actions,
+  isExpanded,
+  onToggle,
+}: {
+  title: string;
+  actions: ActionState[];
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const setSelectedFile = useFilesStore(
+    useShallow((state) => state.setSelectedFile)
+  );
+  const setCurrentTab = useGeneralStore(
+    useShallow((state) => state.setCurrentTab)
+  );
+
+  return (
+    <div className="bg-primary-foreground rounded-md space-y-1">
+      <div className="flex items-center justify-between px-5 py-2 border-b dark:border-zinc-800 border-zinc-200 font-medium text-sm">
+        <span>{title}</span>
+        <Button
+          variant="ghost"
+          className={cn("rounded-full transition-transform", {
+            "-rotate-180": isExpanded,
+          })}
+          size="icon"
+          onClick={onToggle}
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </div>
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            key="actions-panel"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="flex flex-col gap-y-3 px-5 py-4 overflow-hidden"
+          >
+            <AnimatePresence initial={false}>
+              {actions.map((action) => (
+                <motion.div
+                  key={action.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 24 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                >
+                  {action.type === "file" ? (
+                    <FileActionDisplay
+                      action={action}
+                      onClick={() => {
+                        setCurrentTab("code");
+                        setSelectedFile(action.filePath);
+                      }}
+                    />
+                  ) : (
+                    <ShellActionDisplay action={action} />
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function AssistantResponse({
   content,
   actions,
@@ -101,36 +189,31 @@ export function AssistantResponse({
   actions: ActionState[];
   reasoning?: string;
 }) {
-  const parsedContent = parseContent(content);
+  const artifact = useMemo(() => parseContent(content)?.artifact, [content]);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <div className="flex flex-col gap-y-4 bg-[#F5F5F5] dark:bg-gray-800 text-sm/6 rounded-lg px-4 py-3">
       {reasoning && (
         <Reasoning
           reasoning={reasoning}
-          isReasoning={!parsedContent?.artifact?.initialContext}
+          isReasoning={!artifact?.initialContext}
         />
       )}
-      <div className="break-words overflow-wrap-anywhere whitespace-pre-wrap min-w-0 flex-1">
-        {parsedContent?.artifact?.initialContext ?? ""}
-      </div>
-      {actions.length > 0 && (
-        <div className="flex flex-col gap-y-3 bg-primary-foreground rounded-md px-4 py-4">
-          {actions.map((action) =>
-            action.type === "file" ? (
-              <FileActionDisplay key={action.id} action={action} />
-            ) : (
-              <ShellActionDisplay key={action.id} action={action} />
-            )
+      {artifact?.title && (
+        <>
+          <HTMLContent content={artifact.initialContext} />
+          {actions.length > 0 && (
+            <ActionsPanel
+              title={artifact.title}
+              actions={actions}
+              isExpanded={isExpanded}
+              onToggle={() => setIsExpanded((prev) => !prev)}
+            />
           )}
-        </div>
+          <HTMLContent content={artifact.endingContext} />
+        </>
       )}
-      <div
-        className="break-words overflow-wrap-anywhere whitespace-pre-line min-w-0 flex-1"
-        dangerouslySetInnerHTML={{
-          __html: parsedContent?.artifact?.endingContext ?? "",
-        }}
-      />
     </div>
   );
 }

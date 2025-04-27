@@ -20,6 +20,7 @@ const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
   error: <X className="h-4 w-4 text-red-500" />,
   aborted: <X className="h-4 w-4 text-red-500" />,
 };
+
 export const ShellActionDisplay = memo(
   ({ action }: { action: ShellActionState }) => {
     const commandType = getCommandType(action.command);
@@ -48,7 +49,7 @@ export const ShellActionDisplay = memo(
 );
 
 export const FileActionDisplay = memo(
-  ({ action }: { action: FileActionState }) => {
+  ({ action, onClick }: { action: FileActionState; onClick: () => void }) => {
     const isInProgress =
       action.state === "creating" || action.state === "updating";
     const isCreatingAction =
@@ -61,9 +62,16 @@ export const FileActionDisplay = memo(
         ) : (
           <Check className="h-4 w-4 text-green-500" />
         )}
-        <div className="flex-1">
-          {isCreatingAction ? "Create " : "Update "}
-          {action.filePath}
+        <div
+          className="flex-1 flex flex-row gap-x-1 items-center hover:underline cursor-pointer"
+          onClick={onClick}
+        >
+          <span className="text-gray-800 dark:text-gray-200">
+            {isCreatingAction ? "Create" : "Update"}
+          </span>
+          <span className="bg-gray-100 dark:bg-gray-800 rounded-md px-2">
+            {action.filePath}
+          </span>
         </div>
       </div>
     );

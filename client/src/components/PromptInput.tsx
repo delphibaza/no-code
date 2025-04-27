@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
 import { ChatInput } from "./ChatInput";
 
 export function PromptInput({
@@ -13,7 +12,6 @@ export function PromptInput({
 
   return (
     <div className="relative flex flex-col w-full">
-      <Toaster />
       <ChatInput
         placeholder="Type a prompt ..."
         handleSubmit={handleSubmit}
