@@ -164,10 +164,12 @@ export default function HomePage() {
                     },
                   }}
                 >
+                  <div className="w-11/12 mx-auto">
                   <PromptInput
                     handleSubmit={handleSubmit}
                     isLoading={isLoading}
                   />
+                  </div>
 
                   {/* Example Prompts UI */}
                   <ExamplePrompts onPromptClick={handleSubmit} />

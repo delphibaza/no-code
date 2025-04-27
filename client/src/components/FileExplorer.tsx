@@ -45,7 +45,7 @@ function RenderStructure({ files }: { files: Folders[] }) {
   return (
     <div
       style={{ scrollbarWidth: "none" }}
-      className="overflow-y-auto overflow-x-hidden h-full"
+      className="py-1 overflow-y-auto overflow-x-hidden h-full"
     >
       {files.map((file) => {
         if (file.type === "folder") {
@@ -100,8 +100,9 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
   };
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden border rounded-md shadow-sm">
-      <div className="flex items-center justify-between border-b bg-muted/30 px-2 py-1.5">
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b bg-muted/30 px-2 py-1.5 flex-shrink-0">
         <div className="flex items-center gap-x-2">
           <TooltipProvider>
             <Tooltip>
@@ -172,88 +173,91 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
         )}
       </div>
 
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="flex-1 h-full"
-        onLayout={(sizes) => {
-          setDefaultLayout(sizes);
-        }}
-      >
-        <ResizablePanel
-          defaultSize={defaultLayout[0]}
-          minSize={15}
-          maxSize={40}
-          className={cn(
-            "bg-background transition-all duration-300 ease-in-out",
-            isFileExplorerCollapsed && "hidden"
-          )}
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="h-full"
+          onLayout={(sizes) => {
+            setDefaultLayout(sizes);
+          }}
         >
-          <div className="h-full overflow-hidden">
-            <RenderStructure files={folders} />
-          </div>
-        </ResizablePanel>
-
-        {!isFileExplorerCollapsed && (
-          <ResizableHandle withHandle>
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </ResizableHandle>
-        )}
-
-        <ResizablePanel
-          defaultSize={defaultLayout[1]}
-          className="flex flex-col"
-        >
-          {selectedFile ? (
-            <>
-              <div className="border-b bg-muted/20 px-3 py-1.5">
-                <Breadcrumb>
-                  <BreadcrumbList className="flex-wrap">
-                    {selectedFile.split("/").map((segment, index, array) => (
-                      <BreadcrumbItem key={index}>
-                        {index === array.length - 1 ? (
-                          <span className="flex items-center gap-x-1.5">
-                            <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="font-medium">{segment}</span>
-                            {modifiedFiles.has(selectedFile) && (
-                              <span className="text-xs text-muted-foreground">
-                                •
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <>
-                            <BreadcrumbLink className="text-xs text-muted-foreground hover:text-foreground">
-                              {segment}
-                            </BreadcrumbLink>
-                            <BreadcrumbSeparator />
-                          </>
-                        )}
-                      </BreadcrumbItem>
-                    ))}
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <CodeEditor
-                  code={findFileContent(projectFiles, selectedFile) ?? ""}
-                  language={getLanguageFromFileExtension(selectedFile)}
-                  readonly={readonly || !selectedFile || !projectFiles.length}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <div className="flex flex-col items-center gap-y-2 text-center max-w-md px-4">
-                <FileIcon className="h-12 w-12 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium">No file selected</h3>
-                <p className="text-sm text-muted-foreground">
-                  Select a file from the explorer to view and edit its content
-                </p>
-              </div>
+          <ResizablePanel
+            defaultSize={defaultLayout[0]}
+            minSize={15}
+            maxSize={40}
+            className={cn(
+              "bg-background transition-all duration-300 ease-in-out",
+              isFileExplorerCollapsed && "hidden"
+            )}
+          >
+            <div className="h-full overflow-hidden">
+              <RenderStructure files={folders} />
             </div>
+          </ResizablePanel>
+
+          {!isFileExplorerCollapsed && (
+            <ResizableHandle withHandle>
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </ResizableHandle>
           )}
-        </ResizablePanel>
-      </ResizablePanelGroup>
+
+          <ResizablePanel
+            defaultSize={defaultLayout[1]}
+            className="flex flex-col"
+          >
+            {selectedFile ? (
+              <>
+                <div className="border-b bg-muted/20 px-3 py-1.5">
+                  <Breadcrumb>
+                    <BreadcrumbList className="flex-wrap">
+                      {selectedFile.split("/").map((segment, index, array) => (
+                        <BreadcrumbItem key={index}>
+                          {index === array.length - 1 ? (
+                            <span className="flex items-center gap-x-1.5">
+                              <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="font-medium">{segment}</span>
+                              {modifiedFiles.has(selectedFile) && (
+                                <span className="text-xs text-muted-foreground">
+                                  •
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <>
+                              <BreadcrumbLink className="text-xs text-muted-foreground hover:text-foreground">
+                                {segment}
+                              </BreadcrumbLink>
+                              <BreadcrumbSeparator />
+                            </>
+                          )}
+                        </BreadcrumbItem>
+                      ))}
+                    </BreadcrumbList>
+                  </Breadcrumb>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <CodeEditor
+                    code={findFileContent(projectFiles, selectedFile) ?? ""}
+                    language={getLanguageFromFileExtension(selectedFile)}
+                    readonly={readonly || !selectedFile || !projectFiles.length}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <div className="flex flex-col items-center gap-y-2 text-center max-w-md px-4">
+                  <FileIcon className="h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium">No file selected</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select a file from the explorer to view and edit its content
+                  </p>
+                </div>
+              </div>
+            )}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
     </div>
   );
 }

@@ -168,7 +168,10 @@ function ActionsPanel({
                       }}
                     />
                   ) : (
-                    <ShellActionDisplay action={action} />
+                    <ShellActionDisplay
+                      action={action}
+                      onClick={() => setCurrentTab("preview")}
+                    />
                   )}
                 </motion.div>
               ))}
