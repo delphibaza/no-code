@@ -123,7 +123,7 @@ export function getImportArtifact(files: File[]) {
     { id: 1, type: "shell", command: setupCommand },
   ];
   const artifact: Artifact = {
-    title: "Setting up Project",
+    title: "Set up Project",
     initialContext:
       "I'm setting up your project. This may take a moment as I set everything up. Once it's ready, you'll be able to explore and interact with your code.",
     actions: currentActions,

@@ -58,6 +58,7 @@ export const ChatInput = memo(
     placeholder,
     handleSubmit,
     error,
+    rows = 5,
   }: {
     placeholder: string;
     handleSubmit: (input: string) => void;
@@ -67,6 +68,7 @@ export const ChatInput = memo(
     reload?: () => Promise<string | null | undefined>;
     stop?: () => void;
     error?: Error | undefined;
+    rows?: number;
   }) => {
     const { authenticatedFetch } = useFetch();
     const [enhancing, setEnhancing] = useState(false);
@@ -142,7 +144,7 @@ export const ChatInput = memo(
           className="rounded-lg overflow-hidden"
         >
           <Textarea
-            rows={5}
+            rows={rows}
             className={cn(
               "relative pl-4 pr-12 py-2 rounded-lg whitespace-pre-wrap",
               "transition-shadow duration-300",

@@ -6,7 +6,7 @@ import {
   ShellState,
 } from "@repo/common/types";
 import { Check, CircleDashed, Terminal, X } from "lucide-react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 function getCommandType(command: string) {
   if (isInstallCommand(command)) return "install";
@@ -22,22 +22,42 @@ const ACTION_ICONS: Record<ShellState, React.ReactNode> = {
 };
 
 export const ShellActionDisplay = memo(
-  ({ action }: { action: ShellActionState }) => {
-    const commandType = getCommandType(action.command);
+  ({ action, onClick }: { action: ShellActionState; onClick: () => void }) => {
+    const commandType = useMemo(
+      () => getCommandType(action.command),
+      [action.command]
+    );
+
+    const label = useMemo(() => {
+      switch (commandType) {
+        case "start":
+          return "Start application";
+        case "install":
+          return "Install dependencies";
+        default:
+          return "Run command";
+      }
+    }, [commandType]);
+
+    const showTerminalIcon =
+      action.state === "running" && commandType === "start";
+    const isStartCommand = commandType === "start";
+
     return (
       <div className="flex flex-col gap-y-2">
         <div className="flex items-center gap-x-2">
-          {action.state === "running" && commandType === "start" ? (
+          {showTerminalIcon ? (
             <Terminal className="h-4 w-4" />
           ) : (
             ACTION_ICONS[action.state]
           )}
-          <div>
-            {commandType === "start"
-              ? "Start application"
-              : commandType === "install"
-              ? "Install dependencies"
-              : "Run command"}
+          <div
+            className={
+              isStartCommand ? "hover:underline cursor-pointer" : undefined
+            }
+            onClick={isStartCommand ? onClick : undefined}
+          >
+            {label}
           </div>
         </div>
         <code className="px-3 py-4 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm">

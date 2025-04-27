@@ -7,15 +7,19 @@ import {
 import { useHandleDeploy } from "@/hooks/useHandleDeploy";
 import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
-import { MousePointerClick } from "lucide-react";
+import { MousePointerClick, Terminal } from "lucide-react";
 import { motion } from "motion/react";
 import { memo } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
 import { FileExplorer } from "./FileExplorer";
 import { Preview } from "./Preview";
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from "./TerminalTabs";
 import { Button } from "./ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./ui/resizable";
 
 const viewTransition = {
   type: "tween",
@@ -55,11 +59,12 @@ export function TabsSwitch({
   initializingProject: boolean;
   isStreaming: boolean;
 }) {
-  const { currentTab, setCurrentTab, showTerminal } = useGeneralStore(
+  const { currentTab, showTerminal, setCurrentTab, setShowTerminal } = useGeneralStore(
     useShallow((state) => ({
       currentTab: state.currentTab,
       showTerminal: state.showTerminal,
       setCurrentTab: state.setCurrentTab,
+      setShowTerminal: state.setShowTerminal,
     }))
   );
   const currentProjectId = useProjectStore(
@@ -73,7 +78,7 @@ export function TabsSwitch({
     <motion.div
       initial="closed"
       animate="open"
-      className={`col-span-8 bg-gray-100 dark:bg-gray-800 rounded-lg h-full ${
+      className={`col-span-8 border bg-gray-100 dark:bg-gray-800 rounded-lg h-full ${
         initializingProject ? "hidden" : "block"
       }`}
     >
@@ -92,60 +97,75 @@ export function TabsSwitch({
           />
         </div>
 
-        {/* Deploy Button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-2">
+          {/* Terminal Toggle Button - Only show in code tab */}
+          {currentTab === "code" && (
             <Button
               variant="outline"
               size="sm"
-              disabled={!!deployingTo || !currentProjectId || isStreaming}
+              onClick={() => setShowTerminal(!showTerminal)}
+              title={showTerminal ? "Hide Terminal" : "Show Terminal"}
             >
-              {deployingTo ? `Deploying to ${deployingTo}...` : "Deploy"}
-              <MousePointerClick className="h-4 w-4" />
+              <Terminal className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuItem
-              disabled={!!deployingTo}
-              onClick={() => handleDeploy("netlify")}
-              className={`${!hasNetlifyToken && "cursor-not-allowed"}`}
-            >
-              <img
-                className="w-5 h-5"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                loading="eager"
-                src="https://cdn.simpleicons.org/netlify"
-              />
-              <span className="mx-auto">
-                {!hasNetlifyToken
-                  ? "No Netlify Account Connected"
-                  : "Deploy to Netlify"}
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={!!deployingTo}
-              onClick={() => handleDeploy("vercel")}
-              className={`${!hasVercelToken && "cursor-not-allowed"}`}
-            >
-              <img
-                className="w-5 h-5 bg-black p-1 rounded"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                loading="eager"
-                src="https://cdn.simpleicons.org/vercel/white"
-                alt="vercel"
-              />
-              <span className="mx-auto">
-                {!hasVercelToken
-                  ? "No Vercel Account Connected"
-                  : "Deploy to Vercel"}
-              </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+
+          {/* Deploy Button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!!deployingTo || !currentProjectId || isStreaming}
+              >
+                {deployingTo ? `Deploying to ${deployingTo}...` : "Deploy"}
+                <MousePointerClick className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuItem
+                disabled={!!deployingTo}
+                onClick={() => handleDeploy("netlify")}
+                className={`${!hasNetlifyToken && "cursor-not-allowed"}`}
+              >
+                <img
+                  className="w-5 h-5"
+                  height="24"
+                  width="24"
+                  crossOrigin="anonymous"
+                  loading="eager"
+                  src="https://cdn.simpleicons.org/netlify"
+                />
+                <span className="mx-auto">
+                  {!hasNetlifyToken
+                    ? "No Netlify Account Connected"
+                    : "Deploy to Netlify"}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!!deployingTo}
+                onClick={() => handleDeploy("vercel")}
+                className={`${!hasVercelToken && "cursor-not-allowed"}`}
+              >
+                <img
+                  className="w-5 h-5 bg-black p-1 rounded"
+                  height="24"
+                  width="24"
+                  crossOrigin="anonymous"
+                  loading="eager"
+                  src="https://cdn.simpleicons.org/vercel/white"
+                  alt="vercel"
+                />
+                <span className="mx-auto">
+                  {!hasVercelToken
+                    ? "No Vercel Account Connected"
+                    : "Deploy to Vercel"}
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="relative h-[calc(100%-2.5rem)] overflow-hidden">
@@ -156,28 +176,37 @@ export function TabsSwitch({
           animate={{ x: currentTab === "code" ? 0 : "-100%" }}
           transition={viewTransition}
           className={`absolute inset-0 ${
-            currentTab === "code" ? "z-10 block overflow-hidden" : "z-0 hidden"
+            currentTab === "code" ? "z-10 block" : "z-0 hidden"
           }`}
         >
-          <PanelGroup direction="vertical" className="h-full">
-            <Panel
-              defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100}
-              minSize={30}
-              className="overflow-hidden"
-            >
-              <FileExplorer readonly={isStreaming} />
-            </Panel>
-            <PanelResizeHandle className="h-[2px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600" />
-            <Panel
-              defaultSize={DEFAULT_TERMINAL_SIZE}
-              minSize={10}
-              className="h-full"
-            >
-              <div className="h-full overflow-hidden">
-                <TerminalTabs readonly={isStreaming} />
-              </div>
-            </Panel>
-          </PanelGroup>
+          <div className="h-full flex flex-col">
+            <ResizablePanelGroup direction="vertical" className="h-full">
+              <ResizablePanel
+                defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100}
+                minSize={30}
+                className="min-h-0"
+              >
+                <div className="h-full w-full overflow-hidden">
+                  <FileExplorer readonly={isStreaming} />
+                </div>
+              </ResizablePanel>
+
+              {showTerminal && (
+                <>
+                  <ResizableHandle className="h-[2px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600" />
+                  <ResizablePanel
+                    defaultSize={DEFAULT_TERMINAL_SIZE}
+                    minSize={10}
+                    className="min-h-0"
+                  >
+                    <div className="h-full w-full overflow-hidden">
+                      <TerminalTabs readonly={isStreaming} />
+                    </div>
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
+          </div>
         </motion.div>
 
         {/* Preview Tab Content */}

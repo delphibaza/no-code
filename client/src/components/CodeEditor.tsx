@@ -44,6 +44,7 @@ export function CodeEditor({
   const editorRef = useRef<ReactCodeMirrorRef>(null);
 
   useEffect(() => {
+    // Scroll to bottom of editor when readonly
     if (editorRef.current && readonly) {
       const editor = editorRef.current.view;
       if (editor) {
@@ -51,29 +52,33 @@ export function CodeEditor({
         editor.scrollDOM.scrollTo(0, scrollInfo);
       }
     }
-  }, [code, readonly]);
+  }, [code]);
 
   return (
-    <CodeMirror
-      ref={editorRef}
-      value={code}
-      // TODO: fix height
-      height="60vh"
-      style={{
-        fontSize: "12px",
-      }}
-      readOnly={readonly}
-      theme={codeEditorTheme(theme)}
-      extensions={[
-        getLanguageExtension(language),
-        ...(wordWrap ? [EditorView.lineWrapping] : []),
-      ]}
-      onChange={(value) => {
-        if (selectedFile) {
-          updateFile(selectedFile, value);
-        }
-      }}
-      basicSetup={codeEditorOptions}
-    />
+    <div className="h-full w-full overflow-auto">
+      <CodeMirror
+        ref={editorRef}
+        value={code}
+        height="100%"
+        width="100%"
+        style={{
+          fontSize: "12px",
+          overflow: "auto",
+          height: "100%",
+        }}
+        readOnly={readonly}
+        theme={codeEditorTheme(theme)}
+        extensions={[
+          getLanguageExtension(language),
+          ...(wordWrap ? [EditorView.lineWrapping] : []),
+        ]}
+        onChange={(value) => {
+          if (selectedFile) {
+            updateFile(selectedFile, value);
+          }
+        }}
+        basicSetup={codeEditorOptions}
+      />
+    </div>
   );
 }
