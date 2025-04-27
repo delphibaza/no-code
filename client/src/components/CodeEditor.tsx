@@ -34,28 +34,24 @@ export function CodeEditor({
   readonly: boolean;
 }) {
   const { theme } = useTheme();
-  const { wordWrap } = useGeneralStore(
-    useShallow((state) => ({
-      wordWrap: state.wordWrap,
-    })),
-  );
+  const wordWrap = useGeneralStore(useShallow((state) => state.wordWrap));
   const { updateFile, selectedFile } = useFilesStore(
     useShallow((state) => ({
       updateFile: state.updateFile,
       selectedFile: state.selectedFile,
-    })),
+    }))
   );
   const editorRef = useRef<ReactCodeMirrorRef>(null);
 
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && readonly) {
       const editor = editorRef.current.view;
       if (editor) {
         const scrollInfo = editor.scrollDOM.scrollHeight;
         editor.scrollDOM.scrollTo(0, scrollInfo);
       }
     }
-  }, [code]);
+  }, [code, readonly]);
 
   return (
     <CodeMirror

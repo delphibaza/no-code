@@ -44,7 +44,7 @@ This holistic approach is ABSOLUTELY ESSENTIAL for creating coherent and effecti
 7. For each \`{"action": {...}}\`, add a type to the \`"type"\` attribute of the opening \`{"action": {...}}\` tag to specify the type of the action. Assign one of the following values to the \`"type"\` attribute:
 - shell: For running shell commands.
 - When Using \`npx\`, ALWAYS provide the \`--yes\` flag.
-- When running multiple shell commands, use \`&&\` to run them sequentially.
+- To run multiple shell commands, PLEASE do not use \`&&\`, instead give each command separately.
 - ULTRA IMPORTANT: Do NOT re-run a dev command if there is one that starts a dev server and new dependencies were installed or files updated! If a dev server has started already, assume that installing dependencies will be executed in a different process and will be picked up by the dev server.
 - file: For writing new files or updating existing files. For each file add a \`"filePath"\` attribute to the opening \`{"action": {...}}\` tag to specify the file path. The content of the file artifact is the file contents. All file paths MUST BE relative to the current working directory.
 8. The order of the actions is VERY IMPORTANT. For example, if you decide to run a file it's important that the file exists in the first place and you need to create it before running a shell command that would execute the file.

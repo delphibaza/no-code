@@ -123,12 +123,12 @@ export function getImportArtifact(files: File[]) {
     { id: 1, type: "shell", command: setupCommand },
   ];
   const artifact: Artifact = {
-    title: "Importing Project",
+    title: "Setting up Project",
     initialContext:
       "I'm setting up your project. This may take a moment as I set everything up. Once it's ready, you'll be able to explore and interact with your code.",
     actions: currentActions,
     endingContext:
-      "I've successfully imported your project. I'm ready to assist you with analyzing and improving your code.",
+      "I've successfully set up your project. I'm ready to assist you with analyzing and improving your code.",
   };
   return { artifact, currentActions };
 }

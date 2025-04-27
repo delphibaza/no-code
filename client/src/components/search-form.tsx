@@ -15,7 +15,7 @@ export function SearchForm({
 }) {
   return (
     <form>
-      <SidebarGroup className="py-0">
+      <SidebarGroup className="py-1">
         <SidebarGroupContent className="relative">
           <Label htmlFor="search" className="sr-only">
             Search

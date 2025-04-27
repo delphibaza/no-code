@@ -1,5 +1,9 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { useProjectStore } from "@/stores/project";
 import {
   SignedIn,
@@ -17,18 +21,21 @@ export default function MainLayout() {
     useShallow((state) => ({
       currentProjectId: state.currentProjectId,
       projects: state.projects,
-    })),
+    }))
   );
   const currentProject = projects.find(
-    (project) => project.id === currentProjectId,
+    (project) => project.id === currentProjectId
   );
   return (
     <div className="flex min-h-screen">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="w-full">
-          <header className="flex justify-between fixed top-0 h-14 w-full bg-primary-foreground/10 backdrop-blur-sm shrink-0 items-center gap-2 border-b px-4">
-            <Logo />
+          <header className="flex justify-between fixed top-0 h-14 w-full bg-primary-foreground/10 backdrop-blur-sm shrink-0 items-center gap-2 border-b pl-2 pr-4">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <Logo />
+            </div>
             {currentProject && (
               <div className="flex items-center border px-4 py-1 rounded-md cursor-default">
                 <div className="font-semibold truncate text-sm">

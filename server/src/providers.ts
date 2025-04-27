@@ -13,26 +13,26 @@ type ModelConfig = {
 
 // Centralized model configuration
 const modelConfigs: Record<string, ModelConfig> = {
-  openaiOvh: {
+  ovh: {
     provider: "openai",
     model: ["DeepSeek-R1-Distill-Llama-70B"],
     apiKey: process.env.OVH_API_KEY,
     baseURL:
       "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1",
   },
-  openaiGROQ: {
+  groq: {
     provider: "groq",
     model: ["meta-llama/llama-4-maverick-17b-128e-instruct"],
     apiKey: process.env.GROQ_API_KEY,
     baseURL: "https://api.groq.com/openai/v1",
   },
-  openaiChutes: {
+  chutes: {
     provider: "openai",
     model: "deepseek-ai/DeepSeek-V3-0324",
     apiKey: process.env.CHUTES_API_KEY,
     baseURL: "https://llm.chutes.ai/v1",
   },
-  openaiNovita: {
+  novita: {
     provider: "openai",
     model: ["deepseek/deepseek-r1-turbo", "deepseek/deepseek-v3-0324"],
     apiKey: process.env.NOVITA_API_KEY,
@@ -72,9 +72,9 @@ function getInstance(config: ModelConfig) {
 }
 
 // Refactored exports using generic getModel
-export const selectorModel = getModel("openaiGROQ");
-export const coderModel = getModel("openaiChutes");
+export const selectorModel = getModel("groq");
+export const coderModel = getModel("chutes");
 export const reasoningModel = wrapLanguageModel({
-  model: getModel("openaiNovita", 0),
+  model: getModel("novita", 0),
   middleware: extractReasoningMiddleware({ tagName: "think" }),
 });

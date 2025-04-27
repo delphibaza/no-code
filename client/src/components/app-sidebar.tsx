@@ -37,7 +37,7 @@ export function AppSidebar() {
       refreshProjects: state.refreshProjects,
       setProjects: state.setProjects,
       setCurrentProjectId: state.setCurrentProjectId,
-    })),
+    }))
   );
   const { authenticatedFetch } = useFetch();
 
@@ -45,14 +45,14 @@ export function AppSidebar() {
     async function fetchProjects() {
       try {
         const data = await authenticatedFetch(
-          `${API_URL}/api/projects?limit=30&page=0`,
+          `${API_URL}/api/projects?limit=30&page=0`
         );
         setProjects(data.projects);
       } catch (error) {
         console.error(
           error instanceof Error
             ? error.message
-            : "Something went wrong while fetching projects",
+            : "Something went wrong while fetching projects"
         );
       } finally {
         setIsLoading(false);
@@ -87,7 +87,7 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar ref={menuRef} variant="sidebar">
+    <Sidebar ref={menuRef} variant="floating">
       <SidebarHeader>
         <SidebarMenuButton size="lg">
           <Logo />

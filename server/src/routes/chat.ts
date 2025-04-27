@@ -52,6 +52,7 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           model: reasoning ? reasoningModel : coderModel,
           system: getSystemPrompt(),
           messages: messages,
+          experimental_continueSteps: true,
           experimental_transform: smoothStream(),
           maxTokens: 12000,
           async onFinish({ text, finishReason, usage, response, reasoning }) {
