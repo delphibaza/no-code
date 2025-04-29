@@ -128,7 +128,7 @@ export const ChatInput = memo(
     return (
       <div className="relative">
         {subscriptionData && (
-          <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 dark:shadow-sky-400 text-center -top-5 px-2 border border-gray-200 dark:border-gray-600 bg-[#F5F5F5] dark:bg-gray-800 rounded-t-md text-[12px]">
+          <div className="absolute w-11/12 left-1/2 -translate-x-1/2 shadow-md shadow-sky-600 dark:shadow-sky-400 text-center -top-5 px-2 border border-gray-200 dark:border-gray-600 bg-primary-foreground rounded-t-md text-[12px]">
             {formatNumber(
               subscriptionData.tokenUsage.daily.limit -
                 subscriptionData.tokenUsage.daily.used

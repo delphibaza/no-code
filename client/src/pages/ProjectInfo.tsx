@@ -96,46 +96,45 @@ export default function ProjectInfo() {
     }
   }, [messages]);
 
+  if (initializingProject) {
+    return (
+      <div className="flex h-full md:h-[90vh] items-center justify-center">
+        <Loader2 className="animate-spin size-5" />
+      </div>
+    );
+  }
+
   return (
     <BackgroundDots>
       <div className="w-full pr-2 pl-8 pt-2 h-full max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
-        {initializingProject ? (
-          <div className="flex col-span-12 h-full md:h-[85vh] items-center justify-center">
-            <Loader2 className="animate-spin size-5" />
+        <div className="flex flex-col gap-y-5 col-span-4">
+          <Workbench />
+          <div className="relative">
+            {actionAlert && (
+              <div className="absolute bottom-full left-0 w-full z-10">
+                <ChatAlert
+                  alert={actionAlert}
+                  clearAlert={() => setActionAlert(null)}
+                  postMessage={(message) => {
+                    handleSend(message);
+                    setActionAlert(null);
+                  }}
+                />
+              </div>
+            )}
+            <ChatInput
+              placeholder="How can we refine it..."
+              handleSubmit={handleSend}
+              input={input}
+              setInput={setInput}
+              isLoading={isLoading}
+              reload={reload}
+              stop={stop}
+              error={error}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col gap-y-5 col-span-4">
-            <Workbench />
-            <div className="flex-1 relative">
-              {actionAlert && (
-                <div className="absolute bottom-full left-0 w-full z-10">
-                  <ChatAlert
-                    alert={actionAlert}
-                    clearAlert={() => setActionAlert(null)}
-                    postMessage={(message) => {
-                      handleSend(message);
-                      setActionAlert(null);
-                    }}
-                  />
-                </div>
-              )}
-              <ChatInput
-                placeholder="How can we refine it..."
-                handleSubmit={handleSend}
-                input={input}
-                setInput={setInput}
-                isLoading={isLoading}
-                reload={reload}
-                stop={stop}
-                error={error}
-              />
-            </div>
-          </div>
-        )}
-        <TabsSwitch
-          initializingProject={initializingProject}
-          isStreaming={isLoading}
-        />
+        </div>
+        <TabsSwitch isStreaming={isLoading} />
       </div>
     </BackgroundDots>
   );
