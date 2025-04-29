@@ -203,8 +203,10 @@ router.post(
       // Step 3: Get template data and create project files
       const templateData = await getTemplateData(templates);
 
-      // Create project files
-      await createProjectFiles(project.id, templateData.templateFiles);
+      // When the page is refreshed, the project files are not created again
+      if (project.files.length === 0) {
+        await createProjectFiles(project.id, templateData.templateFiles);
+      }
 
       // Update the project with new title
       await prisma.project.update({

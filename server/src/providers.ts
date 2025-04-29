@@ -13,22 +13,18 @@ type ModelConfig = {
 
 // Centralized model configuration
 const modelConfigs: Record<string, ModelConfig> = {
-  ovh: {
-    provider: "openai",
-    model: ["DeepSeek-R1-Distill-Llama-70B"],
-    apiKey: process.env.OVH_API_KEY,
-    baseURL:
-      "https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1",
-  },
   groq: {
     provider: "groq",
-    model: ["meta-llama/llama-4-maverick-17b-128e-instruct"],
+    model: [
+      "meta-llama/llama-4-maverick-17b-128e-instruct",
+      "meta-llama/llama-4-scout-17b-16e-instruct",
+    ],
     apiKey: process.env.GROQ_API_KEY,
     baseURL: "https://api.groq.com/openai/v1",
   },
   chutes: {
     provider: "openai",
-    model: "deepseek-ai/DeepSeek-V3-0324",
+    model: ["deepseek-ai/DeepSeek-V3-0324", "deepseek-ai/DeepSeek-R1"],
     apiKey: process.env.CHUTES_API_KEY,
     baseURL: "https://llm.chutes.ai/v1",
   },
@@ -72,7 +68,7 @@ function getInstance(config: ModelConfig) {
 }
 
 // Refactored exports using generic getModel
-export const selectorModel = getModel("groq");
+export const selectorModel = getModel("groq", 1);
 export const coderModel = getModel("chutes");
 export const reasoningModel = wrapLanguageModel({
   model: getModel("novita", 0),
