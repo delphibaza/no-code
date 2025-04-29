@@ -31,11 +31,10 @@ jobs:
           echo "GITHUB_ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }}" > server/.env
           echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> server/.env
           echo "GOOGLE_GENERATIVE_AI_API_KEY=${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}" >> server/.env
-          echo "OVH_API_KEY=${{ secrets.OVH_API_KEY }}" >> server/.env
-          echo "NINETEEN_API_KEY=${{ secrets.NINETEEN_API_KEY }}" >> server/.env
           echo "NOVITA_API_KEY=${{ secrets.NOVITA_API_KEY }}" >> server/.env
           echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> server/.env
           echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> server/.env
+          echo "CHUTES_API_KEY=${{ secrets.CHUTES_API_KEY }}" >> server/.env
           echo "NODE_ENV=production" >> server/.env
           echo "PORT=3000" >> server/.env
 
