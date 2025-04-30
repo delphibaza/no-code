@@ -8,6 +8,7 @@ export const messageSchema = z.object({
   id: z.string(),
   role: z.enum(["user", "assistant"]),
   content: z.string(),
+  timestamp: z.number().optional(),
   rawContent: z.string().optional(),
 });
 export const chatSchema = z.object({

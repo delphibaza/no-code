@@ -58,7 +58,7 @@ export default function ProjectInfo() {
     fetch: customFetch,
     sendExtraMessageFields: true,
     experimental_throttle: 75,
-    onFinish: async (_, { finishReason }) => {
+    onFinish: (_, { finishReason }) => {
       if (finishReason !== "stop") {
         customToast(
           "Token limit reached on our end. Please send a new request."
