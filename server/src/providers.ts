@@ -5,8 +5,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 type ModelConfig = {
-  provider: "openai" | "google" | "groq";
-  model: string | string[];
+  provider: "openai" | "groq";
+  models: {
+    name: string;
+    think: boolean;
+  }[];
   apiKey: string | undefined;
   baseURL: string;
 };
@@ -15,44 +18,33 @@ type ModelConfig = {
 const modelConfigs: Record<string, ModelConfig> = {
   groq: {
     provider: "groq",
-    model: [
-      "meta-llama/llama-4-maverick-17b-128e-instruct",
-      "meta-llama/llama-4-scout-17b-16e-instruct",
+    models: [
+      { name: "deepseek-r1-distill-llama-70b", think: true },
+      { name: "meta-llama/llama-4-maverick-17b-128e-instruct", think: false },
     ],
     apiKey: process.env.GROQ_API_KEY,
     baseURL: "https://api.groq.com/openai/v1",
   },
   chutes: {
     provider: "openai",
-    model: [
-      "deepseek-ai/DeepSeek-V3-0324",
-      "deepseek-ai/DeepSeek-R1",
-      "Qwen/Qwen3-235B-A22B",
+    models: [
+      { name: "deepseek-ai/DeepSeek-V3-0324", think: false },
+      { name: "deepseek-ai/DeepSeek-R1", think: true },
+      { name: "Qwen/Qwen3-235B-A22B", think: true },
     ],
     apiKey: process.env.CHUTES_API_KEY,
     baseURL: "https://llm.chutes.ai/v1",
   },
   novita: {
     provider: "openai",
-    model: ["deepseek/deepseek-r1-turbo", "deepseek/deepseek-v3-0324"],
+    models: [
+      { name: "deepseek/deepseek-r1-turbo", think: true },
+      { name: "deepseek/deepseek-v3-0324", think: false },
+    ],
     apiKey: process.env.NOVITA_API_KEY,
     baseURL: "https://api.novita.ai/v3/openai",
   },
 };
-
-export type ModelConfigKey = keyof typeof modelConfigs;
-
-/**
- * Retrieves a model instance by config name and optional variant index.
- */
-export function getModel(key: ModelConfigKey, variantIndex = 0) {
-  const config = modelConfigs[key];
-  const factory = getInstance(config);
-  const modelName = Array.isArray(config.model)
-    ? config.model[variantIndex]
-    : (config.model as string);
-  return factory(modelName);
-}
 
 function getInstance(config: ModelConfig) {
   switch (config.provider) {
@@ -71,10 +63,20 @@ function getInstance(config: ModelConfig) {
   }
 }
 
+function getModel(key: keyof typeof modelConfigs, variantIndex: number) {
+  const config = modelConfigs[key];
+  const factory = getInstance(config);
+  const model = config.models[variantIndex];
+  if (model.think) {
+    return wrapLanguageModel({
+      model: factory(model.name),
+      middleware: extractReasoningMiddleware({ tagName: "think" }),
+    });
+  }
+  return factory(model.name);
+}
+
 // Refactored exports using generic getModel
 export const selectorModel = getModel("groq", 1);
-export const coderModel = getModel("chutes");
-export const reasoningModel = wrapLanguageModel({
-  model: getModel("novita", 0),
-  middleware: extractReasoningMiddleware({ tagName: "think" }),
-});
+export const coderModel = getModel("chutes", 0);
+export const reasoningModel = getModel("novita", 0);
