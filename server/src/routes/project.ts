@@ -174,10 +174,11 @@ router.post(
           402
         );
       }
-
-      // Step 1: Enhance the prompt
+      // Step 1: Enhance the prompt, with the initial prompt message
       const { enhancedPrompt, usage: enhanceUsage } =
-        await enhanceProjectPrompt(project.name);
+        await enhanceProjectPrompt(
+          (project.messages[0].content as { text: string }).text
+        );
 
       // Update token usage and check limits
       req.plan.dailyTokensUsed += enhanceUsage.totalTokens;

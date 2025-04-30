@@ -55,7 +55,6 @@ export function ExamplePrompts({
             "whitespace-nowrap text-sm md:text-[11px]"
           )}
           onClick={() => onPromptClick(item.prompt)}
-          title={item.prompt}
         >
           {item.title}
         </button>
