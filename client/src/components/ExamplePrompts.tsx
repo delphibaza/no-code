@@ -29,12 +29,12 @@ const EXAMPLE_PROMPTS: ExamplePrompt[] = [
   {
     title: "E-commerce Website",
     prompt:
-      "Create a landing page in React for an e-commerce website that allows users to browse products, add them to a cart.",
+      "Create an E-commerce website in React that allows users to browse products, add them to a cart and checkout.",
   },
   {
     title: "Blog Website in SvelteKit",
     prompt:
-      "Create a blog website using SvelteKit where users can write and publish posts, add comments, and manage their own content.",
+      "Create a blog website in SvelteKit where users can write and publish posts, add comments, and manage their own content.",
   },
 ];
 

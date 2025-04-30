@@ -58,8 +58,8 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
               // Update token usage and check limits
-              req.plan!.dailyTokensUsed += usage.totalTokens;
-              req.plan!.monthlyTokensUsed += usage.totalTokens;
+              req.plan!.dailyTokensUsed += usage.totalTokens || 0;
+              req.plan!.monthlyTokensUsed += usage.totalTokens || 0;
               await updateSubscription(req.plan!);
 
               let jsonContent;
@@ -84,17 +84,23 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
                         {
                           role: "user" as const,
                           projectId: projectId,
-                          // TODO: Fix createdAt timestamp
-                          createdAt: new Date(),
-                          content: { text: currentMessage.rawContent ?? "" }, // Wrap in object to make it valid JSON
+                          createdAt: currentMessage.timestamp
+                            ? new Date(currentMessage.timestamp)
+                            : new Date(),
+                          // Wrap in object to make it valid JSON
+                          content: { text: currentMessage.rawContent || "" },
                         },
                       ]
                     : []),
                   {
-                    role: "assistant",
+                    role: "assistant" as const,
                     projectId: projectId,
                     createdAt: new Date(),
-                    tokensUsed: usage.totalTokens,
+                    tokensUsed:
+                      usage.totalTokens ||
+                      usage.promptTokens ||
+                      usage.completionTokens ||
+                      0,
                     content: jsonContent,
                   },
                 ],
@@ -144,8 +150,7 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
                 },
               });
             } catch (error) {
-              console.error("Failed to parse JSON or saving messages", error);
-              throw error;
+              console.log("Failed to parse JSON or saving messages", error);
             }
           },
         });

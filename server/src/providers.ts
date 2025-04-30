@@ -24,7 +24,11 @@ const modelConfigs: Record<string, ModelConfig> = {
   },
   chutes: {
     provider: "openai",
-    model: ["deepseek-ai/DeepSeek-V3-0324", "deepseek-ai/DeepSeek-R1"],
+    model: [
+      "deepseek-ai/DeepSeek-V3-0324",
+      "deepseek-ai/DeepSeek-R1",
+      "Qwen/Qwen3-235B-A22B",
+    ],
     apiKey: process.env.CHUTES_API_KEY,
     baseURL: "https://llm.chutes.ai/v1",
   },
