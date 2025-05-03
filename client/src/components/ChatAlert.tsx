@@ -1,6 +1,7 @@
 import { cn as classNames } from "@/lib/utils";
 import type { ActionAlert } from "@/services/action-runner";
 import { AnimatePresence, motion } from "framer-motion";
+import { CircleAlert } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface Props {
@@ -25,7 +26,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
-        className={`rounded-lg border border-red-200 bg-red-50 p-4 mb-1 shadow-lg shadow-red-100`}
+        className={`rounded-lg border border-red-200 bg-red-50 dark:border-red-400 dark:bg-gray-800 p-4 mb-1 shadow-lg shadow-red-100 dark:shadow-red-900`}
       >
         <div className="flex items-start">
           {/* Icon */}
@@ -35,7 +36,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className={`i-ph:warning-duotone text-xl text-red-400`}></div>
+            <CircleAlert className="h-4 w-4 text-red-400" />
           </motion.div>
           {/* Content */}
           <div className="ml-3 flex-1">
@@ -43,7 +44,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className={`text-sm font-medium`}
+              className={`text-sm text-primary font-medium`}
             >
               {title}
             </motion.h3>
@@ -55,7 +56,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
             >
               <p>{message}</p>
               {description && (
-                <div className="text-xs p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4">
+                <div className="text-xs p-2 rounded mt-4 mb-4">
                   Error: {description}
                 </div>
               )}
@@ -72,7 +73,11 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                 <Button
                   onClick={() =>
                     postMessage(
-                      `*Fix this ${isPreview ? "preview" : "terminal"} error* \n\`\`\`${isPreview ? "js" : "sh"}\n${content}\n\`\`\`\n`,
+                      `*Fix this ${
+                        isPreview ? "preview" : "terminal"
+                      } error* \n\`\`\`${
+                        isPreview ? "js" : "sh"
+                      }\n${content}\n\`\`\`\n`
                     )
                   }
                   size="sm"

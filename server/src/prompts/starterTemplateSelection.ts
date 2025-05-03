@@ -86,9 +86,11 @@ Instructions:
    - Use "none" when appropriate (frontend-only or backend-only projects)
    - Never omit either tag regardless of project type
 5. For unrelated questions or greetings, default to "bolt-vite-react" as frontend and "none" as backend.
-6. Give the project a concise, descriptive title (max 25 characters), no full stops at the end.
-7. If specifically asked for a framework by name, prioritize that request.
-8. If the user explicitly mentions needing both frontend and backend, provide both.
+6. Give the project a concise, descriptive title (max 4 words), no full stops at the end.
+7. If the user asks to use only frontend or to use only backend, prioritize that request.
+8. If specifically asked for a framework by name, prioritize that request.
+9. If the user asked not to use frontend or not to use backend, prioritize that request.
+10. If the user explicitly mentions needing both frontend and backend, provide both.
 Ultra-Important: Provide only the selection tags in your response, no additional text. The template names you provide should be chosen only from the available list!`;
 
 // Helper function to determine template type
