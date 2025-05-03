@@ -27,9 +27,7 @@ interface ProjectState {
   addProject: (project: Project) => void;
   setSubscriptionData: (usage: SubscriptionUsage) => void;
   setCurrentProjectId: (projectId: string) => void;
-  setCurrentProjectState: (
-    state: "existing" | "blankTemplate" | "new"
-  ) => void;
+  setCurrentProjectState: (state: "existing" | "blankTemplate" | "new") => void;
   setRefreshTokens: (refreshTokens: boolean) => void;
   setRefreshProjects: (refreshProjects: boolean) => void;
   upsertMessage: (message: MessageHistory) => void;

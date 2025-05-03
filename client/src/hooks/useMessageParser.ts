@@ -26,15 +26,13 @@ export function useMessageParser() {
         updateActionStatus: state.updateActionStatus,
       }))
     );
-  const { selectedFile, projectFiles, updateProjectFiles, setSelectedFile } =
-    useFilesStore(
-      useShallow((state) => ({
-        projectFiles: state.projectFiles,
-        selectedFile: state.selectedFile,
-        setSelectedFile: state.setSelectedFile,
-        updateProjectFiles: state.updateProjectFiles,
-      }))
-    );
+  const { selectedFile, setSelectedFile, updateProjectFiles } = useFilesStore(
+    useShallow((state) => ({
+      selectedFile: state.selectedFile,
+      setSelectedFile: state.setSelectedFile,
+      updateProjectFiles: state.updateProjectFiles,
+    }))
+  );
   const { setCurrentTab } = useGeneralStore(
     useShallow((state) => ({
       setCurrentTab: state.setCurrentTab,
@@ -56,22 +54,10 @@ export function useMessageParser() {
   };
 
   const updateStore = (filteredActions: (FileAction | ShellAction)[]) => {
-    const updatedFiles = [...projectFiles];
     const parsedFiles = filteredActions.filter(
       (action) => action.type === "file"
     );
-
-    for (const parsedFile of parsedFiles) {
-      const existingFileIndex = projectFiles.findIndex(
-        (existingFile) => existingFile.filePath === parsedFile.filePath
-      );
-      if (existingFileIndex !== -1) {
-        updatedFiles[existingFileIndex].content = parsedFile.content;
-      } else {
-        updatedFiles.push(parsedFile);
-      }
-    }
-    updateProjectFiles(updatedFiles);
+    updateProjectFiles(parsedFiles);
   };
 
   const handleLastStreamedAction = (
@@ -132,7 +118,7 @@ export function useMessageParser() {
   }
 
   useEffect(() => {
-    if (!streamingAction || !currentMessageId || projectFiles.length === 0) {
+    if (!streamingAction || !currentMessageId) {
       return;
     }
     if (streamingAction.type === "file") {
@@ -152,19 +138,20 @@ export function useMessageParser() {
   }, [streamingAction?.id]);
 
   useEffect(() => {
-    if (lastStreamedAction && currentMessageId && projectFiles.length > 0) {
-      if (lastStreamedAction.type === "file") {
-        updateActionStatus(currentMessageId, lastStreamedAction.id, "created");
-      } else if (lastStreamedAction.type === "shell") {
-        addAction(currentMessageId, {
-          id: lastStreamedAction.id,
-          type: "shell",
-          state: "queued",
-          command: lastStreamedAction.command,
-        });
-      }
-      actionRunner.addAction(currentMessageId, lastStreamedAction);
+    if (!lastStreamedAction || !currentMessageId) {
+      return;
     }
+    if (lastStreamedAction.type === "file") {
+      updateActionStatus(currentMessageId, lastStreamedAction.id, "created");
+    } else if (lastStreamedAction.type === "shell") {
+      addAction(currentMessageId, {
+        id: lastStreamedAction.id,
+        type: "shell",
+        state: "queued",
+        command: lastStreamedAction.command,
+      });
+    }
+    actionRunner.addAction(currentMessageId, lastStreamedAction);
   }, [lastStreamedAction?.id]);
 
   return { handleNewMessage };

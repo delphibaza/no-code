@@ -27,10 +27,10 @@ export function useInitProject(
 ) {
   const [initializingProject, setInitializingProject] = useState(true);
   const { customFetch } = useFetch();
-  const { setSelectedFile, updateProjectFiles, setIgnorePatterns } =
+  const { setSelectedFile, setProjectFiles, setIgnorePatterns } =
     useFilesStore(
       useShallow((state) => ({
-        updateProjectFiles: state.updateProjectFiles,
+        setProjectFiles: state.setProjectFiles,
         setIgnorePatterns: state.setIgnorePatterns,
         setSelectedFile: state.setSelectedFile,
       }))
@@ -67,7 +67,7 @@ export function useInitProject(
       content: JSON.stringify({ artifact: artifact }),
     });
     await mountFiles(projectFiles, container);
-    updateProjectFiles(projectFiles);
+    setProjectFiles(projectFiles);
     setSelectedFile(projectFiles[0]?.filePath ?? "");
     currentActions.forEach((action) => {
       addAction(currentMessageId, {
@@ -199,7 +199,7 @@ export function useInitProject(
       });
     }
     // Add files to project store
-    updateProjectFiles(templateFiles);
+    setProjectFiles(templateFiles);
     await mountFiles(templateFiles, container);
     setCurrentMessageId(crypto.randomUUID());
     reload();
