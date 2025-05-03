@@ -135,7 +135,8 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
             )}
           </div>
         </div>
-        {/* File Actions */}
+
+        {/* Save and Reset */}
         {currentTab === "code" && showFileActions && (
           <div>
             <Button

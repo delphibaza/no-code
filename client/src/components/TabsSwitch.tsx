@@ -5,9 +5,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useHandleDeploy } from "@/hooks/useHandleDeploy";
+import { useFilesStore } from "@/stores/files";
 import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
-import { MousePointerClick, Terminal } from "lucide-react";
+import { ChevronDown, Download, Terminal } from "lucide-react";
 import { motion } from "motion/react";
 import { memo } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -40,7 +41,7 @@ const TabButton = memo(
     <Button
       onClick={onClick}
       variant={"ghost"}
-      size={"sm"}
+      size={"xs"}
       className={`rounded-2xl text-xs h-7 ${
         isActive &&
         "bg-sky-100 dark:bg-gray-800 hover:bg-sky-100 hover:text-blue-500 text-blue-500"
@@ -65,6 +66,7 @@ export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
   const currentProjectId = useProjectStore(
     useShallow((state) => state.currentProjectId)
   );
+  const downloadZip = useFilesStore(useShallow((state) => state.downloadZip));
   const { deployingTo, hasNetlifyToken, hasVercelToken, handleDeploy } =
     useHandleDeploy();
   const DEFAULT_EDITOR_SIZE = 100 - DEFAULT_TERMINAL_SIZE;
@@ -96,25 +98,34 @@ export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
           {currentTab === "code" && (
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               onClick={() => setShowTerminal(!showTerminal)}
               title={showTerminal ? "Hide Terminal" : "Show Terminal"}
             >
-              <Terminal className="h-4 w-4" />
+              <Terminal className="h-3 w-3" />
             </Button>
           )}
+
+          {/* Project Download Button */}
+          <Button
+            size="xs"
+            title="Download Project"
+            disabled={!currentProjectId}
+            onClick={downloadZip}
+          >
+            Download
+            <Download className="h-3 w-3" />
+          </Button>
 
           {/* Deploy Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
-                className="flex text-xs items-center space-x-2 py-1"
-                size="sm"
+                size="xs"
                 disabled={!!deployingTo || !currentProjectId || isStreaming}
               >
                 {deployingTo ? `Deploying to ${deployingTo}...` : "Deploy"}
-                <MousePointerClick className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">

@@ -40,6 +40,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.469.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimatch": "^10.0.1",
@@ -56,6 +58,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^22.10.2",
     "@types/path-browserify": "^1.0.3",
     "@types/react": "^19.0.1",
