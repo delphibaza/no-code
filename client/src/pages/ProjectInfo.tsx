@@ -2,18 +2,25 @@ import ChatAlert from "@/components/ChatAlert";
 import { ChatInput } from "@/components/ChatInput";
 import { TabsSwitch } from "@/components/TabsSwitch";
 import { BackgroundDots } from "@/components/ui/background-dots";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Workbench } from "@/components/Workbench";
 import useFetch from "@/hooks/useFetch";
 import { useHandleSubmit } from "@/hooks/useHandleSubmit";
 import { useInitProject } from "@/hooks/useInitProject";
 import { useMessageParser } from "@/hooks/useMessageParser";
 import { API_URL } from "@/lib/constants";
-import { customToast } from "@/lib/utils";
+import { cn, customToast } from "@/lib/utils";
 import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
 import { useChat } from "ai/react";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 
@@ -74,6 +81,7 @@ export default function ProjectInfo() {
       );
     },
   });
+  const [isWorkbenchCollapsed, setIsWorkbenchCollapsed] = useState(false);
 
   const { initializeProject, initializingProject } = useInitProject(
     setMessages,
@@ -104,10 +112,21 @@ export default function ProjectInfo() {
     );
   }
 
+  const toggleWorkbench = () => {
+    setIsWorkbenchCollapsed(!isWorkbenchCollapsed);
+  };
+
   return (
     <BackgroundDots>
-      <div className="w-full pr-2 pl-8 pt-2 h-full max-w-screen-2xl mx-auto grid grid-cols-12 gap-x-14">
-        <div className="flex flex-col gap-y-5 col-span-4">
+      <div className="w-full pr-2 pl-8 pt-2 h-full max-w-screen-2xl mx-auto flex gap-x-2">
+        <motion.div
+          className={cn(
+            "flex flex-col gap-y-5 mr-4",
+            isWorkbenchCollapsed ? "w-0 overflow-hidden" : "w-1/3"
+          )}
+          animate={{ width: isWorkbenchCollapsed ? 0 : "33.333%" }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
           <Workbench />
           <div className="relative">
             {actionAlert && (
@@ -133,8 +152,39 @@ export default function ProjectInfo() {
               error={error}
             />
           </div>
+        </motion.div>
+
+        <div className="flex items-center h-11/12">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="cursor-pointer p-2 rounded-full"
+                  onClick={toggleWorkbench}
+                >
+                  {isWorkbenchCollapsed ? (
+                    <ChevronRight className="size-6 text-gray-600 dark:text-gray-400" />
+                  ) : (
+                    <ChevronLeft className="size-6 text-gray-600 dark:text-gray-400" />
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {isWorkbenchCollapsed ? "Show workbench" : "Hide workbench"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-        <TabsSwitch isStreaming={isLoading} />
+
+        <motion.div
+          className="flex-1"
+          animate={{
+            width: isWorkbenchCollapsed ? "100%" : "66.667%",
+          }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
+          <TabsSwitch isStreaming={isLoading} />
+        </motion.div>
       </div>
     </BackgroundDots>
   );

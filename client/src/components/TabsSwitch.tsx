@@ -73,7 +73,7 @@ export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
     <motion.div
       initial="closed"
       animate="open"
-      className={`col-span-8 border bg-primary-foreground rounded-lg h-full`}
+      className="w-full border bg-primary-foreground rounded-lg h-full"
     >
       <div className="flex items-center justify-between px-2 pt-2 pb-2 pr-6 rounded-t-lg">
         {/* Tab Switch Buttons */}
@@ -109,6 +109,7 @@ export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
+                className="flex text-xs items-center space-x-2 py-1"
                 size="sm"
                 disabled={!!deployingTo || !currentProjectId || isStreaming}
               >
