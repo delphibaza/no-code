@@ -26,13 +26,15 @@ import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectInfo() {
   const params = useParams();
-  const { actionAlert, reasoning, setActionAlert } = useGeneralStore(
-    useShallow((state) => ({
-      actionAlert: state.actionAlert,
-      reasoning: state.reasoning,
-      setActionAlert: state.setActionAlert,
-    }))
-  );
+  const { actionAlert, reasoning, setActionAlert, setCurrentTab } =
+    useGeneralStore(
+      useShallow((state) => ({
+        actionAlert: state.actionAlert,
+        reasoning: state.reasoning,
+        setActionAlert: state.setActionAlert,
+        setCurrentTab: state.setCurrentTab,
+      }))
+    );
   const { customFetch } = useFetch();
   const { refreshTokens, setCurrentProjectId, setRefreshTokens } =
     useProjectStore(
@@ -101,6 +103,9 @@ export default function ProjectInfo() {
     const recentMessage = messages.at(-1);
     if (recentMessage) {
       handleNewMessage(recentMessage);
+      setTimeout(() => {
+        setCurrentTab("code");
+      }, 1500);
     }
   }, [messages]);
 

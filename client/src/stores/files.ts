@@ -1,12 +1,13 @@
 import { webcontainer } from "@/config/webContainer";
 import { API_URL } from "@/lib/constants";
+import { path } from "@/lib/path";
 import { mountFiles } from "@/lib/runtime";
 import { FileAction } from "@repo/common/types";
 import fileSaver from "file-saver";
 import JSZip from "jszip";
+import toast from "react-hot-toast";
 import { create } from "zustand";
 import { useProjectStore } from "./project";
-import toast from "react-hot-toast";
 
 const { saveAs } = fileSaver;
 interface FilesStore {
@@ -32,6 +33,12 @@ interface FilesStore {
     error?: string;
   }>;
   downloadZip: () => Promise<void>;
+  createFile: (filePath: string) => Promise<void>;
+  deleteFile: (filePath: string) => Promise<void>;
+  addFolder: (folderPath: string) => Promise<void>;
+  deleteFolder: (folderPath: string) => Promise<void>;
+  renameFile: (oldPath: string, newPath: string) => Promise<void>;
+  renameFolder: (oldPath: string, newPath: string) => Promise<void>;
 }
 
 export const useFilesStore = create<FilesStore>()((set, get) => ({
@@ -202,7 +209,6 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       // if there's more than one segment, we need to create folders
       if (pathSegments.length > 1) {
         let currentFolder = zip;
-
         for (let i = 0; i < pathSegments.length - 1; i++) {
           currentFolder = currentFolder.folder(pathSegments[i])!;
         }
@@ -215,5 +221,594 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
     // Generate the zip file and save it
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, `${projectName}.zip`);
+  },
+
+  async createFile(filePath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+      const relativePath = path.relative(globalWebContainer.workdir, filePath);
+
+      if (!relativePath) {
+        throw new Error(`EINVAL: invalid file path, create '${relativePath}'`);
+      }
+
+      // Check if file already exists before trying to create it
+      const isExists = get().projectFiles.some(
+        (file) => file.filePath === filePath
+      );
+
+      if (isExists) {
+        throw new Error(`EEXIST: file already exists, create '${filePath}'`);
+      }
+
+      const dirPath = path.dirname(relativePath);
+
+      if (dirPath !== ".") {
+        await globalWebContainer.fs.mkdir(dirPath, { recursive: true });
+      }
+
+      await globalWebContainer.fs.writeFile(relativePath, "");
+
+      set((state) => {
+        const newFiles = [...state.projectFiles];
+        newFiles.push({
+          filePath,
+          content: "",
+        });
+        return {
+          projectFiles: newFiles,
+        };
+      });
+
+      // Use get() to access the setter method from state
+      get().setSelectedFile(filePath);
+    } catch (error) {
+      console.error("Failed to create file:", error);
+      throw error;
+    }
+  },
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+      const relativePath = path.relative(globalWebContainer.workdir, filePath);
+
+      if (!relativePath) {
+        throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
+      }
+
+      // First check if the file exists in our state
+      const fileExists = get().projectFiles.some(
+        (file) => file.filePath === filePath
+      );
+
+      if (!fileExists) {
+        throw new Error(`ENOENT: file does not exist, delete '${filePath}'`);
+      }
+
+      // Try to delete the file from the filesystem
+      await globalWebContainer.fs.rm(relativePath);
+
+      // Update all state in one set operation to maintain consistency
+      set((state) => {
+        // Clean up modified files and original content
+        const newModifiedFiles = new Set(state.modifiedFiles);
+        newModifiedFiles.delete(filePath);
+
+        const newOriginalContent = new Map(state.originalContent);
+        newOriginalContent.delete(filePath);
+
+        // Filter out the deleted file
+        const newFiles = state.projectFiles.filter(
+          (file) => file.filePath !== filePath
+        );
+
+        let newSelectedFile = state.selectedFile;
+
+        // If the deleted file was selected, find a new file to select
+        if (state.selectedFile === filePath) {
+          const currentFileIndex = state.projectFiles.findIndex(
+            (file) => file.filePath === filePath
+          );
+
+          // Try to select next file, then previous file, then first file
+          newSelectedFile =
+            state.projectFiles[currentFileIndex + 1]?.filePath ||
+            state.projectFiles[currentFileIndex - 1]?.filePath ||
+            (newFiles.length > 0 ? newFiles[0].filePath : null);
+        }
+
+        return {
+          projectFiles: newFiles,
+          modifiedFiles: newModifiedFiles,
+          originalContent: newOriginalContent,
+          selectedFile: newSelectedFile,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+      throw error;
+    }
+  },
+
+  async addFolder(folderPath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+
+      // Sanitize folder path - remove trailing slashes
+      folderPath = folderPath.replace(/\/+$/, "");
+
+      // Validate folder path
+      if (!folderPath || folderPath === "." || folderPath === "/") {
+        throw new Error("EINVAL: invalid folder path");
+      }
+
+      const relativePath = path.relative(
+        globalWebContainer.workdir,
+        folderPath
+      );
+
+      if (!relativePath) {
+        throw new Error(
+          `EINVAL: invalid folder path, create '${relativePath}'`
+        );
+      }
+
+      // Check if folder (or file with same path) already exists
+      const folderExists = get().projectFiles.some((file) => {
+        // Check if the file path is the folder itself or is inside the folder
+        return (
+          file.filePath === folderPath ||
+          file.filePath.startsWith(`${folderPath}/`)
+        );
+      });
+
+      if (folderExists) {
+        throw new Error(
+          `EEXIST: folder already exists, create '${folderPath}'`
+        );
+      }
+
+      // Create the folder in the filesystem
+      await globalWebContainer.fs.mkdir(relativePath, { recursive: true });
+
+      // Create a .gitkeep file inside the folder
+      const gitkeepPath = `${folderPath}/.gitkeep`;
+      const gitkeepRelativePath = path.relative(
+        globalWebContainer.workdir,
+        gitkeepPath
+      );
+
+      // Write an empty .gitkeep file
+      await globalWebContainer.fs.writeFile(gitkeepRelativePath, "");
+
+      // Add the .gitkeep file to projectFiles
+      set((state) => {
+        const newFiles = [...state.projectFiles];
+        newFiles.push({
+          filePath: gitkeepPath,
+          content: "",
+        });
+        return {
+          projectFiles: newFiles,
+        };
+      });
+
+      // Don't set the .gitkeep file as selected
+      // This keeps the current selection unchanged
+
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Failed to add folder:", error);
+      throw error;
+    }
+  },
+
+  async deleteFolder(folderPath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+      const relativePath = path.relative(
+        globalWebContainer.workdir,
+        folderPath
+      );
+
+      if (!relativePath) {
+        throw new Error(
+          `EINVAL: invalid folder path, delete '${relativePath}'`
+        );
+      }
+
+      await globalWebContainer.fs.rm(relativePath, { recursive: true });
+
+      // Remove all files that are within this folder from projectFiles
+      set((state) => {
+        // Filter out files that are in the deleted folder
+        const newFiles = state.projectFiles.filter((file) => {
+          // Ensure we match the exact folder path or its children
+          // This prevents partial string matches (e.g., "src/comp" matching "src/components")
+          const filePathParts = file.filePath.split("/");
+          const folderPathParts = folderPath.split("/");
+
+          // If the file path has fewer parts than the folder path, it can't be inside this folder
+          if (filePathParts.length < folderPathParts.length) {
+            return true;
+          }
+
+          // Check if all folder path parts match at the beginning of the file path
+          for (let i = 0; i < folderPathParts.length; i++) {
+            if (filePathParts[i] !== folderPathParts[i]) {
+              return true;
+            }
+          }
+
+          // If we get here, the file is inside the folder we're deleting
+          return false;
+        });
+
+        // Clean up modifiedFiles set
+        const newModifiedFiles = new Set(state.modifiedFiles);
+        state.modifiedFiles.forEach((filePath) => {
+          // Apply the same path matching logic
+          const filePathParts = filePath.split("/");
+          const folderPathParts = folderPath.split("/");
+
+          if (filePathParts.length >= folderPathParts.length) {
+            let isInFolder = true;
+            for (let i = 0; i < folderPathParts.length; i++) {
+              if (filePathParts[i] !== folderPathParts[i]) {
+                isInFolder = false;
+                break;
+              }
+            }
+            if (isInFolder) {
+              newModifiedFiles.delete(filePath);
+            }
+          }
+        });
+
+        // Clean up originalContent map
+        const newOriginalContent = new Map(state.originalContent);
+        state.originalContent.forEach((_, filePath) => {
+          // Apply the same path matching logic
+          const filePathParts = filePath.split("/");
+          const folderPathParts = folderPath.split("/");
+
+          if (filePathParts.length >= folderPathParts.length) {
+            let isInFolder = true;
+            for (let i = 0; i < folderPathParts.length; i++) {
+              if (filePathParts[i] !== folderPathParts[i]) {
+                isInFolder = false;
+                break;
+              }
+            }
+            if (isInFolder) {
+              newOriginalContent.delete(filePath);
+            }
+          }
+        });
+
+        // Check if the currently selected file was in the deleted folder
+        let newSelectedFile = state.selectedFile;
+        if (state.selectedFile) {
+          // Apply the same path matching logic
+          const filePathParts = state.selectedFile.split("/");
+          const folderPathParts = folderPath.split("/");
+
+          if (filePathParts.length >= folderPathParts.length) {
+            let isInFolder = true;
+            for (let i = 0; i < folderPathParts.length; i++) {
+              if (filePathParts[i] !== folderPathParts[i]) {
+                isInFolder = false;
+                break;
+              }
+            }
+
+            // If the selected file was in the deleted folder, select a new file
+            if (isInFolder) {
+              newSelectedFile =
+                newFiles.length > 0 ? newFiles[0].filePath : null;
+            }
+          }
+        }
+
+        return {
+          projectFiles: newFiles,
+          modifiedFiles: newModifiedFiles,
+          originalContent: newOriginalContent,
+          selectedFile: newSelectedFile,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to delete folder:", error);
+      throw error;
+    }
+  },
+
+  async renameFile(oldPath: string, newPath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+
+      // Validate paths
+      if (!oldPath || !newPath) {
+        throw new Error("EINVAL: Invalid file paths");
+      }
+
+      // Check if source file exists in our state
+      const sourceFile = get().projectFiles.find(
+        (file) => file.filePath === oldPath
+      );
+
+      if (!sourceFile) {
+        throw new Error(`ENOENT: Source file does not exist: '${oldPath}'`);
+      }
+
+      // Check if destination already exists
+      const destinationExists = get().projectFiles.some(
+        (file) => file.filePath === newPath
+      );
+
+      if (destinationExists) {
+        throw new Error(
+          `EEXIST: Destination file already exists: '${newPath}'`
+        );
+      }
+
+      // Check if the parent directory of the destination exists
+      const destDirPath = path.dirname(newPath);
+      const destDirExists = get().projectFiles.some(
+        (file) =>
+          path.dirname(file.filePath) === destDirPath ||
+          file.filePath.endsWith(`${destDirPath}/.gitkeep`)
+      );
+
+      if (destDirPath !== "." && !destDirExists) {
+        // Create the parent directory structure if it doesn't exist
+        const relativeDestDir = path.relative(
+          globalWebContainer.workdir,
+          destDirPath
+        );
+        await globalWebContainer.fs.mkdir(relativeDestDir, { recursive: true });
+      }
+
+      // Get relative paths for WebContainer
+      const relativeOldPath = path.relative(
+        globalWebContainer.workdir,
+        oldPath
+      );
+      const relativeNewPath = path.relative(
+        globalWebContainer.workdir,
+        newPath
+      );
+
+      // Read the source file content
+      const content = sourceFile.content;
+
+      // Create the new file
+      await globalWebContainer.fs.writeFile(relativeNewPath, content);
+
+      // Delete the old file
+      await globalWebContainer.fs.rm(relativeOldPath);
+
+      // Update state in a single operation
+      set((state) => {
+        // Add new file to projectFiles
+        const newFiles = state.projectFiles.filter(
+          (file) => file.filePath !== oldPath
+        );
+        newFiles.push({
+          filePath: newPath,
+          content: content,
+        });
+
+        // Handle modified files
+        const newModifiedFiles = new Set(state.modifiedFiles);
+        if (newModifiedFiles.has(oldPath)) {
+          newModifiedFiles.delete(oldPath);
+          newModifiedFiles.add(newPath);
+        }
+
+        // Handle original content
+        const newOriginalContent = new Map(state.originalContent);
+        if (newOriginalContent.has(oldPath)) {
+          const originalContent = newOriginalContent.get(oldPath);
+          newOriginalContent.delete(oldPath);
+          newOriginalContent.set(newPath, originalContent!);
+        }
+
+        // Update selected file if needed
+        let newSelectedFile = state.selectedFile;
+        if (state.selectedFile === oldPath) {
+          newSelectedFile = newPath;
+        }
+
+        return {
+          projectFiles: newFiles,
+          modifiedFiles: newModifiedFiles,
+          originalContent: newOriginalContent,
+          selectedFile: newSelectedFile,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to rename file:", error);
+      throw error;
+    }
+  },
+
+  async renameFolder(oldPath: string, newPath: string): Promise<void> {
+    try {
+      const globalWebContainer = await webcontainer;
+
+      // Normalize paths - remove trailing slashes
+      oldPath = oldPath.replace(/\/+$/, "");
+      newPath = newPath.replace(/\/+$/, "");
+
+      // Validate paths
+      if (!oldPath || !newPath || oldPath === "." || newPath === ".") {
+        throw new Error("EINVAL: Invalid folder paths");
+      }
+
+      // Check if source folder exists
+      const filesInFolder = get().projectFiles.filter(
+        (file) =>
+          file.filePath === oldPath || file.filePath.startsWith(`${oldPath}/`)
+      );
+
+      if (filesInFolder.length === 0) {
+        throw new Error(`ENOENT: Source folder does not exist: '${oldPath}'`);
+      }
+
+      // Check if destination folder already exists
+      const destFolderExists = get().projectFiles.some(
+        (file) =>
+          file.filePath === newPath || file.filePath.startsWith(`${newPath}/`)
+      );
+
+      if (destFolderExists) {
+        throw new Error(
+          `EEXIST: Destination folder already exists: '${newPath}'`
+        );
+      }
+
+      // Check if the parent directory of the destination exists
+      const destParentDir = path.dirname(newPath);
+      const destParentExists =
+        destParentDir === "." ||
+        get().projectFiles.some(
+          (file) =>
+            path.dirname(file.filePath) === destParentDir ||
+            file.filePath.endsWith(`${destParentDir}/.gitkeep`)
+        );
+
+      if (destParentDir !== "." && !destParentExists) {
+        // Create the parent directory structure if it doesn't exist
+        const relativeDestParent = path.relative(
+          globalWebContainer.workdir,
+          destParentDir
+        );
+        await globalWebContainer.fs.mkdir(relativeDestParent, {
+          recursive: true,
+        });
+      }
+
+      // Create new folder in the file system
+      const relativeNewPath = path.relative(
+        globalWebContainer.workdir,
+        newPath
+      );
+      await globalWebContainer.fs.mkdir(relativeNewPath, { recursive: true });
+
+      // Copy all files from old folder to new folder
+      const fileOperations: Promise<void>[] = [];
+      const filePathMappings: { oldPath: string; newPath: string }[] = [];
+
+      for (const file of filesInFolder) {
+        // Calculate the new path by replacing the prefix
+        const newFilePath = file.filePath.replace(
+          new RegExp(`^${oldPath}(/|$)`),
+          `${newPath}$1`
+        );
+
+        // Get relative paths for WebContainer
+        // const relativeOldFilePath = path.relative(
+        //   globalWebContainer.workdir,
+        //   file.filePath
+        // );
+        const relativeNewFilePath = path.relative(
+          globalWebContainer.workdir,
+          newFilePath
+        );
+
+        // Copy file to new location
+        fileOperations.push(
+          globalWebContainer.fs.writeFile(relativeNewFilePath, file.content)
+        );
+
+        filePathMappings.push({
+          oldPath: file.filePath,
+          newPath: newFilePath,
+        });
+      }
+
+      // Wait for all file operations to complete
+      await Promise.all(fileOperations);
+
+      // Delete the old folder recursively
+      const relativeOldPath = path.relative(
+        globalWebContainer.workdir,
+        oldPath
+      );
+      await globalWebContainer.fs.rm(relativeOldPath, { recursive: true });
+
+      // Update state in a single operation
+      set((state) => {
+        // Create new files list with updated paths
+        const newFiles = [...state.projectFiles];
+
+        // Remove old files
+        const filteredFiles = newFiles.filter(
+          (file) =>
+            !(
+              file.filePath === oldPath ||
+              file.filePath.startsWith(`${oldPath}/`)
+            )
+        );
+
+        // Add new files
+        for (const mapping of filePathMappings) {
+          const oldFile = state.projectFiles.find(
+            (f) => f.filePath === mapping.oldPath
+          );
+          if (oldFile) {
+            filteredFiles.push({
+              filePath: mapping.newPath,
+              content: oldFile.content,
+            });
+          }
+        }
+
+        // Handle modified files
+        const newModifiedFiles = new Set(state.modifiedFiles);
+        for (const mapping of filePathMappings) {
+          if (newModifiedFiles.has(mapping.oldPath)) {
+            newModifiedFiles.delete(mapping.oldPath);
+            newModifiedFiles.add(mapping.newPath);
+          }
+        }
+
+        // Handle original content
+        const newOriginalContent = new Map(state.originalContent);
+        for (const mapping of filePathMappings) {
+          if (newOriginalContent.has(mapping.oldPath)) {
+            const originalContent = newOriginalContent.get(mapping.oldPath);
+            newOriginalContent.delete(mapping.oldPath);
+            newOriginalContent.set(mapping.newPath, originalContent!);
+          }
+        }
+
+        // Update selected file if needed
+        let newSelectedFile = state.selectedFile;
+        if (
+          state.selectedFile &&
+          (state.selectedFile === oldPath ||
+            state.selectedFile.startsWith(`${oldPath}/`))
+        ) {
+          // Replace the old path prefix with the new one
+          newSelectedFile = state.selectedFile.replace(
+            new RegExp(`^${oldPath}(/|$)`),
+            `${newPath}$1`
+          );
+        }
+
+        return {
+          projectFiles: filteredFiles,
+          modifiedFiles: newModifiedFiles,
+          originalContent: newOriginalContent,
+          selectedFile: newSelectedFile,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to rename folder:", error);
+      throw error;
+    }
   },
 }));
