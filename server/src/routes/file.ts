@@ -48,12 +48,11 @@ router.post("/saveFiles", async (req: Request, res: Response) => {
       msg: "File saved successfully",
     });
   } catch (error) {
-    console.error("Failed to save files:", error);
-
     if (error instanceof ApplicationError) {
       res.status(error.code).json({ msg: error.message });
       return;
     }
+    console.log("Failed to save files:", error);
 
     res.status(500).json({
       msg: error instanceof Error ? error.message : "Failed to save files",
