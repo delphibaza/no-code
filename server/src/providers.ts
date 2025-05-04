@@ -85,6 +85,6 @@ function getModel(key: keyof typeof modelConfigs, variantIndex: number) {
 }
 
 // Refactored exports using generic getModel
-export const selectorModel = getModel("cerebras", 0);
+export const selectorModel = getModel("groq", 1);
 export const coderModel = getModel("chutes", 0);
 export const reasoningModel = getModel("chutes", 2);

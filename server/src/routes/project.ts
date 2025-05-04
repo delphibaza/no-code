@@ -74,11 +74,11 @@ router.post("/new", async (req: Request, res: Response) => {
       projectId: newProject.id,
     });
   } catch (error) {
-    console.error(error);
     if (error instanceof ApplicationError) {
       res.status(error.code).json({ message: error.message });
       return;
     }
+    console.log(error);
     res.status(500).json({
       msg: "Failed to create project",
     });
@@ -229,12 +229,11 @@ router.post(
         ignorePatterns: templateData.ignorePatterns,
       } as NewProject);
     } catch (error) {
-      console.error("Project generation failed:", error);
-
       if (error instanceof ApplicationError) {
         res.status(error.code).json({ message: error.message });
         return;
       }
+      console.log("Project generation failed:", error);
 
       res.status(500).json({
         message:
@@ -278,7 +277,7 @@ router.get("/projects", ensureUserExists, resetLimits, async (req, res) => {
       projects,
     });
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(500).json({
       msg: "Failed to get projects",
     });
@@ -319,6 +318,7 @@ router.get("/project-state/:projectId", async (req, res) => {
       res.status(error.code).json({ msg: error.message });
       return;
     }
+    console.log(error);
     res.status(500).json({
       msg: "Failed to get project state",
     });
