@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { ChevronRight, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { path } from "@/lib/path";
 import { cn } from "@/lib/utils";
+import { useFilesStore } from "@/stores/files";
+import { ChevronRight, FolderIcon, FolderOpenIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 export function FolderComponent({
   name,
@@ -9,7 +12,23 @@ export function FolderComponent({
   name: string;
   children: React.ReactNode;
 }) {
+  const selectedFile = useFilesStore(useShallow((state) => state.selectedFile));
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    // Check if the selected file is inside this folder
+    if (selectedFile) {
+      // Use path utilities to properly check if the file is in this folder or a subfolder
+      // won't work for nested folders with same names
+      const isCurrentFileInFolder = path.dirname(selectedFile).includes(name);
+
+      if (isCurrentFileInFolder) {
+        setIsOpen(true);
+      } else {
+        setIsOpen(false);
+      }
+    }
+  }, [selectedFile, name]);
 
   return (
     <div>

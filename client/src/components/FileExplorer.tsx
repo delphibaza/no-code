@@ -218,11 +218,6 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
                             <span className="flex items-center gap-x-1.5">
                               <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="font-medium">{segment}</span>
-                              {modifiedFiles.has(selectedFile) && (
-                                <span className="text-xs text-muted-foreground">
-                                  •
-                                </span>
-                              )}
                             </span>
                           ) : (
                             <>

@@ -55,6 +55,21 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           experimental_continueSteps: true,
           experimental_transform: smoothStream(),
           maxTokens: 8192,
+          maxSteps: 25,
+          async onStepFinish({ finishReason, usage }) {
+            console.log({ finishReason });
+            req.plan!.dailyTokensUsed += usage.totalTokens || 0;
+            req.plan!.monthlyTokensUsed += usage.totalTokens || 0;
+            // Check the limits
+            const limitsCheck = checkLimits(req.plan!);
+            if (!limitsCheck.success) {
+              throw new ApplicationError(
+                limitsCheck.message ?? "You have reached your token limit",
+                403
+              );
+            }
+            await updateSubscription(req.plan!);
+          },
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
               // Update token usage and check limits

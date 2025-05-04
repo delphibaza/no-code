@@ -51,11 +51,17 @@ export async function updateSubscription(planInfo: PlanInfo) {
   try {
     await prisma.subscription.update({
       where: { id: planInfo.subscriptionId },
+      // Prevent negative token usage based on limits,
+      // we only update the tokens till the limit
       data: {
         monthlyTokensUsed:
-          planInfo.monthlyTokensUsed >= 0 ? planInfo.monthlyTokensUsed : 0,
+          planInfo.monthlyTokensUsed >= planInfo.monthlyTokenLimit
+            ? planInfo.monthlyTokenLimit
+            : planInfo.monthlyTokensUsed,
         dailyTokensUsed:
-          planInfo.dailyTokensUsed >= 0 ? planInfo.dailyTokensUsed : 0,
+          planInfo.dailyTokensUsed >= planInfo.dailyTokenLimit
+            ? planInfo.dailyTokenLimit
+            : planInfo.dailyTokensUsed,
         monthlyTokensReset: planInfo.monthlyTokensReset,
         dailyTokensReset: planInfo.dailyTokensReset,
       },
