@@ -18,4 +18,5 @@ export const path = {
   normalize: (path: string): string => pathBrowserify.normalize(path),
   parse: (path: string): ParsedPath => pathBrowserify.parse(path),
   format: (pathObject: ParsedPath): string => pathBrowserify.format(pathObject),
+  sep: pathBrowserify.sep,
 } as const;

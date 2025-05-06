@@ -3,13 +3,12 @@ import { API_URL } from "@/lib/constants";
 import { path } from "@/lib/path";
 import { mountFiles } from "@/lib/runtime";
 import { FileAction } from "@repo/common/types";
-import fileSaver from "file-saver";
+import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import toast from "react-hot-toast";
 import { create } from "zustand";
 import { useProjectStore } from "./project";
 
-const { saveAs } = fileSaver;
 interface FilesStore {
   projectFiles: Omit<FileAction, "id" | "type">[];
   modifiedFiles: Set<string>; // Track modified file paths
@@ -226,11 +225,6 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
   async createFile(filePath: string): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(globalWebContainer.workdir, filePath);
-
-      if (!relativePath) {
-        throw new Error(`EINVAL: invalid file path, create '${relativePath}'`);
-      }
 
       // Check if file already exists before trying to create it
       const isExists = get().projectFiles.some(
@@ -241,13 +235,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
         throw new Error(`EEXIST: file already exists, create '${filePath}'`);
       }
 
-      const dirPath = path.dirname(relativePath);
+      const dirPath = path.dirname(filePath);
 
       if (dirPath !== ".") {
         await globalWebContainer.fs.mkdir(dirPath, { recursive: true });
       }
 
-      await globalWebContainer.fs.writeFile(relativePath, "");
+      await globalWebContainer.fs.writeFile(filePath, "");
 
       set((state) => {
         const newFiles = [...state.projectFiles];
@@ -271,11 +265,6 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
   async deleteFile(filePath: string): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(globalWebContainer.workdir, filePath);
-
-      if (!relativePath) {
-        throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
-      }
 
       // First check if the file exists in our state
       const fileExists = get().projectFiles.some(
@@ -287,7 +276,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       }
 
       // Try to delete the file from the filesystem
-      await globalWebContainer.fs.rm(relativePath);
+      await globalWebContainer.fs.rm(filePath);
 
       // Update all state in one set operation to maintain consistency
       set((state) => {
@@ -343,17 +332,6 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
         throw new Error("EINVAL: invalid folder path");
       }
 
-      const relativePath = path.relative(
-        globalWebContainer.workdir,
-        folderPath
-      );
-
-      if (!relativePath) {
-        throw new Error(
-          `EINVAL: invalid folder path, create '${relativePath}'`
-        );
-      }
-
       // Check if folder (or file with same path) already exists
       const folderExists = get().projectFiles.some((file) => {
         // Check if the file path is the folder itself or is inside the folder
@@ -370,17 +348,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       }
 
       // Create the folder in the filesystem
-      await globalWebContainer.fs.mkdir(relativePath, { recursive: true });
+      await globalWebContainer.fs.mkdir(folderPath, { recursive: true });
 
       // Create a .gitkeep file inside the folder
       const gitkeepPath = `${folderPath}/.gitkeep`;
-      const gitkeepRelativePath = path.relative(
-        globalWebContainer.workdir,
-        gitkeepPath
-      );
 
       // Write an empty .gitkeep file
-      await globalWebContainer.fs.writeFile(gitkeepRelativePath, "");
+      await globalWebContainer.fs.writeFile(gitkeepPath, "");
 
       // Add the .gitkeep file to projectFiles
       set((state) => {
@@ -407,18 +381,8 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
   async deleteFolder(folderPath: string): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(
-        globalWebContainer.workdir,
-        folderPath
-      );
 
-      if (!relativePath) {
-        throw new Error(
-          `EINVAL: invalid folder path, delete '${relativePath}'`
-        );
-      }
-
-      await globalWebContainer.fs.rm(relativePath, { recursive: true });
+      await globalWebContainer.fs.rm(folderPath, { recursive: true });
 
       // Remove all files that are within this folder from projectFiles
       set((state) => {
@@ -563,31 +527,17 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       if (destDirPath !== "." && !destDirExists) {
         // Create the parent directory structure if it doesn't exist
-        const relativeDestDir = path.relative(
-          globalWebContainer.workdir,
-          destDirPath
-        );
-        await globalWebContainer.fs.mkdir(relativeDestDir, { recursive: true });
+        await globalWebContainer.fs.mkdir(destDirPath, { recursive: true });
       }
-
-      // Get relative paths for WebContainer
-      const relativeOldPath = path.relative(
-        globalWebContainer.workdir,
-        oldPath
-      );
-      const relativeNewPath = path.relative(
-        globalWebContainer.workdir,
-        newPath
-      );
 
       // Read the source file content
       const content = sourceFile.content;
 
       // Create the new file
-      await globalWebContainer.fs.writeFile(relativeNewPath, content);
+      await globalWebContainer.fs.writeFile(newPath, content);
 
       // Delete the old file
-      await globalWebContainer.fs.rm(relativeOldPath);
+      await globalWebContainer.fs.rm(oldPath);
 
       // Update state in a single operation
       set((state) => {
@@ -681,21 +631,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       if (destParentDir !== "." && !destParentExists) {
         // Create the parent directory structure if it doesn't exist
-        const relativeDestParent = path.relative(
-          globalWebContainer.workdir,
-          destParentDir
-        );
-        await globalWebContainer.fs.mkdir(relativeDestParent, {
+        await globalWebContainer.fs.mkdir(destParentDir, {
           recursive: true,
         });
       }
 
       // Create new folder in the file system
-      const relativeNewPath = path.relative(
-        globalWebContainer.workdir,
-        newPath
-      );
-      await globalWebContainer.fs.mkdir(relativeNewPath, { recursive: true });
+      await globalWebContainer.fs.mkdir(newPath, { recursive: true });
 
       // Copy all files from old folder to new folder
       const fileOperations: Promise<void>[] = [];
@@ -708,19 +650,9 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           `${newPath}$1`
         );
 
-        // Get relative paths for WebContainer
-        // const relativeOldFilePath = path.relative(
-        //   globalWebContainer.workdir,
-        //   file.filePath
-        // );
-        const relativeNewFilePath = path.relative(
-          globalWebContainer.workdir,
-          newFilePath
-        );
-
         // Copy file to new location
         fileOperations.push(
-          globalWebContainer.fs.writeFile(relativeNewFilePath, file.content)
+          globalWebContainer.fs.writeFile(newFilePath, file.content)
         );
 
         filePathMappings.push({
@@ -733,11 +665,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       await Promise.all(fileOperations);
 
       // Delete the old folder recursively
-      const relativeOldPath = path.relative(
-        globalWebContainer.workdir,
-        oldPath
-      );
-      await globalWebContainer.fs.rm(relativeOldPath, { recursive: true });
+      await globalWebContainer.fs.rm(oldPath, { recursive: true });
 
       // Update state in a single operation
       set((state) => {
