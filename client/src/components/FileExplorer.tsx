@@ -1,6 +1,7 @@
 import useFetch from "@/hooks/useFetch";
 import { buildHierarchy } from "@/lib/formatterHelpers";
 import { getLanguageFromFileExtension } from "@/lib/getLanguageExtension";
+import { path } from "@/lib/path";
 import { cn, customToast, findFileContent } from "@/lib/utils";
 import { useFilesStore } from "@/stores/files";
 import { useGeneralStore } from "@/stores/general";
@@ -41,25 +42,41 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 
-function RenderStructure({ files }: { files: Folders[] }) {
+function RenderStructure({
+  files,
+  parentPath = "",
+}: {
+  files: Folders[];
+  parentPath?: string;
+}) {
   return (
     <div
       style={{ scrollbarWidth: "none" }}
       className="py-1 overflow-y-auto overflow-x-hidden h-full"
     >
       {files.map((file) => {
+        const currentPath = parentPath
+          ? path.join(parentPath, file.name)
+          : file.name;
         if (file.type === "folder") {
           return (
-            <FolderComponent key={file.name} name={file.name}>
-              <RenderStructure files={file.children ?? []} />
+            <FolderComponent
+              key={currentPath}
+              name={file.name}
+              folderPath={currentPath}
+            >
+              <RenderStructure
+                files={file.children ?? []}
+                parentPath={currentPath}
+              />
             </FolderComponent>
           );
         } else {
           return (
             <FileComponent
-              key={file.name}
+              key={currentPath}
               name={file.name}
-              filePath={file.filePath ?? file.name}
+              filePath={currentPath}
             />
           );
         }

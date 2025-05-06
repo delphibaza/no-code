@@ -3,13 +3,12 @@ import { API_URL } from "@/lib/constants";
 import { path } from "@/lib/path";
 import { mountFiles } from "@/lib/runtime";
 import { FileAction } from "@repo/common/types";
-import fileSaver from "file-saver";
+import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import toast from "react-hot-toast";
 import { create } from "zustand";
 import { useProjectStore } from "./project";
 
-const { saveAs } = fileSaver;
 interface FilesStore {
   projectFiles: Omit<FileAction, "id" | "type">[];
   modifiedFiles: Set<string>; // Track modified file paths
@@ -33,12 +32,20 @@ interface FilesStore {
     error?: string;
   }>;
   downloadZip: () => Promise<void>;
-  createFile: (filePath: string) => Promise<void>;
-  deleteFile: (filePath: string) => Promise<void>;
-  addFolder: (folderPath: string) => Promise<void>;
-  deleteFolder: (folderPath: string) => Promise<void>;
-  renameFile: (oldPath: string, newPath: string) => Promise<void>;
-  renameFolder: (oldPath: string, newPath: string) => Promise<void>;
+  createFile: (filePath: string, fetchFn: typeof fetch) => Promise<void>;
+  deleteFile: (filePath: string, fetchFn: typeof fetch) => Promise<void>;
+  addFolder: (folderPath: string, fetchFn: typeof fetch) => Promise<void>;
+  deleteFolder: (folderPath: string, fetchFn: typeof fetch) => Promise<void>;
+  renameFile: (
+    oldPath: string,
+    newPath: string,
+    fetchFn: typeof fetch
+  ) => Promise<void>;
+  renameFolder: (
+    oldPath: string,
+    newPath: string,
+    fetchFn: typeof fetch
+  ) => Promise<void>;
 }
 
 export const useFilesStore = create<FilesStore>()((set, get) => ({
@@ -132,7 +139,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
   saveModifiedFile: async (
     projectId: string,
     filePath: string,
-    customFetch: typeof fetch
+    fetchFn: typeof fetch
   ) => {
     const state = get();
     const globalWebContainer = await webcontainer;
@@ -151,7 +158,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       await mountFiles(file, globalWebContainer);
 
       // Save to backend
-      const response = await customFetch(`${API_URL}/api/saveFiles`, {
+      const response = await fetchFn(`${API_URL}/api/saveFiles`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -223,14 +230,9 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
     saveAs(content, `${projectName}.zip`);
   },
 
-  async createFile(filePath: string): Promise<void> {
+  async createFile(filePath: string, fetchFn: typeof fetch): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(globalWebContainer.workdir, filePath);
-
-      if (!relativePath) {
-        throw new Error(`EINVAL: invalid file path, create '${relativePath}'`);
-      }
 
       // Check if file already exists before trying to create it
       const isExists = get().projectFiles.some(
@@ -241,13 +243,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
         throw new Error(`EEXIST: file already exists, create '${filePath}'`);
       }
 
-      const dirPath = path.dirname(relativePath);
+      const dirPath = path.dirname(filePath);
 
       if (dirPath !== ".") {
         await globalWebContainer.fs.mkdir(dirPath, { recursive: true });
       }
 
-      await globalWebContainer.fs.writeFile(relativePath, "");
+      await globalWebContainer.fs.writeFile(filePath, "");
 
       set((state) => {
         const newFiles = [...state.projectFiles];
@@ -262,20 +264,25 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       // Use get() to access the setter method from state
       get().setSelectedFile(filePath);
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist created file to backend
+      await saveOrRenameFilesToBackend(
+        projectId,
+        { type: "save", files: [{ filePath, content: "" }] },
+        fetchFn
+      );
     } catch (error) {
       console.error("Failed to create file:", error);
       throw error;
     }
   },
 
-  async deleteFile(filePath: string): Promise<void> {
+  async deleteFile(filePath: string, fetchFn: typeof fetch): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(globalWebContainer.workdir, filePath);
-
-      if (!relativePath) {
-        throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
-      }
 
       // First check if the file exists in our state
       const fileExists = get().projectFiles.some(
@@ -287,7 +294,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       }
 
       // Try to delete the file from the filesystem
-      await globalWebContainer.fs.rm(relativePath);
+      await globalWebContainer.fs.rm(filePath);
 
       // Update all state in one set operation to maintain consistency
       set((state) => {
@@ -325,13 +332,19 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           selectedFile: newSelectedFile,
         };
       });
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist deleted file to backend
+      await deleteFilesToBackend(projectId, [filePath], fetchFn);
     } catch (error) {
       console.error("Failed to delete file:", error);
       throw error;
     }
   },
 
-  async addFolder(folderPath: string): Promise<void> {
+  async addFolder(folderPath: string, fetchFn: typeof fetch): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
 
@@ -341,17 +354,6 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       // Validate folder path
       if (!folderPath || folderPath === "." || folderPath === "/") {
         throw new Error("EINVAL: invalid folder path");
-      }
-
-      const relativePath = path.relative(
-        globalWebContainer.workdir,
-        folderPath
-      );
-
-      if (!relativePath) {
-        throw new Error(
-          `EINVAL: invalid folder path, create '${relativePath}'`
-        );
       }
 
       // Check if folder (or file with same path) already exists
@@ -370,17 +372,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       }
 
       // Create the folder in the filesystem
-      await globalWebContainer.fs.mkdir(relativePath, { recursive: true });
+      await globalWebContainer.fs.mkdir(folderPath, { recursive: true });
 
       // Create a .gitkeep file inside the folder
       const gitkeepPath = `${folderPath}/.gitkeep`;
-      const gitkeepRelativePath = path.relative(
-        globalWebContainer.workdir,
-        gitkeepPath
-      );
 
       // Write an empty .gitkeep file
-      await globalWebContainer.fs.writeFile(gitkeepRelativePath, "");
+      await globalWebContainer.fs.writeFile(gitkeepPath, "");
 
       // Add the .gitkeep file to projectFiles
       set((state) => {
@@ -396,30 +394,28 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       // Don't set the .gitkeep file as selected
       // This keeps the current selection unchanged
-
-      return Promise.resolve();
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist created folder to backend
+      await saveOrRenameFilesToBackend(
+        projectId,
+        { type: "save", files: [{ filePath: gitkeepPath, content: "" }] },
+        fetchFn
+      );
     } catch (error) {
       console.error("Failed to add folder:", error);
       throw error;
     }
   },
 
-  async deleteFolder(folderPath: string): Promise<void> {
+  async deleteFolder(folderPath: string, fetchFn: typeof fetch): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
-      const relativePath = path.relative(
-        globalWebContainer.workdir,
-        folderPath
-      );
 
-      if (!relativePath) {
-        throw new Error(
-          `EINVAL: invalid folder path, delete '${relativePath}'`
-        );
-      }
-
-      await globalWebContainer.fs.rm(relativePath, { recursive: true });
-
+      await globalWebContainer.fs.rm(folderPath, { recursive: true });
+      const filesToDelete: string[] = [];
       // Remove all files that are within this folder from projectFiles
       set((state) => {
         // Filter out files that are in the deleted folder
@@ -440,8 +436,8 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
               return true;
             }
           }
-
           // If we get here, the file is inside the folder we're deleting
+          filesToDelete.push(file.filePath);
           return false;
         });
 
@@ -518,13 +514,23 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           selectedFile: newSelectedFile,
         };
       });
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist deleted folder to backend
+      await deleteFilesToBackend(projectId, filesToDelete, fetchFn);
     } catch (error) {
       console.error("Failed to delete folder:", error);
       throw error;
     }
   },
 
-  async renameFile(oldPath: string, newPath: string): Promise<void> {
+  async renameFile(
+    oldPath: string,
+    newPath: string,
+    fetchFn: typeof fetch
+  ): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
 
@@ -563,31 +569,17 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       if (destDirPath !== "." && !destDirExists) {
         // Create the parent directory structure if it doesn't exist
-        const relativeDestDir = path.relative(
-          globalWebContainer.workdir,
-          destDirPath
-        );
-        await globalWebContainer.fs.mkdir(relativeDestDir, { recursive: true });
+        await globalWebContainer.fs.mkdir(destDirPath, { recursive: true });
       }
-
-      // Get relative paths for WebContainer
-      const relativeOldPath = path.relative(
-        globalWebContainer.workdir,
-        oldPath
-      );
-      const relativeNewPath = path.relative(
-        globalWebContainer.workdir,
-        newPath
-      );
 
       // Read the source file content
       const content = sourceFile.content;
 
       // Create the new file
-      await globalWebContainer.fs.writeFile(relativeNewPath, content);
+      await globalWebContainer.fs.rename(oldPath, newPath);
 
       // Delete the old file
-      await globalWebContainer.fs.rm(relativeOldPath);
+      await globalWebContainer.fs.rm(oldPath);
 
       // Update state in a single operation
       set((state) => {
@@ -628,13 +620,27 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           selectedFile: newSelectedFile,
         };
       });
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist renamed file to backend
+      await saveOrRenameFilesToBackend(
+        projectId,
+        { type: "rename", files: [{ oldPath, newPath }] },
+        fetchFn
+      );
     } catch (error) {
       console.error("Failed to rename file:", error);
       throw error;
     }
   },
 
-  async renameFolder(oldPath: string, newPath: string): Promise<void> {
+  async renameFolder(
+    oldPath: string,
+    newPath: string,
+    fetchFn: typeof fetch
+  ): Promise<void> {
     try {
       const globalWebContainer = await webcontainer;
 
@@ -681,21 +687,13 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
 
       if (destParentDir !== "." && !destParentExists) {
         // Create the parent directory structure if it doesn't exist
-        const relativeDestParent = path.relative(
-          globalWebContainer.workdir,
-          destParentDir
-        );
-        await globalWebContainer.fs.mkdir(relativeDestParent, {
+        await globalWebContainer.fs.mkdir(destParentDir, {
           recursive: true,
         });
       }
 
       // Create new folder in the file system
-      const relativeNewPath = path.relative(
-        globalWebContainer.workdir,
-        newPath
-      );
-      await globalWebContainer.fs.mkdir(relativeNewPath, { recursive: true });
+      await globalWebContainer.fs.mkdir(newPath, { recursive: true });
 
       // Copy all files from old folder to new folder
       const fileOperations: Promise<void>[] = [];
@@ -708,19 +706,9 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           `${newPath}$1`
         );
 
-        // Get relative paths for WebContainer
-        // const relativeOldFilePath = path.relative(
-        //   globalWebContainer.workdir,
-        //   file.filePath
-        // );
-        const relativeNewFilePath = path.relative(
-          globalWebContainer.workdir,
-          newFilePath
-        );
-
         // Copy file to new location
         fileOperations.push(
-          globalWebContainer.fs.writeFile(relativeNewFilePath, file.content)
+          globalWebContainer.fs.writeFile(newFilePath, file.content)
         );
 
         filePathMappings.push({
@@ -733,11 +721,7 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
       await Promise.all(fileOperations);
 
       // Delete the old folder recursively
-      const relativeOldPath = path.relative(
-        globalWebContainer.workdir,
-        oldPath
-      );
-      await globalWebContainer.fs.rm(relativeOldPath, { recursive: true });
+      await globalWebContainer.fs.rm(oldPath, { recursive: true });
 
       // Update state in a single operation
       set((state) => {
@@ -806,9 +790,72 @@ export const useFilesStore = create<FilesStore>()((set, get) => ({
           selectedFile: newSelectedFile,
         };
       });
+      const projectId = useProjectStore.getState().currentProjectId;
+      if (!projectId) {
+        throw new Error("Project ID not found");
+      }
+      // Persist renamed folder to backend
+      await saveOrRenameFilesToBackend(
+        projectId,
+        { type: "rename", files: filePathMappings },
+        fetchFn
+      );
     } catch (error) {
       console.error("Failed to rename folder:", error);
       throw error;
     }
   },
 }));
+
+async function saveOrRenameFilesToBackend(
+  projectId: string,
+  data:
+    | {
+        type: "save";
+        files: { filePath: string; content: string }[];
+      }
+    | {
+        type: "rename";
+        files: { oldPath: string; newPath: string }[];
+      },
+  fetchFn: typeof fetch
+) {
+  const route = data.type === "save" ? "saveFiles" : "renameFiles";
+  const response = await fetchFn(`${API_URL}/api/${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      projectId,
+      files: data.files,
+    }),
+  });
+
+  if (!response.ok) {
+    const errMessage = await response.json();
+    throw new Error(errMessage?.msg);
+  }
+
+  return response;
+}
+
+async function deleteFilesToBackend(
+  projectId: string,
+  paths: string[],
+  fetchFn: typeof fetch
+) {
+  const response = await fetchFn(
+    `${API_URL}/api/deleteFiles?projectId=${projectId}&${paths
+      .map((path) => `paths=${path}`)
+      .join("&")}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    const errMessage = await response.json();
+    throw new Error(errMessage?.msg);
+  }
+
+  return response;
+}
