@@ -6,6 +6,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
+import useFetch from "@/hooks/useFetch";
 import { path } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { useFilesStore } from "@/stores/files";
@@ -56,6 +57,7 @@ export function FolderComponent({
       deleteFolder: state.deleteFolder,
     }))
   );
+  const { customFetch } = useFetch();
   const [isOpen, setIsOpen] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(InputMode.NONE);
   const [inputValue, setInputValue] = useState("");
@@ -100,7 +102,7 @@ export function FolderComponent({
               path.dirname(folderPath),
               currentInputValue
             );
-            await renameFolder(folderPath, newPath);
+            await renameFolder(folderPath, newPath, customFetch);
             toast.success(`Renamed to ${currentInputValue}`);
             // If a file inside the renamed folder was selected, update its path
             if (
@@ -114,7 +116,7 @@ export function FolderComponent({
           break;
         case InputMode.NEW_FILE: {
           const newFilePath = path.join(folderPath, currentInputValue);
-          await createFile(newFilePath);
+          await createFile(newFilePath, customFetch);
           toast.success(`File ${currentInputValue} created`);
           setIsOpen(true); // Ensure folder is open to show the new file
           setSelectedFile(newFilePath); // Select the new file
@@ -122,7 +124,7 @@ export function FolderComponent({
         }
         case InputMode.NEW_FOLDER: {
           const newFolderPath = path.join(folderPath, currentInputValue);
-          await addFolder(newFolderPath);
+          await addFolder(newFolderPath, customFetch);
           toast.success(`Folder ${currentInputValue} created`);
           setIsOpen(true); // Ensure folder is open
           break;
@@ -141,7 +143,7 @@ export function FolderComponent({
 
   const handleDelete = async () => {
     try {
-      await deleteFolder(folderPath);
+      await deleteFolder(folderPath, customFetch);
       toast.success(`Deleted folder ${name}`);
     } catch (error) {
       toast.error(

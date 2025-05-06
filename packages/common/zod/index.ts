@@ -25,4 +25,13 @@ export const saveFileSchema = z.object({
     })
   ),
 });
+export const renameFileSchema = z.object({
+  projectId: z.string(),
+  files: z.array(
+    z.object({
+      oldPath: z.string(),
+      newPath: z.string(),
+    })
+  ),
+});
 export type PromptSchema = z.infer<typeof promptSchema>;

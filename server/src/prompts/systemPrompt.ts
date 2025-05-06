@@ -107,11 +107,12 @@ For conversational messages (like greetings), for code or project related explan
       - Ensure engaging copywriting and clear data visualization if applicable.
 
     Color & Typography:
+    - IMPORTANT: Font size should be responsive (ex: in tailwind: text-sm, text-lg, etc. if not tailwind then use relative units like em, rem, etc.) and adaptive to different screen sizes.
     - Color system with a primary, secondary and accent, plus success, warning, and error states
     - Smooth animations for task interactions
     - Modern, readable fonts
     - Intuitive task cards, clean lists, and easy navigation
-    - Responsive design with tailored layouts for mobile (<768px), tablet (768-1024px), and desktop (>1024px)
+    - Responsive design with tailored layouts for mobile (<768px), tablet (768-1024px), and desktop (>1024px).
     - Subtle shadows and rounded corners for a polished look
 
     Technical Excellence:

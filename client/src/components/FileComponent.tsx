@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { webcontainer } from "@/config/webContainer";
+import useFetch from "@/hooks/useFetch";
 import { getFileIcon } from "@/lib/fileIcons";
 import { path } from "@/lib/path";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export function FileComponent({
       deleteFile: state.deleteFile,
     }))
   );
+  const { customFetch } = useFetch();
   const isSelected = selectedFile === filePath;
   const isModified = modifiedFiles.has(filePath);
   const FileIcon = getFileIcon(name);
@@ -56,7 +58,7 @@ export function FileComponent({
     if (newName && newName !== name) {
       const newPath = path.join(path.dirname(filePath), newName);
       try {
-        await renameFile(filePath, newPath);
+        await renameFile(filePath, newPath, customFetch);
         toast.success(`Renamed to ${newName}`);
       } catch (error) {
         toast.error(
@@ -72,7 +74,7 @@ export function FileComponent({
 
   const handleDelete = async () => {
     try {
-      await deleteFile(filePath);
+      await deleteFile(filePath, customFetch);
       toast.success(`Deleted ${name}`);
     } catch (error) {
       toast.error(
