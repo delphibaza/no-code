@@ -38,22 +38,14 @@ export default function SubscriptionDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { authenticatedFetch } = useFetch();
-  const {
-    subscriptionData,
-    currentProjectId,
-    refreshTokens,
-    setSubscriptionData,
-    setCurrentProjectState,
-  } = useProjectStore(
-    useShallow((state) => ({
-      currentProjectId: state.currentProjectId,
-      subscriptionData: state.subscriptionData,
-      refreshTokens: state.refreshTokens,
-      setCurrentProjectState: state.setCurrentProjectState,
-      setSubscriptionData: state.setSubscriptionData,
-      setRefreshTokens: state.setRefreshTokens,
-    }))
-  );
+  const { subscriptionData, refreshTokens, setSubscriptionData } =
+    useProjectStore(
+      useShallow((state) => ({
+        subscriptionData: state.subscriptionData,
+        refreshTokens: state.refreshTokens,
+        setSubscriptionData: state.setSubscriptionData,
+      }))
+    );
   const plan = subscriptionData?.plan
     ? planDetails[subscriptionData.plan as keyof typeof planDetails]
     : null;
@@ -64,11 +56,6 @@ export default function SubscriptionDialog() {
       try {
         const data = await authenticatedFetch(`${API_URL}/api/subscription`);
         setSubscriptionData(data);
-        // Fetch project state
-        const projectState = await authenticatedFetch(
-          `${API_URL}/api/project-state/${currentProjectId}`
-        );
-        setCurrentProjectState(projectState.state);
       } catch (error) {
         console.error("Error fetching subscription data:", error);
       } finally {
@@ -86,7 +73,7 @@ export default function SubscriptionDialog() {
           My Subscription
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-full md:w-[500px]">
         {isLoading ? (
           <div className="flex justify-center items-center h-52 md:h-[550px]">
             <Loader2 className="h-4 w-4 animate-spin text-gray-500 mx-auto" />

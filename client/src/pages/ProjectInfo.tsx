@@ -39,14 +39,9 @@ export default function ProjectInfo() {
   const { refreshTokens, setCurrentProjectId, setRefreshTokens } =
     useProjectStore(
       useShallow((state) => ({
-        messageHistory: state.messageHistory,
-        currentMessageId: state.currentMessageId,
         refreshTokens: state.refreshTokens,
-        currentProjectState: state.currentProjectState,
-        upsertMessage: state.upsertMessage,
         setRefreshTokens: state.setRefreshTokens,
         setCurrentProjectId: state.setCurrentProjectId,
-        setCurrentMessageId: state.setCurrentMessageId,
       }))
     );
   const {

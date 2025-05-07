@@ -1,9 +1,11 @@
+import { API_URL } from "@/lib/constants";
 import { projectFilesMsg } from "@/lib/prompts";
 import { constructMessages } from "@/lib/runtime";
 import { useFilesStore } from "@/stores/files";
 import { useProjectStore } from "@/stores/project";
 import { Message } from "ai/react";
 import { useShallow } from "zustand/react/shallow";
+import useFetch from "./useFetch";
 
 export function useHandleSubmit(
   setMessages: (
@@ -15,14 +17,14 @@ export function useHandleSubmit(
   const {
     currentMessageId,
     messageHistory,
-    currentProjectState,
+    currentProjectId,
     upsertMessage,
     setCurrentMessageId,
   } = useProjectStore(
     useShallow((state) => ({
+      currentProjectId: state.currentProjectId,
       currentMessageId: state.currentMessageId,
       messageHistory: state.messageHistory,
-      currentProjectState: state.currentProjectState,
       upsertMessage: state.upsertMessage,
       setCurrentMessageId: state.setCurrentMessageId,
     }))
@@ -33,8 +35,9 @@ export function useHandleSubmit(
       ignorePatterns: state.ignorePatterns,
     }))
   );
+  const { authenticatedFetch } = useFetch();
 
-  function handleSend(input: string) {
+  async function handleSend(input: string) {
     upsertMessage({
       id: crypto.randomUUID(),
       role: "user",
@@ -42,7 +45,11 @@ export function useHandleSubmit(
       timestamp: Date.now(),
     });
     if (!currentMessageId || !projectFiles.length) return;
-    if (currentProjectState === "blankTemplate") {
+    // Fetch project state
+    const data = await authenticatedFetch(
+      `${API_URL}/api/project-state/${currentProjectId}`
+    );
+    if (data.state === "blankTemplate") {
       // Get the template prompt that was added earlier while initializing
       const templatePrompt = messageHistory.find(
         (message) => message.role === "data"

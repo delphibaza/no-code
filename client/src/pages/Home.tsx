@@ -17,13 +17,13 @@ import { useShallow } from "zustand/react/shallow";
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
+  transition: { duration: 0.25 },
 };
 
 const stagger = {
   animate: {
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.1,
     },
   },
 };
@@ -131,7 +131,7 @@ export default function HomePage() {
                       initial: { opacity: 0 },
                       animate: {
                         opacity: 1,
-                        transition: { delay: 0.5, duration: 0.8 },
+                        transition: { delay: 0.5, duration: 0.5 },
                       },
                     }}
                   >

@@ -72,11 +72,6 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           },
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
-              // Update token usage and check limits
-              req.plan!.dailyTokensUsed += usage.totalTokens || 0;
-              req.plan!.monthlyTokensUsed += usage.totalTokens || 0;
-              await updateSubscription(req.plan!);
-
               let jsonContent;
               // Check if text is wrapped in markdown code blocks
               const jsonMatch = text.match(/```json\n([\s\S]*?)```/);

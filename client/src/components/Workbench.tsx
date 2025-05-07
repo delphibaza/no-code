@@ -1,8 +1,8 @@
-import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@/stores/project";
+import { useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
-import { useEffect, useRef } from "react";
 
 export function Workbench() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,6 +59,7 @@ export function Workbench() {
             reasoning={message?.reasoning}
             content={message.content}
             actions={actions.get(message.id) || []}
+            tokensUsed={message.tokensUsed}
           />
         )
       )}

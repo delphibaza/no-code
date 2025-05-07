@@ -37,7 +37,7 @@ export default function NetlifyConnection() {
       setValidatedToken: state.setValidatedToken,
       setIsConnecting: state.setIsConnecting,
       removeToken: state.removeToken,
-    })),
+    }))
   );
   // const [isActionLoading ,setIsActionLoading] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
@@ -65,7 +65,7 @@ export default function NetlifyConnection() {
       toast.error(
         `Failed to connect to Netlify: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
+        }`
       );
     } finally {
       setIsConnecting(false);
@@ -138,27 +138,26 @@ export default function NetlifyConnection() {
           </div>
         ) : (
           <div className="flex flex-col w-full gap-3 mt-4">
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3">
               <Button
                 onClick={handleDisconnect}
                 variant="destructive"
                 size="sm"
-                className="flex items-center gap-2"
               >
                 <LogOutIcon className="w-4 h-4" />
                 Disconnect
               </Button>
-              <div className="text-sm">
-                <a
-                  href="https://app.netlify.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="decoration-1 hover:underline flex items-center"
-                >
-                  Netlify Dashboard
-                  <ArrowUpRightFromSquareIcon className="w-3 h-3 inline-block ml-1" />
-                </a>
-              </div>
+            </div>
+            <div className="text-sm">
+              <a
+                href="https://app.netlify.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="decoration-1 hover:underline flex items-center"
+              >
+                Netlify Dashboard
+                <ArrowUpRightFromSquareIcon className="w-3 h-3 inline-block ml-1" />
+              </a>
             </div>
           </div>
         )}
