@@ -24,7 +24,7 @@ export default function ConnectionsTab() {
         Manage your external service connections and integrations
       </p>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Suspense fallback={<Loader2 className="animate-spin size-4" />}>
           <NetlifyConnection />
         </Suspense>

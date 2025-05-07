@@ -1,5 +1,6 @@
 import svgToDataUri from "mini-svg-data-uri";
 import { default as flattenColorPalette } from "tailwindcss/lib/util/flattenColorPalette";
+import typography from "@tailwindcss/typography";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -73,6 +74,7 @@ export default {
     },
   },
   plugins: [
+    typography,
     import("tailwindcss-animate"),
     addVariablesForColors,
     function ({ matchUtilities, theme }) {

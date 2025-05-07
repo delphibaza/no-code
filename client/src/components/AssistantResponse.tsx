@@ -6,6 +6,8 @@ import { parse } from "best-effort-json-parser";
 import { ChevronDown, ChevronRight, Loader } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useShallow } from "zustand/react/shallow";
 import { FileActionDisplay, ShellActionDisplay } from "./ActionDisplay";
 import { Button } from "./ui/button";
@@ -82,28 +84,22 @@ function Reasoning({
         {isExpanded && (
           <motion.div
             key="reasoning"
-            className="text-sm dark:text-zinc-400 text-zinc-600 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
+            className="text-sm bg-[#f7f7f7] dark:bg-gray-800 text-zinc-600 dark:text-zinc-400 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
             initial="collapsed"
             animate="expanded"
             exit="collapsed"
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            {reasoning}
+            <div className="prose text-sm/6">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {reasoning}
+              </ReactMarkdown>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function HTMLContent({ content }: { content?: string }) {
-  if (!content) return null;
-  return (
-    <div
-      className="break-words overflow-wrap-anywhere whitespace-pre-line min-w-0 flex-1"
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
   );
 }
 
@@ -187,10 +183,12 @@ export function AssistantResponse({
   content,
   actions,
   reasoning,
+  tokensUsed,
 }: {
   content: string;
   actions: ActionState[];
   reasoning?: string;
+  tokensUsed?: number;
 }) {
   const artifact = useMemo(() => parseContent(content)?.artifact, [content]);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -205,7 +203,11 @@ export function AssistantResponse({
       )}
       {artifact?.title && (
         <>
-          <HTMLContent content={artifact.initialContext} />
+          <div className="prose text-sm/6">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {artifact.initialContext}
+            </ReactMarkdown>
+          </div>
           {actions.length > 0 && (
             <ActionsPanel
               title={artifact.title}
@@ -214,9 +216,20 @@ export function AssistantResponse({
               onToggle={() => setIsExpanded((prev) => !prev)}
             />
           )}
-          <HTMLContent content={artifact.endingContext} />
+          <div className="prose text-sm/6">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {artifact.endingContext}
+            </ReactMarkdown>
+          </div>
         </>
       )}
+      <div className="flex justify-end">
+        {tokensUsed && (
+          <div className="text-xs text-muted-foreground">
+            Tokens Used : {tokensUsed}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

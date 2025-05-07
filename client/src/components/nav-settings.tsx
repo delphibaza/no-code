@@ -23,7 +23,7 @@ export function NavSettings() {
       setWordWrap: state.setWordWrap,
       reasoning: state.reasoning,
       setReasoning: state.setReasoning,
-    })),
+    }))
   );
   return (
     <Dialog>
@@ -31,13 +31,15 @@ export function NavSettings() {
         <CogIcon className="size-4" />
         <span className="text-sm font-medium">Settings</span>
       </DialogTrigger>
-      <DialogContent className="w-[500px]">
+      <DialogContent className="w-full md:w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CogIcon className="size-5" />
             Settings
           </DialogTitle>
-          <DialogDescription>Customize your workspace</DialogDescription>
+          <DialogDescription className="text-left">
+            Customize your workspace
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4 w-full">
           <div className="flex items-center justify-between gap-4">

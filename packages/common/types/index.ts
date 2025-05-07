@@ -17,6 +17,7 @@ export type MessageHistory = {
   timestamp: number;
   role: Role;
   reasoning?: string;
+  tokensUsed?: number;
   rawContent?: string;
   content: string;
 };

@@ -27,25 +27,22 @@ export function useInitProject(
 ) {
   const [initializingProject, setInitializingProject] = useState(true);
   const { customFetch } = useFetch();
-  const { setSelectedFile, setProjectFiles, setIgnorePatterns } =
-    useFilesStore(
-      useShallow((state) => ({
-        setProjectFiles: state.setProjectFiles,
-        setIgnorePatterns: state.setIgnorePatterns,
-        setSelectedFile: state.setSelectedFile,
-      }))
-    );
+  const { setSelectedFile, setProjectFiles, setIgnorePatterns } = useFilesStore(
+    useShallow((state) => ({
+      setProjectFiles: state.setProjectFiles,
+      setIgnorePatterns: state.setIgnorePatterns,
+      setSelectedFile: state.setSelectedFile,
+    }))
+  );
   const {
     refreshProjects,
     addAction,
     upsertMessage,
     setCurrentMessageId,
     setRefreshProjects,
-    setCurrentProjectState,
   } = useProjectStore(
     useShallow((state) => ({
       refreshProjects: state.refreshProjects,
-      setCurrentProjectState: state.setCurrentProjectState,
       setRefreshProjects: state.setRefreshProjects,
       addAction: state.addAction,
       upsertMessage: state.upsertMessage,
@@ -94,15 +91,12 @@ export function useInitProject(
       }
       switch (data.state) {
         case "existing":
-          setCurrentProjectState("existing");
           await initializeExistingProject(data, container);
           break;
         case "new":
-          setCurrentProjectState("new");
           await initializeNewProject(data, container);
           break;
         case "blankTemplate":
-          setCurrentProjectState("blankTemplate");
           await initializeBlankTemplate(data, container);
           break;
         default:
@@ -126,6 +120,7 @@ export function useInitProject(
   ) {
     const { messages, projectFiles, ignorePatterns } = data;
     messages.forEach((message) => {
+      if (!message.content) return;
       if (message.role === "user") {
         // For user messages, content is always { text: string }
         const userContent = message.content as { text: string };
@@ -143,14 +138,18 @@ export function useInitProject(
           role: message.role,
           content: JSON.stringify(assistantContent),
           timestamp: new Date(message.createdAt).getTime(),
+          tokensUsed: message.tokensUsed,
         });
-        assistantContent.artifact.actions.forEach((action) => {
-          if (action.type === "file") {
-            addAction(message.id, { state: "created", ...action });
-          } else if (action.type === "shell") {
-            addAction(message.id, { state: "completed", ...action });
-          }
-        });
+        const actions = assistantContent.artifact.actions;
+        if (Array.isArray(actions)) {
+          actions.forEach((action) => {
+            if (action.type === "file") {
+              addAction(message.id, { state: "created", ...action });
+            } else if (action.type === "shell") {
+              addAction(message.id, { state: "completed", ...action });
+            }
+          });
+        }
       }
     });
     setIgnorePatterns(ignorePatterns);

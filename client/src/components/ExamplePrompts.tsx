@@ -9,7 +9,7 @@ const EXAMPLE_PROMPTS: ExamplePrompt[] = [
   {
     title: "React Todo App",
     prompt:
-      "Create a simple, user-friendly to-do list application using React where users can add, edit, and delete tasks, mark them as completed, and organize them by priority.",
+      "Create a simple, user-friendly to-do list application using React where users can add, edit, and delete tasks and mark them as completed.",
   },
   {
     title: "Next.js Portfolio Website",
