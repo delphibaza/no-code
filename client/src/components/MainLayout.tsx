@@ -54,7 +54,7 @@ export default function MainLayout() {
               </SignedIn>
             </div>
           </header>
-          <main className="max-h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden mt-14">
+          <main className="h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden mt-14">
             <Outlet />
           </main>
         </SidebarInset>

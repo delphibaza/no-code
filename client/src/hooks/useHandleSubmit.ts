@@ -45,6 +45,7 @@ export function useHandleSubmit(
       timestamp: Date.now(),
     });
     if (!currentMessageId || !projectFiles.length) return;
+    setInput("");
     // Fetch project state
     const data = await authenticatedFetch(
       `${API_URL}/api/project-state/${currentProjectId}`
@@ -92,7 +93,6 @@ export function useHandleSubmit(
     }
     reload();
     setCurrentMessageId(crypto.randomUUID());
-    setInput("");
   }
 
   return { handleSend };
