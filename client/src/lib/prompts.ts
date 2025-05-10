@@ -26,13 +26,14 @@ export function projectFilesMsg(files: File[], ignorePatterns: string[]) {
     .join(", ")}`;
 }
 
-export const projectInstructionsMsg = (currTask: string) => stripIndents`
-  ⚠️ STRICT IMPLEMENTATION REQUIREMENTS
-  ORDER OF OPERATIONS:
-  1. Update dependencies only if needed (don't modify the package.json just to modify the project name)
-  2. Run package manager install command, even if dependencies are not updated. Remember: By default, the packages are not installed (Ex: npm install, yarn install, pnpm install, etc.)
-  3. Make file changes and return ONLY modified/new files
-  4. Start development server (Ex: npm run dev, yarn dev, pnpm dev, etc.)
+export const projectInstructionsMsg = (
+  currTask: string
+) => stripIndents`⚠️ STRICT IMPLEMENTATION REQUIREMENTS
+ORDER OF OPERATIONS:
+1. Update dependencies only if needed (don't modify the package.json just to modify the project name)
+2. Run package manager install command, even if dependencies are not updated. Remember: By default, the packages are not installed (Ex: npm install, yarn install, pnpm install, etc.)
+3. Make file changes and return ONLY modified/new files
+4. Start development server (Ex: npm run dev, yarn dev, pnpm dev, etc.)
   YOUR CURRENT TASK: ${currTask}
   VALIDATION CHECKLIST:
   ✓ For full-stack projects: Commands are run in the respective directories (Ex: run commands in the frontend and backend directories by running the \`cd\` command)

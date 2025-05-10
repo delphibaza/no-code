@@ -84,7 +84,7 @@ function Reasoning({
         {isExpanded && (
           <motion.div
             key="reasoning"
-            className="text-sm bg-[#f7f7f7] dark:bg-gray-800 text-zinc-600 dark:text-zinc-400 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
+            className="text-sm bg-[#f7f7f7] dark:bg-gray-800 text-zinc-600 dark:text-zinc-200 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
             initial="collapsed"
             animate="expanded"
             exit="collapsed"

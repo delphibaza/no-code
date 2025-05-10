@@ -73,7 +73,7 @@ export default function HomePage() {
 
   return (
     <BackgroundDots>
-      <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col h-[calc(100vh-3.5rem)] w-full">
         <motion.main
           className="flex-1"
           initial="initial"
