@@ -31,6 +31,7 @@ const modelConfigs: Record<string, ModelConfig> = {
       { name: "deepseek-ai/DeepSeek-V3-0324", think: false },
       { name: "deepseek-ai/DeepSeek-R1", think: true },
       { name: "Qwen/Qwen3-235B-A22B", think: true },
+      { name: "chutesai/Llama-4-Maverick-17B-128E-Instruct-FP8", think: false },
     ],
     apiKey: process.env.CHUTES_API_KEY,
     baseURL: "https://llm.chutes.ai/v1",
@@ -38,7 +39,7 @@ const modelConfigs: Record<string, ModelConfig> = {
   novita: {
     provider: "openai",
     models: [
-      { name: "deepseek/deepseek-r1-turbo", think: true },
+      { name: "deepseek/deepseek-r1", think: true },
       { name: "deepseek/deepseek-v3-0324", think: false },
     ],
     apiKey: process.env.NOVITA_API_KEY,
