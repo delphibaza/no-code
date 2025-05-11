@@ -16,7 +16,7 @@ import {
   Minimize2,
   Save,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 import { CodeEditor } from "./CodeEditor";
@@ -42,50 +42,47 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 
-function RenderStructure({
-  files,
-  parentPath = "",
-}: {
-  files: Folders[];
-  parentPath?: string;
-}) {
-  return (
-    <div
-      style={{ scrollbarWidth: "none" }}
-      className="py-1 overflow-y-auto overflow-x-hidden h-full"
-    >
-      {files.map((file) => {
-        const currentPath = parentPath
-          ? path.join(parentPath, file.name)
-          : file.name;
-        if (file.type === "folder") {
-          return (
-            <FolderComponent
-              key={currentPath}
-              name={file.name}
-              folderPath={currentPath}
-            >
-              <RenderStructure
-                files={file.children ?? []}
-                parentPath={currentPath}
+const RenderStructure = memo(
+  ({ files, parentPath = "" }: { files: Folders[]; parentPath?: string }) => {
+    return (
+      <div
+        style={{ scrollbarWidth: "none" }}
+        className="py-1 overflow-y-auto overflow-x-hidden h-full"
+      >
+        {files.map((file) => {
+          const currentPath = parentPath
+            ? path.join(parentPath, file.name)
+            : file.name;
+          if (file.type === "folder") {
+            return (
+              <FolderComponent
+                key={currentPath}
+                name={file.name}
+                folderPath={currentPath}
+              >
+                <RenderStructure
+                  files={file.children ?? []}
+                  parentPath={currentPath}
+                />
+              </FolderComponent>
+            );
+          } else {
+            return (
+              <FileComponent
+                key={currentPath}
+                name={file.name}
+                filePath={currentPath}
               />
-            </FolderComponent>
-          );
-        } else {
-          return (
-            <FileComponent
-              key={currentPath}
-              name={file.name}
-              filePath={currentPath}
-            />
-          );
-        }
-      })}
-    </div>
-  );
-}
+            );
+          }
+        })}
+      </div>
+    );
+  }
+);
+RenderStructure.displayName = "RenderStructure";
 
-export function FileExplorer({ readonly }: { readonly: boolean }) {
+export const FileExplorer = memo(({ readonly }: { readonly: boolean }) => {
   const {
     projectFiles,
     selectedFile,
@@ -273,4 +270,5 @@ export function FileExplorer({ readonly }: { readonly: boolean }) {
       </div>
     </div>
   );
-}
+});
+FileExplorer.displayName = "FileExplorer";

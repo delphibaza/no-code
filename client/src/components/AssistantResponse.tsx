@@ -5,7 +5,7 @@ import { ActionState } from "@repo/common/types";
 import { parse } from "best-effort-json-parser";
 import { ChevronDown, ChevronRight, Loader } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useShallow } from "zustand/react/shallow";
@@ -20,7 +20,7 @@ function parseContent(content: string) {
   }
 }
 
-function Reasoning({
+const Reasoning = memo(function Reasoning({
   reasoning,
   isReasoning,
 }: {
@@ -105,9 +105,9 @@ function Reasoning({
       </AnimatePresence>
     </div>
   );
-}
+});
 
-function ActionsPanel({
+const ActionsPanel = memo(function ActionsPanel({
   title,
   actions,
   isExpanded,
@@ -181,9 +181,9 @@ function ActionsPanel({
       </AnimatePresence>
     </div>
   );
-}
+});
 
-export function AssistantResponse({
+export const AssistantResponse = memo(function AssistantResponse({
   content,
   actions,
   reasoning,
@@ -236,4 +236,4 @@ export function AssistantResponse({
       </div>
     </div>
   );
-}
+});

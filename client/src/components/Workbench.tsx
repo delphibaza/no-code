@@ -1,5 +1,5 @@
 import { useProjectStore } from "@/stores/project";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
@@ -38,11 +38,13 @@ export function Workbench() {
     scrollToBottom();
   }, [messageHistory.length]);
 
-  const filteredMessageHistory = messageHistory
-    .filter(
-      (message) => message.role === "user" || message.role === "assistant"
-    )
-    .sort((a, b) => a.timestamp - b.timestamp);
+  const filteredMessageHistory = useMemo(() => {
+    return messageHistory
+      .filter(
+        (message) => message.role === "user" || message.role === "assistant"
+      )
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [messageHistory]);
 
   return (
     <div

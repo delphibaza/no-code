@@ -12,7 +12,6 @@ import { useProjectStore } from "@/stores/project";
 import {
   CircleStop,
   CornerDownLeft,
-  RotateCcw,
   WandSparkles,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -52,12 +51,10 @@ export const ChatInput = memo(
   ({
     input,
     isLoading,
-    reload,
     stop,
     setInput,
     placeholder,
     handleSubmit,
-    error,
     rows = 5,
   }: {
     placeholder: string;
@@ -94,11 +91,11 @@ export const ChatInput = memo(
             }
           : () => {},
       },
-      {
-        show: Boolean(error && reload),
-        icon: <RotateCcw className="size-4" />,
-        onClick: reload || (() => {}),
-      },
+      // {
+      //   show: Boolean(error && reload),
+      //   icon: <RotateCcw className="size-4" />,
+      //   onClick: reload || (() => {}),
+      // },
     ];
 
     async function handleEnhancePrompt() {

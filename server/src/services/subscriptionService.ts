@@ -22,7 +22,7 @@ export async function getUserWithSubscription(userId: string) {
   return userWithSubscription;
 }
 
-export function checkLimits(plan: PlanInfo) {
+export function checkLimits(plan: PlanInfo, minTokens?: number) {
   const {
     dailyTokensUsed,
     monthlyTokensUsed,
@@ -30,7 +30,12 @@ export function checkLimits(plan: PlanInfo) {
     monthlyTokenLimit,
   } = plan;
 
-  if (dailyTokensUsed >= dailyTokenLimit) {
+  if (minTokens && dailyTokenLimit - dailyTokensUsed <= minTokens) {
+    return {
+      success: false,
+      message: "You do not have enough tokens to make this request",
+    };
+  } else if (dailyTokensUsed >= dailyTokenLimit) {
     return {
       success: false,
       message: "You have reached your daily token limit",

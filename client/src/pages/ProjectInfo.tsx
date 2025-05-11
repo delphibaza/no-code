@@ -61,7 +61,7 @@ export default function ProjectInfo() {
     },
     fetch: customFetch,
     sendExtraMessageFields: true,
-    experimental_throttle: 75,
+    experimental_throttle: 100,
     onFinish: (_, { finishReason }) => {
       if (finishReason !== "stop") {
         customToast(
@@ -70,12 +70,48 @@ export default function ProjectInfo() {
       }
       setRefreshTokens(!refreshTokens);
     },
-    onError: (error) => {
-      console.log(error);
-      customToast(
-        JSON.parse(error.message)?.msg ??
-          "An error occurred while processing your request. Please try again."
-      );
+    onError: (error: Error) => {
+      console.error("Chat error from server:", error);
+      let displayMessage =
+        "An error occurred while processing your request. Please try again.";
+
+      if (error && error.message && typeof error.message === "string") {
+        console.log("Raw error.message from server:", error.message);
+        try {
+          const parsedError = JSON.parse(error.message);
+          if (parsedError && parsedError.msg) {
+            displayMessage = parsedError.msg;
+          } else {
+            console.warn(
+              "Parsed error from server, but 'msg' field was missing or malformed.",
+              parsedError
+            );
+            // If JSON was valid but not our expected {msg: ...} format,
+            // we could consider using error.message directly if it's short and simple.
+            // For now, we'll stick to the generic message or the successfully parsed part if any.
+          }
+        } catch (e) {
+          // JSON.parse failed, meaning error.message was not a valid JSON string.
+          // It might be a plain text error message from the server or a network error.
+          console.warn(
+            "Failed to parse server error message as JSON. Raw message:",
+            error.message,
+            "Error during parsing:",
+            e
+          );
+          // If error.message is a relatively short, non-HTML string, it might be intended for display.
+          if (
+            error.message.length < 150 &&
+            !error.message.toLowerCase().includes("<html") &&
+            !error.message.toLowerCase().includes("<!doctype")
+          ) {
+            displayMessage = error.message;
+          }
+        }
+      } else {
+        console.warn("Error object or error.message is missing or not a string.");
+      }
+      customToast(displayMessage);
     },
   });
   const [isWorkbenchCollapsed, setIsWorkbenchCollapsed] = useState(false);
@@ -100,7 +136,7 @@ export default function ProjectInfo() {
       handleNewMessage(recentMessage);
       setTimeout(() => {
         setCurrentTab("code");
-      }, 1500);
+      }, 5000);
     }
   }, [messages]);
 
