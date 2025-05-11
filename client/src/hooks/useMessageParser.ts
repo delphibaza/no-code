@@ -2,21 +2,18 @@ import { parseActions } from "@/lib/runtime";
 import { removeTrailingNewlines } from "@/lib/utils";
 import { actionRunner } from "@/services/action-runner";
 import { useFilesStore } from "@/stores/files";
-import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
 import { FileAction, ShellAction } from "@repo/common/types";
 import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 export function useMessageParser() {
-  const [streamingAction, setStreamingAction] = useState<
-    FileAction | ShellAction | null
-  >(null);
-  const [lastStreamedAction, setLastStreamedAction] = useState<
-    FileAction | ShellAction | null
-  >(null);
+  const processedActionIds = useRef<{
+    storeAdded: Set<string | number>;
+    finalized: Set<string | number>;
+  }>({ storeAdded: new Set(), finalized: new Set() });
   const { currentMessageId, upsertMessage, addAction, updateActionStatus } =
     useProjectStore(
       useShallow((state) => ({
@@ -33,11 +30,14 @@ export function useMessageParser() {
       updateProjectFiles: state.updateProjectFiles,
     }))
   );
-  const { setCurrentTab } = useGeneralStore(
-    useShallow((state) => ({
-      setCurrentTab: state.setCurrentTab,
-    }))
-  );
+
+  useEffect(() => {
+    console.log("Resetting processedActionIds due to currentMessageId change.");
+    processedActionIds.current = {
+      storeAdded: new Set(),
+      finalized: new Set(),
+    };
+  }, [currentMessageId]);
 
   const parseMessage = (content: string) => {
     try {
@@ -58,29 +58,6 @@ export function useMessageParser() {
       (action) => action.type === "file"
     );
     updateProjectFiles(parsedFiles);
-  };
-
-  const handleLastStreamedAction = (
-    actionsStreamed: boolean,
-    validActions: (FileAction | ShellAction)[]
-  ) => {
-    const lastStreamedAction = actionsStreamed
-      ? validActions.at(-1)
-      : validActions.at(-2);
-    if (lastStreamedAction) {
-      setLastStreamedAction(lastStreamedAction);
-    }
-  };
-
-  const handleStreamingAction = (
-    validActions: (FileAction | ShellAction)[]
-  ) => {
-    if (validActions.length > 0) {
-      const streamingAction = validActions.at(-1);
-      if (streamingAction) {
-        setStreamingAction(streamingAction);
-      }
-    }
   };
 
   function handleNewMessage(message: Message) {
@@ -104,11 +81,70 @@ export function useMessageParser() {
       if (!parsedMessage) {
         return;
       }
-      const validActions = parsedMessage.actions;
-      setCurrentTab("code");
-      updateStore(validActions);
-      handleStreamingAction(validActions);
-      handleLastStreamedAction(parsedMessage.actionsStreamed, validActions);
+
+      const currentActions = parsedMessage.actions;
+      const isStreamDone = parsedMessage.actionsStreamed;
+
+      updateStore(currentActions);
+
+      const currentProcessed = processedActionIds.current;
+
+      currentActions.forEach((action, index) => {
+        const isLastActionInCurrentStreamChunk =
+          index === currentActions.length - 1;
+
+        if (
+          action.type === "file" &&
+          !currentProcessed.storeAdded.has(action.id)
+        ) {
+          addAction(currentMessageId, {
+            id: action.id,
+            type: "file",
+            filePath: action.filePath,
+            state: "creating",
+          });
+          currentProcessed.storeAdded.add(action.id);
+        }
+
+        if (isLastActionInCurrentStreamChunk && action.type === "file") {
+          if (action.filePath !== selectedFile) {
+            setSelectedFile(action.filePath);
+          }
+        }
+      });
+
+      const actionsToFinalize = isStreamDone
+        ? currentActions
+        : currentActions.slice(0, -1);
+
+      actionsToFinalize.forEach((action) => {
+        if (!currentProcessed.finalized.has(action.id)) {
+          if (action.type === "file") {
+            if (!currentProcessed.storeAdded.has(action.id)) {
+              addAction(currentMessageId, {
+                id: action.id,
+                type: "file",
+                filePath: action.filePath,
+                state: "creating",
+              });
+              currentProcessed.storeAdded.add(action.id);
+            }
+            updateActionStatus(currentMessageId, action.id, "created");
+          } else if (action.type === "shell") {
+            if (!currentProcessed.storeAdded.has(action.id)) {
+              addAction(currentMessageId, {
+                id: action.id,
+                type: "shell",
+                state: "queued",
+                command: action.command,
+              });
+              currentProcessed.storeAdded.add(action.id);
+            }
+          }
+          actionRunner.addAction(currentMessageId, action);
+          currentProcessed.finalized.add(action.id);
+        }
+      });
     } catch (error) {
       console.error(
         "An error occurred while parsing the message:",
@@ -116,43 +152,6 @@ export function useMessageParser() {
       );
     }
   }
-
-  useEffect(() => {
-    if (!streamingAction || !currentMessageId) {
-      return;
-    }
-    if (streamingAction.type === "file") {
-      addAction(currentMessageId, {
-        id: streamingAction.id,
-        type: "file",
-        filePath: streamingAction.filePath,
-        state: "creating",
-      });
-    }
-    if (
-      streamingAction.type === "file" &&
-      streamingAction.filePath !== selectedFile
-    ) {
-      setSelectedFile(streamingAction.filePath);
-    }
-  }, [streamingAction?.id]);
-
-  useEffect(() => {
-    if (!lastStreamedAction || !currentMessageId) {
-      return;
-    }
-    if (lastStreamedAction.type === "file") {
-      updateActionStatus(currentMessageId, lastStreamedAction.id, "created");
-    } else if (lastStreamedAction.type === "shell") {
-      addAction(currentMessageId, {
-        id: lastStreamedAction.id,
-        type: "shell",
-        state: "queued",
-        command: lastStreamedAction.command,
-      });
-    }
-    actionRunner.addAction(currentMessageId, lastStreamedAction);
-  }, [lastStreamedAction?.id]);
 
   return { handleNewMessage };
 }

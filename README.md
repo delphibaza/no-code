@@ -2,6 +2,8 @@
 
 A modern web application that allows users to build websites and applications using natural language prompts. The project uses AI to generate code from user descriptions and provides a live development environment.
 
+![homepage](./client/src/assets/images/image.png)
+
 ## 🚀 Features
 
 - **AI-Powered Code Generation**: Convert natural language descriptions into functional code
@@ -66,7 +68,7 @@ npm install
 ```
 
 3. **Set up environment variables**
-Create `.env` files in both client and server directories with necessary configurations:
+   Create `.env` files in both client and server directories with necessary configurations:
 
 Required environment variables: Check `.env.example` files for reference.
 
@@ -112,19 +114,19 @@ sudo cp nginx.conf /etc/nginx/sites-available/no-code
 
 3. Edit the configuration file to replace placeholders:
 
-```bash
+````bash
 sudo nano /etc/nginx/sites-available/no-code
 
 Replace:
 
 - your-frontend-domain.com with your actual frontend domain
 - your-api-domain.com with your actual API domain
-- Update SSL certificate paths if needed 
+- Update SSL certificate paths if needed
 
 4. Create a symbolic link to enable the site:
 ```bash
 sudo ln -s /etc/nginx/sites-available/no-code /etc/nginx/sites-enabled/
-```
+````
 
 5. Test Nginx configuration:
 
@@ -166,7 +168,7 @@ For WebContainers to work properly, the frontend server must have these headers:
 
 - Cross-Origin-Embedder-Policy: require-corp
 - Cross-Origin-Opener-Policy: same-origin
-If WebContainers aren't working, check that these headers are being sent correctly.
+  If WebContainers aren't working, check that these headers are being sent correctly.
 
 ## 📦 Available Scripts (for development)
 

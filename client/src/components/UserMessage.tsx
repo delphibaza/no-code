@@ -1,7 +1,12 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@clerk/clerk-react";
+import { memo } from "react";
 
-export function UserMessage({ content }: { content: string }) {
+export const UserMessage = memo(function UserMessage({
+  content,
+}: {
+  content: string;
+}) {
   const { user, isLoaded } = useUser();
   return (
     <div className="flex items-center gap-x-4 text-sm bg-[#f7f7f7] dark:bg-gray-800 rounded-lg px-4 py-4">
@@ -18,4 +23,4 @@ export function UserMessage({ content }: { content: string }) {
       </div>
     </div>
   );
-}
+});

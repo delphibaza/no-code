@@ -7,41 +7,6 @@ import { type ImperativePanelHandle } from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
 import { Terminal, type TerminalRef } from "./Terminal";
 
-export interface Shortcut {
-  key: string;
-  ctrlKey?: boolean;
-  shiftKey?: boolean;
-  altKey?: boolean;
-  metaKey?: boolean;
-  ctrlOrMetaKey?: boolean;
-  action: () => void;
-  description?: string;
-  isPreventDefault?: boolean;
-}
-
-export interface Shortcuts {
-  toggleTheme: Shortcut;
-  toggleTerminal: Shortcut;
-}
-
-class ShortcutEventEmitter {
-  #emitter = new EventTarget();
-
-  dispatch(type: keyof Shortcuts) {
-    this.#emitter.dispatchEvent(new Event(type));
-  }
-
-  on(type: keyof Shortcuts, cb: VoidFunction) {
-    this.#emitter.addEventListener(type, cb);
-
-    return () => {
-      this.#emitter.removeEventListener(type, cb);
-    };
-  }
-}
-
-export const shortcutEventEmitter = new ShortcutEventEmitter();
-
 const MAX_TERMINALS = 3;
 export const DEFAULT_TERMINAL_SIZE = 25;
 
@@ -83,19 +48,6 @@ export const TerminalTabs = memo(({ readonly }: { readonly?: boolean }) => {
 
     terminalToggledByShortcut.current = false;
   }, [showTerminal]);
-
-  useEffect(() => {
-    const unsubscribeFromEventEmitter = shortcutEventEmitter.on(
-      "toggleTerminal",
-      () => {
-        terminalToggledByShortcut.current = true;
-      }
-    );
-
-    return () => {
-      unsubscribeFromEventEmitter();
-    };
-  }, []);
 
   return (
     <div className="h-full">

@@ -4,6 +4,7 @@ import prisma from "@repo/db/client";
 import { pipeDataStreamToResponse, smoothStream, streamText } from "ai";
 import { parse } from "best-effort-json-parser";
 import express from "express";
+import { MAX_TOKENS, SYSTEM_PROMPT_TOKENS } from "../constants";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
@@ -37,7 +38,7 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
     // Validate ownership
     await validateProjectOwnership(projectId, req.auth.userId!);
     // Check the limits
-    const limitsCheck = checkLimits(req.plan);
+    const limitsCheck = checkLimits(req.plan, SYSTEM_PROMPT_TOKENS);
 
     if (!limitsCheck.success) {
       throw new ApplicationError(
@@ -54,10 +55,9 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           messages: messages,
           experimental_continueSteps: true,
           experimental_transform: smoothStream(),
-          maxTokens: 8000,
+          maxTokens: MAX_TOKENS,
           maxSteps: 25,
-          async onStepFinish({ finishReason, usage }) {
-            console.log({ finishReason });
+          async onStepFinish({ usage }) {
             req.plan!.dailyTokensUsed += usage.totalTokens || 0;
             req.plan!.monthlyTokensUsed += usage.totalTokens || 0;
             // Check the limits
@@ -73,14 +73,64 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
               let jsonContent;
-              // Check if text is wrapped in markdown code blocks
-              const jsonMatch = text.match(/```json\n([\s\S]*?)```/);
-              if (jsonMatch && jsonMatch[1]) {
-                // Extract JSON from markdown code blocks
-                jsonContent = parse(jsonMatch[1]);
+              const firstBrace = text.indexOf("{");
+              const lastBrace = text.lastIndexOf("}");
+
+              if (
+                firstBrace !== -1 &&
+                lastBrace !== -1 &&
+                lastBrace > firstBrace
+              ) {
+                const jsonString = text.substring(firstBrace, lastBrace + 1);
+                try {
+                  jsonContent = parse(jsonString); // Using best-effort-json-parser
+                } catch (e) {
+                  console.log(
+                    "Failed to parse extracted JSON substring:",
+                    jsonString,
+                    "Error:",
+                    e
+                  );
+                  // Fallback: Try parsing the whole text if substring parsing fails
+                  try {
+                    console.warn(
+                      "Fallback: Attempting to parse entire text due to substring parse failure."
+                    );
+                    jsonContent = parse(text);
+                  } catch (finalE) {
+                    console.log(
+                      "Fallback failed: Could not parse the full text as JSON either:",
+                      text,
+                      "Error:",
+                      finalE
+                    );
+                    // Set a default error object or handle as appropriate
+                    jsonContent = {
+                      error: "Failed to parse AI response content as JSON.",
+                      originalText: text,
+                    };
+                  }
+                }
               } else {
-                // Try parsing the text directly as JSON
-                jsonContent = parse(text);
+                console.warn(
+                  "Could not find valid JSON object delimiters '{' and '}' in the text. Attempting to parse entire text as fallback.",
+                  text
+                );
+                // Fallback: if no braces found, or in wrong order, try parsing the whole text
+                try {
+                  jsonContent = parse(text);
+                } catch (e) {
+                  console.log(
+                    "Fallback failed: Could not parse the full text as JSON:",
+                    text,
+                    "Error:",
+                    e
+                  );
+                  jsonContent = {
+                    error: "AI response did not appear to be valid JSON.",
+                    originalText: text,
+                  };
+                }
               }
 
               const currentMessage = messages.find(
