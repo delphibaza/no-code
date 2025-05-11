@@ -39,6 +39,8 @@ ORDER OF OPERATIONS:
   ✓ For full-stack projects: Commands are run in the respective directories (Ex: run commands in the frontend and backend directories by running the \`cd\` command)
   ✓ Follow the order of operations mentioned above.
   ✓ Make the code modular i.e. don't generate a single file with all the code. Divide the code into multiple files.
+  ✓ Double check the functions that are used are being imported correctly.
+  ✓ When using regular font size ex: text-base in tailwind, use medium font weights when required i.e., font-medium because text-base font is looking too light and not production ready.
   Don'ts:
   ✗ Don't give install command after file changes, the install command must be the first command.
   ✗ Don't give placeholder/commented code, incomplete implementations, TODO comments, example/template code

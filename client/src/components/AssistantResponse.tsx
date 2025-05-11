@@ -54,12 +54,16 @@ function Reasoning({
     <div className="flex flex-col">
       {isReasoning ? (
         <div className="flex flex-row gap-2 items-center">
-          <div className="font-medium text-sm">Reasoning</div>
+          <div className="font-medium text-sm text-gray-600 dark:text-gray-200">
+            Reasoning
+          </div>
           <Loader className="w-4 h-4 animate-spin" />
         </div>
       ) : (
         <div className="flex flex-row gap-2 items-center">
-          <div className="font-medium text-sm">Reasoned for a few seconds</div>
+          <div className="font-medium text-sm text-gray-600 dark:text-gray-200">
+            Reasoned for a few seconds
+          </div>
           <button
             className={cn(
               "cursor-pointer rounded-full dark:hover:bg-zinc-800 hover:bg-zinc-200",
@@ -84,14 +88,14 @@ function Reasoning({
         {isExpanded && (
           <motion.div
             key="reasoning"
-            className="text-sm bg-[#f7f7f7] dark:bg-gray-800 text-zinc-600 dark:text-zinc-200 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
+            className="text-sm bg-[#f7f7f7] dark:bg-gray-800 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
             initial="collapsed"
             animate="expanded"
             exit="collapsed"
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            <div className="prose text-sm/6">
+            <div className="prose text-sm/6 text-gray-600 dark:text-gray-400">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {reasoning}
               </ReactMarkdown>
@@ -203,7 +207,7 @@ export function AssistantResponse({
       )}
       {artifact?.title && (
         <>
-          <div className="prose text-sm/6">
+          <div className="prose text-sm/6 text-gray-600 dark:text-gray-200">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {artifact.initialContext}
             </ReactMarkdown>
@@ -216,7 +220,7 @@ export function AssistantResponse({
               onToggle={() => setIsExpanded((prev) => !prev)}
             />
           )}
-          <div className="prose text-sm/6">
+          <div className="prose text-sm/6 text-gray-600 dark:text-gray-200">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {artifact.endingContext}
             </ReactMarkdown>

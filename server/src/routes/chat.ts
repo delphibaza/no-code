@@ -54,7 +54,7 @@ router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
           messages: messages,
           experimental_continueSteps: true,
           experimental_transform: smoothStream(),
-          maxTokens: 8192,
+          maxTokens: 8000,
           maxSteps: 25,
           async onStepFinish({ finishReason, usage }) {
             console.log({ finishReason });

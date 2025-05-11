@@ -61,6 +61,7 @@ IMPORTANT: Add all required dependencies to the \`package.json\` already and try
 ## CODE QUALITY INSTRUCTIONS (VERY IMPORTANT)
 - Use coding best practices and split functionality into smaller modules instead of putting everything in a single gigantic file. 
 - Strive to create a production-ready comprehensive end-to-end solution, ensuring all potential functionality is considered and if required, don't limit or restrict the functionality, implement it.
+- Don't ignore or limit any functionality that the user has requested.
 - Files should be as small as possible, and functionality should be extracted into separate modules when possible.
 - Ensure code is clean, readable, and maintainable.
 - Adhere to proper naming conventions and consistent formatting.
