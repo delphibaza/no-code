@@ -55,7 +55,7 @@ const rainbowVariants = {
     ],
     transition: {
       duration: 2,
-      repeat: Number.POSITIVE_INFINITY,
+      repeat: Infinity,
       ease: "linear",
     },
   },
@@ -69,8 +69,7 @@ export const ChatInput = memo(
     setInput,
     placeholder,
     handleSubmit,
-  }: // rows = 5,
-  {
+  }: {
     placeholder: string;
     handleSubmit: (input: string) => void;
     input: string;
@@ -79,7 +78,6 @@ export const ChatInput = memo(
     reload?: () => Promise<string | null | undefined>;
     stop?: () => void;
     error?: Error | undefined;
-    rows?: number;
   }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { authenticatedFetch } = useFetch();
@@ -308,7 +306,7 @@ export const ChatInput = memo(
         {/* Input */}
         <div
           className={cn(
-            "relative rounded-2xl overflow-hidden transition-all",
+            "relative rounded-2xl transition-all",
             isDragging && "ring-2 ring-primary"
           )}
           onDragOver={handleDragOver}
@@ -326,8 +324,7 @@ export const ChatInput = memo(
               className={cn(
                 "relative rounded-2xl whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 border-2",
                 "transition-shadow duration-300",
-                "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background",
-                "text-cyan-700 font-medium dark:text-white resize-none"
+                "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background font-medium"
               )}
               placeholder={placeholder}
               value={input}
