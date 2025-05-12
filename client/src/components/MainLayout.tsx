@@ -1,63 +1,19 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { useProjectStore } from "@/stores/project";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
-} from "@clerk/clerk-react";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Outlet } from "react-router-dom";
-import { useShallow } from "zustand/react/shallow";
-import { Logo } from "./Logo";
-import { Button } from "./ui/button";
+import { SiteHeader } from "./ui/site-header";
 
 export default function MainLayout() {
-  const { currentProjectId, projects } = useProjectStore(
-    useShallow((state) => ({
-      currentProjectId: state.currentProjectId,
-      projects: state.projects,
-    }))
-  );
-  const currentProject = projects.find(
-    (project) => project.id === currentProjectId
-  );
   return (
-    <div className="flex min-h-screen">
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="w-full">
-          <header className="flex justify-between fixed top-0 h-14 w-full bg-primary-foreground/10 backdrop-blur-sm shrink-0 items-center gap-2 border-b pl-2 pr-4">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <Logo />
-            </div>
-            {currentProject && (
-              <div className="flex items-center border px-4 py-1 rounded-md cursor-default">
-                <div className="font-semibold truncate text-sm">
-                  {currentProject.name || ""}
-                </div>
-              </div>
-            )}
-            <div>
-              <SignedOut>
-                <Button size={"sm"}>
-                  <SignInButton />
-                </Button>
-              </SignedOut>
-              <SignedIn>
-                <UserButton />
-              </SignedIn>
-            </div>
-          </header>
-          <main className="h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden mt-14">
+    <div className="flex min-h-screen [--header-height:calc(theme(spacing.14))]">
+      <SidebarProvider className="flex flex-col">
+        <SiteHeader />
+        <div className="flex flex-1">
+          <AppSidebar />
+          <SidebarInset className="w-full">
             <Outlet />
-          </main>
-        </SidebarInset>
+          </SidebarInset>
+        </div>
       </SidebarProvider>
     </div>
   );

@@ -15,7 +15,7 @@ export function SearchForm({
 }) {
   return (
     <form>
-      <SidebarGroup className="py-1">
+      <SidebarGroup className="py-1 mt-2">
         <SidebarGroupContent className="relative">
           <Label htmlFor="search" className="sr-only">
             Search
@@ -25,7 +25,7 @@ export function SearchForm({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search the projects..."
+            placeholder="Search..."
             className="pl-8"
           />
           <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />

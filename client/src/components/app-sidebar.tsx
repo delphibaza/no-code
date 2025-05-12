@@ -5,7 +5,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -15,17 +14,16 @@ import {
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/stores/project";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Clock, Loader2, MessageCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Logo } from "./Logo";
+import { NavSettings } from "./nav-settings";
 import { SearchForm } from "./search-form";
 import SubscriptionDialog from "./subscription-dialog";
 import { ModeToggle } from "./ui/mode-toggle";
 import { NavProjects } from "./ui/nav-projects";
-import { NavSettings } from "./nav-settings";
 
-export function AppSidebar() {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isLoading, setIsLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,12 +85,12 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar ref={menuRef} variant="floating">
-      <SidebarHeader>
-        <SidebarMenuButton size="lg">
-          <Logo />
-        </SidebarMenuButton>
-      </SidebarHeader>
+    <Sidebar
+      ref={menuRef}
+      variant="floating"
+      className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
+      {...props}
+    >
       <SearchForm searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <SidebarMenu className="mt-2 px-2">
         <SidebarMenuItem>
@@ -119,7 +117,10 @@ export function AppSidebar() {
             style={{ scrollbarWidth: "thin" }}
             className="overflow-y-scroll"
           >
-            <SidebarGroupLabel>Chats</SidebarGroupLabel>
+            <SidebarGroupLabel>
+              <Clock className="mr-1 size-3" />
+              Chats
+            </SidebarGroupLabel>
             <NavProjects searchQuery={searchQuery} />
           </SidebarGroup>
         )}
