@@ -1,13 +1,13 @@
+import { ExamplePrompts } from "@/components/ExamplePrompts";
 import { PromptInput } from "@/components/PromptInput";
 import { TemplateShowcase } from "@/components/TemplateShowcase";
 import { BackgroundDots } from "@/components/ui/background-dots";
 import { Badge } from "@/components/ui/badge";
-import { ExamplePrompts } from "@/components/ExamplePrompts";
 import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { customToast } from "@/lib/utils";
 import { useProjectStore } from "@/stores/project";
-import { PromptSchema } from "@repo/common/zod";
+import type { PromptSchema } from "@repo/common/zod";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -73,7 +73,7 @@ export default function HomePage() {
 
   return (
     <BackgroundDots>
-      <div className="flex flex-col h-[calc(100vh-3.5rem)] w-full">
+      <div className="flex flex-col h-full w-full">
         <motion.main
           className="flex-1"
           initial="initial"
@@ -102,7 +102,7 @@ export default function HomePage() {
                 >
                   <Badge
                     variant="outline"
-                    className="px-3.5 py-1.5 bg-primary-foreground"
+                    className="px-3.5 py-1.5 bg-background/80 backdrop-blur-sm"
                   >
                     <Sparkles className="h-3.5 w-3.5 mr-1" />
                     <span>AI-Powered Website Builder</span>
@@ -110,7 +110,7 @@ export default function HomePage() {
                 </motion.div>
 
                 <motion.h1
-                  className="text-4xl font-semibold tracking-tighter sm:text-5xl md:text-6xl"
+                  className="text-4xl font-semibold tracking-tighter sm:text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700"
                   variants={{
                     initial: { opacity: 0, y: 30 },
                     animate: {
@@ -124,20 +124,7 @@ export default function HomePage() {
                     },
                   }}
                 >
-                  Transform Your Ideas into
-                  <motion.span
-                    className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600"
-                    variants={{
-                      initial: { opacity: 0 },
-                      animate: {
-                        opacity: 1,
-                        transition: { delay: 0.5, duration: 0.5 },
-                      },
-                    }}
-                  >
-                    {" "}
-                    Stunning Websites
-                  </motion.span>
+                  What can I help you ship?
                 </motion.h1>
 
                 <motion.p
@@ -164,19 +151,21 @@ export default function HomePage() {
                     },
                   }}
                 >
-                  <div className="w-11/12 mx-auto">
-                  <PromptInput
-                    handleSubmit={handleSubmit}
-                    isLoading={isLoading}
-                  />
+                  <div className="w-full mx-auto">
+                    <PromptInput
+                      handleSubmit={handleSubmit}
+                      isLoading={isLoading}
+                    />
                   </div>
 
                   {/* Example Prompts UI */}
-                  <ExamplePrompts onPromptClick={handleSubmit} />
+                  <div className="mt-4">
+                    <ExamplePrompts onPromptClick={handleSubmit} />
+                  </div>
 
                   {/* Template Showcase Component */}
                   <motion.div
-                    className="w-full"
+                    className="w-full mt-8"
                     variants={{
                       initial: { opacity: 0, y: 10 },
                       animate: {

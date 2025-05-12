@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { Message } from "ai/react";
 import { useShallow } from "zustand/react/shallow";
 import useFetch from "./useFetch";
+import { customToast } from "@/lib/utils";
 
 export function useHandleSubmit(
   setMessages: (
@@ -44,6 +45,10 @@ export function useHandleSubmit(
       content: input,
       timestamp: Date.now(),
     });
+    if (input.trim() === "") {
+      customToast("Please enter a valid input");
+      return;
+    }
     if (!currentMessageId || !projectFiles.length) return;
     setInput("");
     // Fetch project state
