@@ -18,7 +18,6 @@ export function PromptInput({
         input={input}
         setInput={setInput}
         isLoading={isLoading}
-        rows={5}
       />
     </div>
   );
