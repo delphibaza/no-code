@@ -126,7 +126,7 @@ const ActionsPanel = memo(function ActionsPanel({
   );
 
   return (
-    <div className="bg-primary-foreground rounded-md space-y-1">
+    <div className="bg-white dark:bg-gray-950 shadow-sm border rounded-md space-y-1">
       <div className="flex items-center justify-between px-5 py-2 border-b dark:border-zinc-800 border-zinc-200 font-medium text-sm">
         <span>{title}</span>
         <Button
@@ -207,7 +207,7 @@ export const AssistantResponse = memo(function AssistantResponse({
       )}
       {artifact?.title && (
         <>
-          <div className="prose text-sm/6 text-gray-600 dark:text-gray-200">
+          <div className="prose text-sm/6 text-primary">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {artifact.initialContext}
             </ReactMarkdown>
@@ -220,7 +220,7 @@ export const AssistantResponse = memo(function AssistantResponse({
               onToggle={() => setIsExpanded((prev) => !prev)}
             />
           )}
-          <div className="prose text-sm/6 text-gray-600 dark:text-gray-200">
+          <div className="prose text-sm/6 text-primary">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {artifact.endingContext}
             </ReactMarkdown>

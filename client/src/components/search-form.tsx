@@ -5,8 +5,9 @@ import {
   SidebarInput,
 } from "@/components/ui/sidebar";
 import { Search } from "lucide-react";
+import { memo } from "react";
 
-export function SearchForm({
+export const SearchForm = memo(function SearchForm({
   searchQuery,
   setSearchQuery,
 }: {
@@ -33,4 +34,4 @@ export function SearchForm({
       </SidebarGroup>
     </form>
   );
-}
+});

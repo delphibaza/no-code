@@ -12,11 +12,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useGeneralStore } from "@/stores/general";
 import { CogIcon } from "lucide-react";
+import { memo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import ConnectionsTab from "./connections/ConnectionsTab";
+import { ConnectionsTab } from "./connections/ConnectionsTab";
 import { Label } from "./ui/label";
 
-export function NavSettings() {
+export const NavSettings = memo(function NavSettings() {
   const { wordWrap, setWordWrap, reasoning, setReasoning } = useGeneralStore(
     useShallow((state) => ({
       wordWrap: state.wordWrap,
@@ -74,4 +75,4 @@ export function NavSettings() {
       </DialogContent>
     </Dialog>
   );
-}
+});

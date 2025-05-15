@@ -15,7 +15,7 @@ import useFetch from "@/hooks/useFetch";
 import { API_URL } from "@/lib/constants";
 import { useProjectStore } from "@/stores/project";
 import { Clock, Loader2, MessageCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { NavSettings } from "./nav-settings";
 import { SearchForm } from "./search-form";
@@ -23,7 +23,9 @@ import SubscriptionDialog from "./subscription-dialog";
 import { ModeToggle } from "./ui/mode-toggle";
 import { NavProjects } from "./ui/nav-projects";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export const AppSidebar = memo(function AppSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   const [isLoading, setIsLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -151,4 +153,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
     </Sidebar>
   );
-}
+});

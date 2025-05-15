@@ -7,7 +7,7 @@ import {
   LogOutIcon,
   PlugIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 import { Input } from "../ui/input";
@@ -23,7 +23,7 @@ const NetlifyLogo = () => (
   </svg>
 );
 
-export default function NetlifyConnection() {
+const NetlifyConnection = memo(function NetlifyConnection() {
   const {
     validatedToken,
     isConnecting,
@@ -39,14 +39,22 @@ export default function NetlifyConnection() {
       removeToken: state.removeToken,
     }))
   );
-  // const [isActionLoading ,setIsActionLoading] = useState(false);
+
   const [tokenInput, setTokenInput] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Only set mounted after initial render
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   const handleConnect = async () => {
     if (!tokenInput) {
       toast.error("Please enter a Netlify API token");
       return;
     }
+
     setIsConnecting(true);
     try {
       const response = await fetch("https://api.netlify.com/api/v1/user", {
@@ -54,9 +62,11 @@ export default function NetlifyConnection() {
           Authorization: `Bearer ${tokenInput}`,
         },
       });
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
       // Store the token in the local storage only if user is found
       setValidatedToken(tokenInput);
       toast.success("Connected to Netlify successfully");
@@ -79,8 +89,13 @@ export default function NetlifyConnection() {
     toast.success("Disconnected from Netlify");
   };
 
+  // Use opacity and pointer-events to handle mounting instead of conditional rendering
   return (
-    <div className="space-y-6 border shadow-sm rounded-lg">
+    <div
+      className={`space-y-6 border shadow-sm rounded-lg transition-opacity duration-200 ${
+        isMounted ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
       <div className="py-6 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -164,4 +179,6 @@ export default function NetlifyConnection() {
       </div>
     </div>
   );
-}
+});
+
+export default NetlifyConnection;

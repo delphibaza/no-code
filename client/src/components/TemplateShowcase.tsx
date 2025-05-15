@@ -1,11 +1,14 @@
 import { STARTER_TEMPLATES } from "@repo/common/constants";
+import { memo } from "react";
 import { FloatingDock } from "./floating-dock";
 
 interface TemplateShowcaseProps {
   onPromptSelect: (prompt: string, templateName?: string) => void;
 }
 
-export function TemplateShowcase({ onPromptSelect }: TemplateShowcaseProps) {
+export const TemplateShowcase = memo(function TemplateShowcase({
+  onPromptSelect,
+}: TemplateShowcaseProps) {
   return (
     <div className="space-y-4">
       <div className="text-sm">
@@ -24,4 +27,4 @@ export function TemplateShowcase({ onPromptSelect }: TemplateShowcaseProps) {
       />
     </div>
   );
-}
+});

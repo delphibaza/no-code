@@ -5,7 +5,7 @@ import { SiteHeader } from "./ui/site-header";
 
 export default function MainLayout() {
   return (
-    <div className="flex min-h-screen [--header-height:calc(theme(spacing.14))]">
+    <div className="flex max-h-screen [--header-height:calc(theme(spacing.14))]">
       <SidebarProvider className="flex flex-col">
         <SiteHeader />
         <div className="flex flex-1">

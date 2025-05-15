@@ -53,7 +53,11 @@ const TabButton = memo(
 );
 TabButton.displayName = "TabButton";
 
-export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
+export const TabsSwitch = memo(function TabsSwitch({
+  isStreaming,
+}: {
+  isStreaming: boolean;
+}) {
   const { currentTab, showTerminal, setCurrentTab, setShowTerminal } =
     useGeneralStore(
       useShallow((state) => ({
@@ -231,4 +235,4 @@ export function TabsSwitch({ isStreaming }: { isStreaming: boolean }) {
       </div>
     </motion.div>
   );
-}
+});

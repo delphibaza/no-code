@@ -15,10 +15,10 @@ import {
   RotateCw,
   Smartphone,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-export function Preview() {
+export const Preview = memo(function Preview() {
   const { activePreviewIndex, previews, setActivePreviewIndex } =
     usePreviewStore(
       useShallow((state) => ({
@@ -162,4 +162,4 @@ export function Preview() {
       </div>
     </div>
   );
-}
+});
