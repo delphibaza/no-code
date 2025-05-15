@@ -1,10 +1,10 @@
 import { useProjectStore } from "@/stores/project";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { AssistantResponse } from "./AssistantResponse";
 import { UserMessage } from "./UserMessage";
 
-export function Workbench() {
+export const Workbench = memo(function Workbench() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { actions, messageHistory } = useProjectStore(
     useShallow((state) => ({
@@ -68,4 +68,4 @@ export function Workbench() {
       <div className="w-0 h-0" ref={messagesEndRef} />
     </div>
   );
-}
+});

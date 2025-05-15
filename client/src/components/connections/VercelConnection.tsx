@@ -7,14 +7,14 @@ import {
   LogOutIcon,
   Plug,
 } from "lucide-react";
-import React, { useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
-export default function VercelConnection() {
+const VercelConnection = () => {
   const {
     validatedToken,
     isConnecting,
@@ -28,12 +28,26 @@ export default function VercelConnection() {
       setValidatedToken: state.setValidatedToken,
       setIsConnecting: state.setIsConnecting,
       removeToken: state.removeToken,
-    })),
+    }))
   );
+
   const [tokenInput, setTokenInput] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Only set mounted after initial render
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   const handleConnect = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!tokenInput) {
+      toast.error("Please enter a Vercel API token");
+      return;
+    }
+
     setIsConnecting(true);
     try {
       const response = await fetch("https://api.vercel.com/v2/user", {
@@ -42,9 +56,11 @@ export default function VercelConnection() {
           "Content-Type": "application/json",
         },
       });
+
       if (!response.ok) {
         throw new Error("Invalid token or unauthorized");
       }
+
       setValidatedToken(tokenInput);
       toast.success("Successfully connected to Vercel");
     } catch (error) {
@@ -58,17 +74,18 @@ export default function VercelConnection() {
   };
 
   const handleDisconnect = () => {
-    // Update the store
     removeToken();
     toast.success("Disconnected from Vercel");
   };
 
   return (
     <motion.div
-      className="bg-[#FFFFFF] dark:bg-[#0A0A0A] rounded-lg border border-[#E5E5E5] dark:border-[#1A1A1A]"
+      className={`bg-[#FFFFFF] dark:bg-[#0A0A0A] rounded-lg border border-[#E5E5E5] dark:border-[#1A1A1A] ${
+        isMounted ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
+      animate={isMounted ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.2 }}
     >
       <div className="py-6 px-4 space-y-4">
         <div className="flex items-center justify-between">
@@ -88,7 +105,7 @@ export default function VercelConnection() {
         </div>
 
         {!validatedToken ? (
-          <div className="space-y-4">
+          <form onSubmit={handleConnect} className="space-y-4">
             <div>
               <Label className="text-sm">Personal Access Token</Label>
               <Input
@@ -111,22 +128,23 @@ export default function VercelConnection() {
               </div>
             </div>
             <Button
-              onClick={handleConnect}
+              type="submit"
               disabled={isConnecting || !tokenInput}
+              className="w-full"
             >
               {isConnecting ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <Loader2 className="animate-spin size-4" />
                   Connecting...
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <Plug className="size-5" />
                   Connect
                 </div>
               )}
             </Button>
-          </div>
+          </form>
         ) : (
           <div className="flex flex-col w-full gap-3 mt-4">
             <div className="flex items-center gap-3">
@@ -134,8 +152,9 @@ export default function VercelConnection() {
                 onClick={handleDisconnect}
                 size="sm"
                 variant={"destructive"}
+                className="w-full"
               >
-                <LogOutIcon className="w-4 h-4" />
+                <LogOutIcon className="w-4 h-4 mr-2" />
                 Disconnect
               </Button>
             </div>
@@ -155,4 +174,6 @@ export default function VercelConnection() {
       </div>
     </motion.div>
   );
-}
+};
+
+export default memo(VercelConnection);

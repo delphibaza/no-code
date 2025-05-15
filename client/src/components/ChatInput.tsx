@@ -322,9 +322,9 @@ export const ChatInput = memo(
             <Textarea
               ref={textareaRef}
               className={cn(
-                "relative rounded-2xl whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 border-2",
+                "relative rounded-2xl whitespace-pre-wrap bg-slate-50 dark:bg-gray-800 border-2",
                 "transition-shadow duration-300",
-                "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background font-medium"
+                "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
               )}
               placeholder={placeholder}
               value={input}

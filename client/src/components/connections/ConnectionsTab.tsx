@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { Loader2, PlugZapIcon } from "lucide-react";
-import React, { Suspense } from "react";
+import React, { memo, Suspense } from "react";
 
 // Use React.lazy for dynamic imports
 const NetlifyConnection = React.lazy(() => import("./NetlifyConnection"));
 const VercelConnection = React.lazy(() => import("./VercelConnection"));
 
-export default function ConnectionsTab() {
+export const ConnectionsTab = memo(function ConnectionsTab() {
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -34,4 +34,4 @@ export default function ConnectionsTab() {
       </div>
     </div>
   );
-}
+});

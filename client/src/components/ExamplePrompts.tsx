@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { memo } from "react";
 
 interface ExamplePrompt {
   title: string;
@@ -38,7 +39,7 @@ const EXAMPLE_PROMPTS: ExamplePrompt[] = [
   },
 ];
 
-export function ExamplePrompts({
+export const ExamplePrompts = memo(function ExamplePrompts({
   onPromptClick,
 }: {
   onPromptClick: (prompt: string) => void;
@@ -61,4 +62,4 @@ export function ExamplePrompts({
       ))}
     </div>
   );
-}
+});

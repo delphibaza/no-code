@@ -12,11 +12,11 @@ import { path } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { useFilesStore } from "@/stores/files";
 import { ClipboardCopy, Copy, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 
-export function FileComponent({
+export const FileComponent = memo(function FileComponent({
   name,
   filePath,
 }: {
@@ -184,4 +184,4 @@ export function FileComponent({
       </ContextMenuContent>
     </ContextMenu>
   );
-}
+});

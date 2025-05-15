@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ChatInput } from "./ChatInput";
+import { memo } from "react";
 
-export function PromptInput({
+export const PromptInput = memo(function PromptInput({
   handleSubmit,
   isLoading,
 }: {
@@ -21,4 +22,4 @@ export function PromptInput({
       />
     </div>
   );
-}
+});

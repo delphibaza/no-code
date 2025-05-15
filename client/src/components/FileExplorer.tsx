@@ -42,47 +42,54 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 
-const RenderStructure = memo(
-  ({ files, parentPath = "" }: { files: Folders[]; parentPath?: string }) => {
-    return (
-      <div
-        style={{ scrollbarWidth: "none" }}
-        className="py-1 overflow-y-auto overflow-x-hidden h-full"
-      >
-        {files.map((file) => {
-          const currentPath = parentPath
-            ? path.join(parentPath, file.name)
-            : file.name;
-          if (file.type === "folder") {
-            return (
-              <FolderComponent
-                key={currentPath}
-                name={file.name}
-                folderPath={currentPath}
-              >
-                <RenderStructure
-                  files={file.children ?? []}
-                  parentPath={currentPath}
-                />
-              </FolderComponent>
-            );
-          } else {
-            return (
-              <FileComponent
-                key={currentPath}
-                name={file.name}
-                filePath={currentPath}
+const RenderStructure = memo(function RenderStructure({
+  files,
+  parentPath = "",
+}: {
+  files: Folders[];
+  parentPath?: string;
+}) {
+  return (
+    <div
+      style={{ scrollbarWidth: "none" }}
+      className="py-1 overflow-y-auto overflow-x-hidden h-full"
+    >
+      {files.map((file) => {
+        const currentPath = parentPath
+          ? path.join(parentPath, file.name)
+          : file.name;
+        if (file.type === "folder") {
+          return (
+            <FolderComponent
+              key={currentPath}
+              name={file.name}
+              folderPath={currentPath}
+            >
+              <RenderStructure
+                files={file.children ?? []}
+                parentPath={currentPath}
               />
-            );
-          }
-        })}
-      </div>
-    );
-  }
-);
-RenderStructure.displayName = "RenderStructure";
+            </FolderComponent>
+          );
+        } else {
+          return (
+            <FileComponent
+              key={currentPath}
+              name={file.name}
+              filePath={currentPath}
+            />
+          );
+        }
+      })}
+    </div>
+  );
+});
 
-export const FileExplorer = memo(({ readonly }: { readonly: boolean }) => {
+export const FileExplorer = memo(function FileExplorer({
+  readonly,
+}: {
+  readonly: boolean;
+}) {
   const {
     projectFiles,
     selectedFile,
@@ -271,4 +278,3 @@ export const FileExplorer = memo(({ readonly }: { readonly: boolean }) => {
     </div>
   );
 });
-FileExplorer.displayName = "FileExplorer";

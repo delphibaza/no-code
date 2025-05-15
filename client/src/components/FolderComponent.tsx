@@ -19,7 +19,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useShallow } from "zustand/react/shallow";
 
@@ -31,7 +31,7 @@ enum InputMode {
   NEW_FOLDER,
 }
 
-export function FolderComponent({
+export const FolderComponent = memo(function FolderComponent({
   name,
   folderPath,
   children,
@@ -301,4 +301,4 @@ export function FolderComponent({
       </ContextMenuContent>
     </ContextMenu>
   );
-}
+});

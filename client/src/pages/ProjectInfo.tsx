@@ -1,4 +1,4 @@
-import ChatAlert from "@/components/ChatAlert";
+import { ChatAlert } from "@/components/ChatAlert";
 import { ChatInput } from "@/components/ChatInput";
 import { TabsSwitch } from "@/components/TabsSwitch";
 import { BackgroundDots } from "@/components/ui/background-dots";
@@ -161,7 +161,7 @@ export default function ProjectInfo() {
             isWorkbenchCollapsed ? "w-0 overflow-hidden" : "w-1/3"
           )}
           animate={{ width: isWorkbenchCollapsed ? 0 : "33.333%" }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
         >
           <Workbench />
           <div className="relative">
@@ -217,7 +217,7 @@ export default function ProjectInfo() {
           animate={{
             width: isWorkbenchCollapsed ? "100%" : "66.667%",
           }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
         >
           <TabsSwitch isStreaming={isLoading} />
         </motion.div>

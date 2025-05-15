@@ -41,6 +41,7 @@ ORDER OF OPERATIONS:
   ✓ Make the code modular i.e. don't generate a single file with all the code. Divide the code into multiple files.
   ✓ Double check the functions that are used are being imported correctly.
   ✓ When using regular font size ex: text-base in tailwind, use medium font weights when required i.e., font-medium because text-base font is looking too light and not production ready.
+  ✓ Match the export type of a file with the import type. You are sometimes exporting src/App.tsx with a named export but importing it as a default export in src/main.tsx, make sure to export it correctly as a default export.
   Don'ts:
   ✗ Don't give install command after file changes, the install command must be the first command.
   ✗ Don't give placeholder/commented code, incomplete implementations, TODO comments, example/template code

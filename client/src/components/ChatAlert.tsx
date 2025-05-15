@@ -2,6 +2,7 @@ import { cn as classNames } from "@/lib/utils";
 import type { ActionAlert } from "@/services/action-runner";
 import { AnimatePresence, motion } from "framer-motion";
 import { CircleAlert } from "lucide-react";
+import { memo } from "react";
 import { Button } from "./ui/button";
 
 interface Props {
@@ -10,7 +11,11 @@ interface Props {
   postMessage: (message: string) => void;
 }
 
-export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
+export const ChatAlert = memo(function ChatAlert({
+  alert,
+  clearAlert,
+  postMessage,
+}: Props) {
   const { description, content, source } = alert;
 
   const isPreview = source === "preview";
@@ -95,4 +100,4 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
       </motion.div>
     </AnimatePresence>
   );
-}
+});
