@@ -1,7 +1,9 @@
+import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import dotenv from "dotenv";
+import { MAX_THINK_TOKENS } from "./constants";
 dotenv.config();
 
 type ModelConfig = {
@@ -47,9 +49,7 @@ const modelConfigs: Record<string, ModelConfig> = {
   },
   cerebras: {
     provider: "openai",
-    models: [
-      { name: "llama-4-scout-17b-16e-instruct", think: false },
-    ],
+    models: [{ name: "qwen-3-32b", think: true }],
     apiKey: process.env.CEREBRAS_API_KEY,
     baseURL: "https://api.cerebras.ai/v1",
   },
@@ -89,3 +89,31 @@ function getModel(key: keyof typeof modelConfigs, variantIndex: number) {
 export const selectorModel = getModel("groq", 1);
 export const coderModel = getModel("chutes", 0);
 export const reasoningModel = getModel("novita", 0);
+export const fileModel = google("gemini-2.5-flash-preview-04-17", {
+  safetySettings: [
+    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
+    {
+      category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      threshold: "BLOCK_LOW_AND_ABOVE",
+    },
+    {
+      category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+      threshold: "BLOCK_LOW_AND_ABOVE",
+    },
+    {
+      category: "HARM_CATEGORY_CIVIC_INTEGRITY",
+      threshold: "BLOCK_LOW_AND_ABOVE",
+    },
+    { category: "HARM_CATEGORY_UNSPECIFIED", threshold: "BLOCK_LOW_AND_ABOVE" },
+  ],
+});
+export const googleProviderOptions = {
+  google: {
+    thinkingConfig: {
+      thinkingBudget: MAX_THINK_TOKENS,
+      includeThoughts: true,
+    },
+    responseModalities: ["TEXT", "IMAGE"],
+  } satisfies GoogleGenerativeAIProviderOptions,
+};

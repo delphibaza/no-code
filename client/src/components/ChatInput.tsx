@@ -13,6 +13,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   CircleStop,
   CornerDownLeft,
+  FileTextIcon,
   Loader,
   Loader2,
   PaperclipIcon,
@@ -80,13 +81,13 @@ export const ChatInput = memo(
     error?: Error | undefined;
   }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const { authenticatedFetch } = useFetch();
     const [enhancing, setEnhancing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [files, setFiles] = useState<FileItem[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const TEXTAREA_MIN_HEIGHT = 110;
     const TEXTAREA_MAX_HEIGHT = isLoading && stop ? 400 : 200;
+    const { authenticatedFetch } = useFetch();
 
     const { subscriptionData, abortAllActions } = useProjectStore(
       useShallow((state) => ({
@@ -137,7 +138,7 @@ export const ChatInput = memo(
       // },
     ];
 
-    async function handleEnhancePrompt() {
+    const handleEnhancePrompt = useCallback(async () => {
       if (enhancing || !input) return;
 
       setEnhancing(true);
@@ -160,7 +161,7 @@ export const ChatInput = memo(
       } finally {
         setEnhancing(false);
       }
-    }
+    }, []);
 
     const handleFileChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,9 +215,12 @@ export const ChatInput = memo(
       (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-
+        // Only add pdfs and images
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          const newFiles = Array.from(e.dataTransfer.files);
+          const newFiles = Array.from(e.dataTransfer.files).filter(
+            (file) =>
+              file.type.startsWith("image/") || file.type === "application/pdf"
+          );
           addFiles(newFiles);
         }
       },
@@ -255,55 +259,11 @@ export const ChatInput = memo(
           ref={fileInputRef}
           onChange={handleFileChange}
           className="hidden"
+          // accepts images, pdfs only
+          accept="image/*,application/pdf"
           multiple
         />
 
-        {/* Uploaded Files */}
-        {files.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2 p-2 border rounded-lg bg-background/50">
-            <AnimatePresence>
-              {files.map((fileItem) => (
-                <motion.div
-                  key={fileItem.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-2 bg-background border rounded-md px-2 py-1 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    {fileItem.uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : fileItem.preview ? (
-                      <div className="h-5 w-5 rounded overflow-hidden">
-                        <img
-                          src={fileItem.preview || "/placeholder.svg"}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : null}
-                    <span className="max-w-[120px] truncate">
-                      {fileItem.file.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {(fileItem.file.size / 1024).toFixed(1)} KB
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 rounded-full p-0"
-                    onClick={() => handleFileRemove(fileItem.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* Input */}
         <div
           className={cn(
             "relative rounded-2xl transition-all",
@@ -313,6 +273,7 @@ export const ChatInput = memo(
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* Textarea */}
           <motion.div
             variants={rainbowVariants}
             initial="initial"
@@ -374,7 +335,7 @@ export const ChatInput = memo(
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <p>Attach files</p>
+                  <p>Attach files (images, pdfs only)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -430,6 +391,55 @@ export const ChatInput = memo(
             )}
           </div>
         </div>
+
+        {/* Uploaded Files */}
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-2 py-2 rounded-lg bg-background/50">
+            <AnimatePresence>
+              {files.map((fileItem) => (
+                <motion.div
+                  key={fileItem.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-2 bg-background border rounded-md px-2 py-1 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    {fileItem.uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : fileItem.preview ? (
+                      <div className="h-8 w-8 rounded overflow-hidden">
+                        <img
+                          src={fileItem.preview || "/placeholder.svg"}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <FileTextIcon className="h-8 w-8 text-muted-foreground" />
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <div className="max-w-[120px] truncate">
+                        {fileItem.file.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground text-left">
+                        {(fileItem.file.size / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full p-0"
+                    onClick={() => handleFileRemove(fileItem.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     );
   }
