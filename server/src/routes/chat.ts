@@ -21,7 +21,7 @@ import { ApplicationError, getDaysBetweenDates } from "../utils/timeHelpers";
 
 const router = express.Router();
 
-router.post("/chat", ensureUserExists, resetLimits, async (req, res) => {
+router.post("/chat", resetLimits, async (req, res) => {
   const validation = chatSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -263,7 +263,7 @@ router.post("/enhance-prompt", async (req, res) => {
   }
 });
 
-router.get("/subscription", resetLimits, async (req, res) => {
+router.get("/subscription", ensureUserExists, resetLimits, async (req, res) => {
   if (!req.plan) {
     res.status(403).json({ msg: "Unable to get token limits for the user" });
     return;
