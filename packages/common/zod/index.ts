@@ -8,12 +8,21 @@ export const messageSchema = z.object({
   id: z.string(),
   role: z.enum(["user", "assistant"]),
   content: z.string(),
+  experimental_attachments: z
+    .array(
+      z.object({
+        name: z.string(),
+        contentType: z.string(),
+        url: z.string(),
+      })
+    )
+    .optional(),
   timestamp: z.number().optional(),
   rawContent: z.string().optional(),
 });
 export const chatSchema = z.object({
   projectId: z.string(),
-  reasoning: z.boolean(),
+  isFirstPrompt: z.boolean(),
   messages: z.array(messageSchema),
 });
 export const saveFileSchema = z.object({

@@ -46,8 +46,10 @@ model Subscription {
   monthlyTokensReset DateTime           @default(now())
   paymentProvider    String?
   paymentId          String?
-  user               User               @relation(fields: [userId], references: [id])
-  plan               Plan               @relation(fields: [planType], references: [type])
+  //  Deletes subscription if user is deleted
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  //  Deletes subscription if plan is deleted
+  plan               Plan               @relation(fields: [planType], references: [type], onDelete: Cascade)
 
   @@index([userId])
   @@index([planType])

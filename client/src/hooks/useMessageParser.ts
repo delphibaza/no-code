@@ -3,8 +3,8 @@ import { removeTrailingNewlines } from "@/lib/utils";
 import { actionRunner } from "@/services/action-runner";
 import { useFilesStore } from "@/stores/files";
 import { useProjectStore } from "@/stores/project";
+import type { UIMessage } from "@ai-sdk/ui-utils";
 import { FileAction, ShellAction } from "@repo/common/types";
-import type { Message } from "ai/react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -14,15 +14,23 @@ export function useMessageParser() {
     storeAdded: Set<string | number>;
     finalized: Set<string | number>;
   }>({ storeAdded: new Set(), finalized: new Set() });
-  const { currentMessageId, upsertMessage, addAction, updateActionStatus } =
-    useProjectStore(
-      useShallow((state) => ({
-        currentMessageId: state.currentMessageId,
-        upsertMessage: state.upsertMessage,
-        addAction: state.addAction,
-        updateActionStatus: state.updateActionStatus,
-      }))
-    );
+  const {
+    currentMessageId,
+    addAction,
+    updateActionStatus,
+    upsertMessageSources,
+    upsertMessageContent,
+    upsertMessageReasoning,
+  } = useProjectStore(
+    useShallow((state) => ({
+      currentMessageId: state.currentMessageId,
+      addAction: state.addAction,
+      updateActionStatus: state.updateActionStatus,
+      upsertMessageSources: state.upsertMessageSources,
+      upsertMessageContent: state.upsertMessageContent,
+      upsertMessageReasoning: state.upsertMessageReasoning,
+    }))
+  );
   const { selectedFile, setSelectedFile, updateProjectFiles } = useFilesStore(
     useShallow((state) => ({
       selectedFile: state.selectedFile,
@@ -60,67 +68,41 @@ export function useMessageParser() {
     updateProjectFiles(parsedFiles);
   };
 
-  function handleNewMessage(message: Message) {
+  function handleNewMessage(message: UIMessage) {
     if (message.role !== "assistant" || !currentMessageId) {
       return;
     }
-    const startIndex = message.content.indexOf("{");
-    const trimmedJSON =
-      startIndex !== -1
-        ? removeTrailingNewlines(message.content.slice(startIndex))
-        : "";
-    try {
-      upsertMessage({
-        id: currentMessageId,
-        role: "assistant" as const,
-        content: trimmedJSON,
-        reasoning: message.reasoning,
-        timestamp: Date.now(),
-      });
-      const parsedMessage = parseMessage(trimmedJSON);
-      if (!parsedMessage) {
-        return;
+    message.parts.forEach((part) => {
+      if (part.type === "reasoning") {
+        upsertMessageReasoning(currentMessageId, part.reasoning);
       }
-
-      const currentActions = parsedMessage.actions;
-      const isStreamDone = parsedMessage.actionsStreamed;
-
-      updateStore(currentActions);
-
-      const currentProcessed = processedActionIds.current;
-
-      currentActions.forEach((action, index) => {
-        const isLastActionInCurrentStreamChunk =
-          index === currentActions.length - 1;
-
-        if (
-          action.type === "file" &&
-          !currentProcessed.storeAdded.has(action.id)
-        ) {
-          addAction(currentMessageId, {
-            id: action.id,
-            type: "file",
-            filePath: action.filePath,
-            state: "creating",
-          });
-          currentProcessed.storeAdded.add(action.id);
-        }
-
-        if (isLastActionInCurrentStreamChunk && action.type === "file") {
-          if (action.filePath !== selectedFile) {
-            setSelectedFile(action.filePath);
+      if (part.type === "text") {
+        try {
+          const startIndex = part.text.indexOf("{");
+          const trimmedJSON =
+            startIndex !== -1
+              ? removeTrailingNewlines(part.text.slice(startIndex))
+              : "";
+          upsertMessageContent(currentMessageId, trimmedJSON);
+          const parsedMessage = parseMessage(trimmedJSON);
+          if (!parsedMessage) {
+            return;
           }
-        }
-      });
+          const currentActions = parsedMessage.actions;
+          const isStreamDone = parsedMessage.actionsStreamed;
 
-      const actionsToFinalize = isStreamDone
-        ? currentActions
-        : currentActions.slice(0, -1);
+          updateStore(currentActions);
 
-      actionsToFinalize.forEach((action) => {
-        if (!currentProcessed.finalized.has(action.id)) {
-          if (action.type === "file") {
-            if (!currentProcessed.storeAdded.has(action.id)) {
+          const currentProcessed = processedActionIds.current;
+
+          currentActions.forEach((action, index) => {
+            const isLastActionInCurrentStreamChunk =
+              index === currentActions.length - 1;
+
+            if (
+              action.type === "file" &&
+              !currentProcessed.storeAdded.has(action.id)
+            ) {
               addAction(currentMessageId, {
                 id: action.id,
                 type: "file",
@@ -129,28 +111,54 @@ export function useMessageParser() {
               });
               currentProcessed.storeAdded.add(action.id);
             }
-            updateActionStatus(currentMessageId, action.id, "created");
-          } else if (action.type === "shell") {
-            if (!currentProcessed.storeAdded.has(action.id)) {
-              addAction(currentMessageId, {
-                id: action.id,
-                type: "shell",
-                state: "queued",
-                command: action.command,
-              });
-              currentProcessed.storeAdded.add(action.id);
+
+            if (isLastActionInCurrentStreamChunk && action.type === "file") {
+              if (action.filePath !== selectedFile) {
+                setSelectedFile(action.filePath);
+              }
             }
-          }
-          actionRunner.addAction(currentMessageId, action);
-          currentProcessed.finalized.add(action.id);
+          });
+
+          const actionsToFinalize = isStreamDone
+            ? currentActions
+            : currentActions.slice(0, -1);
+
+          actionsToFinalize.forEach((action) => {
+            if (!currentProcessed.finalized.has(action.id)) {
+              if (action.type === "file") {
+                if (!currentProcessed.storeAdded.has(action.id)) {
+                  addAction(currentMessageId, {
+                    id: action.id,
+                    type: "file",
+                    filePath: action.filePath,
+                    state: "creating",
+                  });
+                  currentProcessed.storeAdded.add(action.id);
+                }
+                updateActionStatus(currentMessageId, action.id, "created");
+              } else if (action.type === "shell") {
+                if (!currentProcessed.storeAdded.has(action.id)) {
+                  addAction(currentMessageId, {
+                    id: action.id,
+                    type: "shell",
+                    state: "queued",
+                    command: action.command,
+                  });
+                  currentProcessed.storeAdded.add(action.id);
+                }
+              }
+              actionRunner.addAction(currentMessageId, action);
+              currentProcessed.finalized.add(action.id);
+            }
+          });
+        } catch (error) {
+          console.error("Failed to parse message:", error);
         }
-      });
-    } catch (error) {
-      console.error(
-        "An error occurred while parsing the message:",
-        error as Error
-      );
-    }
+      }
+      if (part.type === "source") {
+        upsertMessageSources(currentMessageId, part.source);
+      }
+    });
   }
 
   return { handleNewMessage };

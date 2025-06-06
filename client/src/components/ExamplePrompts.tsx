@@ -8,35 +8,35 @@ interface ExamplePrompt {
 
 const EXAMPLE_PROMPTS: ExamplePrompt[] = [
   {
-    title: "React Todo App",
+    title: "Invoice Processing Agent",
     prompt:
-      "Create a simple, user-friendly to-do list application using React where users can add, edit, and delete tasks and mark them as completed.",
+      "Design a clean, professional and exteremely feature rich web dashboard UI using React for managing invoice processing. Divide the invoices into two modes. Automated, Assisted. Where automated are auto processed by AI agent, where as assisted are needing Human review or approval. For automated mode, the status should only be in approved or rejected but not pending. For assisted, it could be in pending. Include sections for pending invoices, payment status, vendor details, and document attachments. Use a card-based layout with filters, search, and a side navigation bar. Prioritize usability and efficiency with a finance-friendly color palette. Only frontend code is required.",
   },
   {
-    title: "Next.js Portfolio Website",
+    title: "KYC Verification Agent",
     prompt:
-      "Design a modern, responsive personal portfolio website using Next.js that showcases projects, skills, experience, and contact information.",
+      "Create a modern, clean, professional and exteremely feature rich KYC (Know Your Customer) verification frontend interface for a compliance team using React. Divide the KYC into two modes. Automated, Assisted. Where automated are auto processed by AI agent, where as assisted are needing Human review or approval. Include a dashboard with customer onboarding status, document review sections (ID, address proof), face match results, and approval/rejection buttons. Use light mode, blue-gray theme, and minimalistic icons. Include a notifications sidebar and search/filter for applicants. Only frontend code is required.",
   },
   {
-    title: "Recipe Finder App in Angular",
+    title: "Customer Support Agent",
     prompt:
-      "Develop an app using Angular where users can search for recipes by ingredients, save favorites, and get step-by-step cooking instructions.",
+      "Design a modern, clean, professional and exteremely feature rich customer support request management system dashboard for support agents using React. Divide the tickets into two modes. Automated, Assisted. Where automated are auto processed by AI agent, where as assisted are needing Human review or approval. Show incoming tickets, priority levels, SLA timers, customer chat history, and escalation workflow. Use tabs for ‘Open’, ‘In Progress’, and ‘Closed’ requests. Add tags, search, and filters. Keep UI intuitive and collaborative. Only frontend code is required.",
   },
   {
-    title: "Vue.js Fitness Tracker",
+    title: "Employee Onboarding Agent",
     prompt:
-      "Build a fitness tracker using Vue.js that allows users to log workouts, set goals, track progress, and visualize activity over time.",
+      "Design a modern, clean, professional and exteremely feature rich frontend page for HR to manage employee onboarding workflows using React. Divide the onboarding into two modes. Automated, Assisted. Where automated are auto processed by AI agent, where as assisted are needing Human review or approval. Include checklists for document upload, IT setup, training sessions, and role-specific tasks. Show progress bars, task completion tracking, and department-specific onboarding paths. Use a soft, professional color scheme and welcoming illustrations. Only frontend code is required.",
   },
   {
-    title: "E-commerce Website",
+    title: "Procurement Processing Agent",
     prompt:
-      "Create a production-ready, feature rich, end-to-end E-commerce website in pure React frontend that allows users to browse products, add them to a cart and checkout. Without any backend.",
+      "Create a modern, clean, professional and exteremely feature rich frontend interface for handling procurement requests in a company using React. Divide the procurement into two modes. Automated, Assisted. Where automated are auto processed by AI agent, where as assisted are needing Human review or approval. Include form-based item request UI, approval chains, budget limits, vendor selection, and real-time status tracking. Use a structured layout with data tables, approval status indicators, and a green-themed enterprise design aesthetic. Only frontend code is required.",
   },
-  {
-    title: "Blog Website in SvelteKit",
-    prompt:
-      "Create a blog website in SvelteKit where users can write and publish posts, add comments, and manage their own content.",
-  },
+  // {
+  //   title: "Blog Website in SvelteKit",
+  //   prompt:
+  //     "Create a blog website in SvelteKit where users can write and publish posts, add comments, and manage their own content",
+  // },
 ];
 
 export const ExamplePrompts = memo(function ExamplePrompts({

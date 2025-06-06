@@ -16,7 +16,7 @@
     "@clerk/express": "^1.3.50",
     "@repo/common": "1.0.0",
     "@repo/db": "1.0.0",
-    "ai": "^4.1.16",
+    "ai": "^4.3.16",
     "best-effort-json-parser": "^1.1.3",
     "cors": "^2.8.5",
     "esbuild": "^0.24.2",

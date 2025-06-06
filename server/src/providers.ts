@@ -31,7 +31,7 @@ const modelConfigs: Record<string, ModelConfig> = {
     provider: "openai",
     models: [
       { name: "deepseek-ai/DeepSeek-V3-0324", think: false },
-      { name: "deepseek-ai/DeepSeek-R1", think: true },
+      { name: "deepseek-ai/DeepSeek-R1-0528", think: true },
       { name: "Qwen/Qwen3-235B-A22B", think: true },
       { name: "chutesai/Llama-4-Maverick-17B-128E-Instruct-FP8", think: false },
     ],
@@ -88,32 +88,28 @@ function getModel(key: keyof typeof modelConfigs, variantIndex: number) {
 // Refactored exports using generic getModel
 export const selectorModel = getModel("groq", 1);
 export const coderModel = getModel("chutes", 0);
-export const reasoningModel = getModel("novita", 0);
-export const fileModel = google("gemini-2.5-flash-preview-04-17", {
-  safetySettings: [
-    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
-    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
-    {
-      category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-      threshold: "BLOCK_LOW_AND_ABOVE",
-    },
-    {
-      category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-      threshold: "BLOCK_LOW_AND_ABOVE",
-    },
-    {
-      category: "HARM_CATEGORY_CIVIC_INTEGRITY",
-      threshold: "BLOCK_LOW_AND_ABOVE",
-    },
-    { category: "HARM_CATEGORY_UNSPECIFIED", threshold: "BLOCK_LOW_AND_ABOVE" },
-  ],
+export const googleReasoningModel = google("gemini-2.5-flash-preview-05-20", {
+  useSearchGrounding: true,
+  dynamicRetrievalConfig: {
+    mode: "MODE_DYNAMIC",
+  },
 });
-export const googleProviderOptions = {
-  google: {
-    thinkingConfig: {
-      thinkingBudget: MAX_THINK_TOKENS,
-      includeThoughts: true,
-    },
-    responseModalities: ["TEXT", "IMAGE"],
-  } satisfies GoogleGenerativeAIProviderOptions,
+const googleReasoningThinkingConfig = {
+  thinkingBudget: MAX_THINK_TOKENS,
+  includeThoughts: true,
+};
+const googleNonReasoningThinkingConfig = {
+  thinkingBudget: 0,
+  includeThoughts: false,
+};
+export const getGoogleProviderOptions = (reasoning: boolean) => {
+  const thinkingConfig = reasoning
+    ? googleReasoningThinkingConfig
+    : googleNonReasoningThinkingConfig;
+  return {
+    google: {
+      thinkingConfig,
+      responseModalities: ["TEXT"],
+    } satisfies GoogleGenerativeAIProviderOptions,
+  };
 };

@@ -188,11 +188,13 @@ export const AssistantResponse = memo(function AssistantResponse({
   actions,
   reasoning,
   tokensUsed,
+  sources,
 }: {
   content: string;
   actions: ActionState[];
   reasoning?: string;
   tokensUsed?: number;
+  sources?: { id: string; url: string; title?: string }[];
 }) {
   const artifact = useMemo(() => parseContent(content)?.artifact, [content]);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -226,6 +228,22 @@ export const AssistantResponse = memo(function AssistantResponse({
             </ReactMarkdown>
           </div>
         </>
+      )}
+      {sources && sources.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">Sources :</div>
+          {sources.map((source) => (
+            <a
+              key={source.id}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 border bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-md w-fit"
+            >
+              <p>{source.title}</p>
+            </a>
+          ))}
+        </div>
       )}
       <div className="flex justify-end">
         {tokensUsed && (

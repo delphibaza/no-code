@@ -17,7 +17,7 @@ import { API_URL } from "@/lib/constants";
 import { cn, customToast } from "@/lib/utils";
 import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -48,20 +48,21 @@ export default function ProjectInfo() {
     messages,
     input,
     error,
-    isLoading,
     stop,
     setInput,
     reload,
     setMessages,
+    status,
   } = useChat({
     api: `${API_URL}/api/chat`,
     body: {
       projectId: params.projectId,
-      reasoning,
+      isFirstPrompt: reasoning,
     },
+    onResponse: () => setCurrentTab("code"),
     fetch: customFetch,
     sendExtraMessageFields: true,
-    experimental_throttle: 100,
+    experimental_throttle: 70,
     onFinish: (_, { finishReason }) => {
       if (finishReason !== "stop") {
         customToast(
@@ -109,7 +110,9 @@ export default function ProjectInfo() {
           }
         }
       } else {
-        console.warn("Error object or error.message is missing or not a string.");
+        console.warn(
+          "Error object or error.message is missing or not a string."
+        );
       }
       customToast(displayMessage);
     },
@@ -134,9 +137,6 @@ export default function ProjectInfo() {
     const recentMessage = messages.at(-1);
     if (recentMessage) {
       handleNewMessage(recentMessage);
-      setTimeout(() => {
-        setCurrentTab("code");
-      }, 5000);
     }
   }, [messages]);
 
@@ -147,10 +147,6 @@ export default function ProjectInfo() {
       </div>
     );
   }
-
-  const toggleWorkbench = () => {
-    setIsWorkbenchCollapsed(!isWorkbenchCollapsed);
-  };
 
   return (
     <BackgroundDots>
@@ -182,7 +178,7 @@ export default function ProjectInfo() {
               handleSubmit={handleSend}
               input={input}
               setInput={setInput}
-              isLoading={isLoading}
+              isLoading={status === "streaming"}
               reload={reload}
               stop={stop}
               error={error}
@@ -196,7 +192,7 @@ export default function ProjectInfo() {
               <TooltipTrigger asChild>
                 <div
                   className="cursor-pointer p-2 rounded-full"
-                  onClick={toggleWorkbench}
+                  onClick={() => setIsWorkbenchCollapsed(!isWorkbenchCollapsed)}
                 >
                   {isWorkbenchCollapsed ? (
                     <ChevronRight className="size-6 text-gray-600 dark:text-gray-400" />
@@ -219,7 +215,7 @@ export default function ProjectInfo() {
           }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
         >
-          <TabsSwitch isStreaming={isLoading} />
+          <TabsSwitch isStreaming={status === "streaming"} />
         </motion.div>
       </div>
     </BackgroundDots>

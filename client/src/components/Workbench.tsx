@@ -62,6 +62,7 @@ export const Workbench = memo(function Workbench() {
             content={message.content}
             actions={actions.get(message.id) || []}
             tokensUsed={message.tokensUsed}
+            sources={message.sources}
           />
         )
       )}
