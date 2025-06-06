@@ -17,6 +17,7 @@ import {
   getProject,
   getTemplateData,
   selectTemplate,
+  validateProjectOwnership,
 } from "../services/projectService";
 import {
   checkAndUpdateTokenUsage,
@@ -309,6 +310,36 @@ router.get("/project-state/:projectId", async (req, res) => {
     console.log(error);
     res.status(500).json({
       msg: "Failed to get project state",
+    });
+  }
+});
+
+// Route to delete a project
+router.delete("/project/:projectId", async (req, res) => {
+  const { projectId } = req.params;
+  if (!projectId) {
+    res.status(400).json({
+      msg: "Project ID is required",
+    });
+    return;
+  }
+  if (!req.auth.userId) {
+    res.status(403).json({ msg: "Unauthorized" });
+    return;
+  }
+  try {
+    await validateProjectOwnership(projectId, req.auth.userId);
+    await prisma.project.delete({
+      where: {
+        id: projectId,
+        userId: req.auth.userId,
+      },
+    });
+    res.status(204).send();
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      msg: "Failed to delete project",
     });
   }
 });

@@ -19,8 +19,26 @@ export type MessageHistory = {
   reasoning?: string;
   tokensUsed?: number;
   rawContent?: string;
+  sources?: {
+    id: string;
+    url: string;
+    title?: string;
+  }[];
+  experimental_attachments?: Attachment[];
   content: string;
 };
+export interface FileItem {
+  id: string;
+  file: globalThis.File;
+  preview?: string;
+  uploading: boolean;
+  error?: string;
+}
+export interface Attachment {
+  name: string;
+  contentType: string; // Can be image/*, application/pdf, etc.
+  url: string; // Base64 data URL
+}
 export type FileAction = {
   id: number;
   type: "file";

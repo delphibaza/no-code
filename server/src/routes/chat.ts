@@ -1,14 +1,21 @@
 import { Artifact } from "@repo/common/types";
 import { chatSchema, promptSchema } from "@repo/common/zod";
 import prisma from "@repo/db/client";
-import { pipeDataStreamToResponse, smoothStream, streamText } from "ai";
+import {
+  pipeDataStreamToResponse,
+  smoothStream,
+  streamText,
+} from "ai";
 import { parse } from "best-effort-json-parser";
 import express from "express";
-import { MAX_TOKENS, SYSTEM_PROMPT_TOKENS } from "../constants";
+import { MAX_STEPS, SYSTEM_PROMPT_TOKENS } from "../constants";
 import { ensureUserExists } from "../middleware/ensureUser";
 import { resetLimits } from "../middleware/resetLimits";
 import { getSystemPrompt } from "../prompts/systemPrompt";
-import { coderModel, reasoningModel } from "../providers";
+import {
+  getGoogleProviderOptions,
+  googleReasoningModel,
+} from "../providers";
 import {
   enhanceProjectPrompt,
   validateProjectOwnership,
@@ -33,7 +40,7 @@ router.post("/chat", resetLimits, async (req, res) => {
     res.status(403).json({ msg: "Unable to get token limits for the user" });
     return;
   }
-  const { messages, projectId, reasoning } = validation.data;
+  const { messages, projectId, isFirstPrompt } = validation.data;
   try {
     // Validate ownership
     await validateProjectOwnership(projectId, req.auth.userId!);
@@ -50,25 +57,26 @@ router.post("/chat", resetLimits, async (req, res) => {
       execute: async (dataStreamWriter) => {
         // dataStreamWriter.writeData('initialized call');
         const result = streamText({
-          model: reasoning ? reasoningModel : coderModel,
+          model: googleReasoningModel,
+          providerOptions: getGoogleProviderOptions(isFirstPrompt),
           system: getSystemPrompt(),
           messages: messages,
           experimental_continueSteps: true,
           experimental_transform: smoothStream(),
-          maxTokens: MAX_TOKENS,
-          maxSteps: 25,
+          // maxTokens: MAX_TOKENS,
+          maxSteps: MAX_STEPS,
           async onStepFinish({ usage }) {
             req.plan!.dailyTokensUsed += usage.totalTokens || 0;
             req.plan!.monthlyTokensUsed += usage.totalTokens || 0;
             // Check the limits
             const limitsCheck = checkLimits(req.plan!);
+            await updateSubscription(req.plan!);
             if (!limitsCheck.success) {
               throw new ApplicationError(
                 limitsCheck.message ?? "You have reached your token limit",
                 403
               );
             }
-            await updateSubscription(req.plan!);
           },
           async onFinish({ text, finishReason, usage, response, reasoning }) {
             try {
@@ -215,8 +223,9 @@ router.post("/chat", resetLimits, async (req, res) => {
           },
         });
         result.mergeIntoDataStream(dataStreamWriter, {
-          sendReasoning: reasoning,
+          sendReasoning: isFirstPrompt,
           sendUsage: true,
+          sendSources: true,
         });
       },
       onError: (error) => {

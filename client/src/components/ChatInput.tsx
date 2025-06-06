@@ -9,21 +9,12 @@ import { API_URL } from "@/lib/constants";
 import { formatNumber } from "@/lib/formatterHelpers";
 import { cn, customToast } from "@/lib/utils";
 import { useProjectStore } from "@/stores/project";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  CircleStop,
-  CornerDownLeft,
-  FileTextIcon,
-  Loader,
-  Loader2,
-  PaperclipIcon,
-  WandSparkles,
-  X,
-} from "lucide-react";
+import { CircleStop, CornerDownLeft, Loader, PaperclipIcon, WandSparkles } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { FileInputArea } from "./FileInputArea";
+import { UploadedFilesList } from "./UploadedFilesList";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 
 interface ButtonConfig {
   show: boolean;
@@ -32,59 +23,27 @@ interface ButtonConfig {
   tooltip: string;
 }
 
-interface FileItem {
-  id: string;
-  file: File;
-  preview?: string;
-  uploading: boolean;
-  error?: string;
-}
-
-const rainbowVariants = {
-  initial: {
-    boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
-  },
-  animate: {
-    boxShadow: [
-      "0 0 15px rgba(255, 0, 0, 0.5)",
-      "0 0 15px rgba(255, 165, 0, 0.5)",
-      "0 0 15px rgba(255, 255, 0, 0.5)",
-      "0 0 15px rgba(0, 255, 0, 0.5)",
-      "0 0 15px rgba(0, 0, 255, 0.5)",
-      "0 0 15px rgba(238, 130, 238, 0.5)",
-      "0 0 15px rgba(255, 0, 0, 0.5)",
-    ],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: "linear",
-    },
-  },
-};
-
 export const ChatInput = memo(
   ({
     input,
     isLoading,
+    placeholder,
     stop,
     setInput,
-    placeholder,
     handleSubmit,
   }: {
     placeholder: string;
-    handleSubmit: (input: string) => void;
     input: string;
-    setInput: React.Dispatch<React.SetStateAction<string>>;
     isLoading: boolean;
+    error?: Error | undefined;
+    handleSubmit: (input: string) => void;
+    setInput: React.Dispatch<React.SetStateAction<string>>;
     reload?: () => Promise<string | null | undefined>;
     stop?: () => void;
-    error?: Error | undefined;
   }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [enhancing, setEnhancing] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const [files, setFiles] = useState<FileItem[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [enhancing, setEnhancing] = useState(false);
     const TEXTAREA_MIN_HEIGHT = 110;
     const TEXTAREA_MAX_HEIGHT = isLoading && stop ? 400 : 200;
     const { authenticatedFetch } = useFetch();
@@ -131,16 +90,10 @@ export const ChatInput = memo(
           : () => {},
         tooltip: "Stop",
       },
-      // {
-      //   show: Boolean(error && reload),
-      //   icon: <RotateCcw className="size-4" />,
-      //   onClick: reload || (() => {}),
-      // },
     ];
 
     const handleEnhancePrompt = useCallback(async () => {
       if (enhancing || !input) return;
-
       setEnhancing(true);
       try {
         const result = await authenticatedFetch(
@@ -163,80 +116,6 @@ export const ChatInput = memo(
       }
     }, []);
 
-    const handleFileChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-          const newFiles = Array.from(e.target.files);
-          addFiles(newFiles);
-          // Reset the input value to allow selecting the same file again
-          e.target.value = "";
-        }
-      },
-      []
-    );
-
-    const addFiles = useCallback((newFiles: File[]) => {
-      const fileItems: FileItem[] = newFiles.map((file) => {
-        const id = crypto.randomUUID();
-        const fileItem: FileItem = {
-          id,
-          file,
-          uploading: true,
-          preview: file.type.startsWith("image/")
-            ? URL.createObjectURL(file)
-            : undefined,
-        };
-
-        // Simulate upload process
-        setTimeout(() => {
-          setFiles((prev) =>
-            prev.map((item) =>
-              item.id === id ? { ...item, uploading: false } : item
-            )
-          );
-        }, 1500);
-
-        return fileItem;
-      });
-
-      setFiles((prev) => [...prev, ...fileItems]);
-    }, []);
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(true);
-    }, []);
-
-    const handleDragLeave = useCallback(() => {
-      setIsDragging(false);
-    }, []);
-
-    const handleDrop = useCallback(
-      (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        // Only add pdfs and images
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          const newFiles = Array.from(e.dataTransfer.files).filter(
-            (file) =>
-              file.type.startsWith("image/") || file.type === "application/pdf"
-          );
-          addFiles(newFiles);
-        }
-      },
-      [addFiles]
-    );
-
-    const handleFileRemove = useCallback((id: string) => {
-      setFiles((prev) => {
-        const fileToRemove = prev.find((file) => file.id === id);
-        if (fileToRemove?.preview) {
-          URL.revokeObjectURL(fileToRemove.preview);
-        }
-        return prev.filter((file) => file.id !== id);
-      });
-    }, []);
-
     const activeButton = buttonConfigs.find((config) => config.show);
 
     return (
@@ -253,72 +132,19 @@ export const ChatInput = memo(
           </div>
         )}
 
-        {/* File Upload */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          // accepts images, pdfs only
-          accept="image/*,application/pdf"
-          multiple
-        />
-
-        <div
-          className={cn(
-            "relative rounded-2xl transition-all",
-            isDragging && "ring-2 ring-primary"
-          )}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          {/* Textarea */}
-          <motion.div
-            variants={rainbowVariants}
-            initial="initial"
-            animate={isLoading ? "animate" : "initial"}
-            className="rounded-2xl overflow-hidden"
-          >
-            <Textarea
-              ref={textareaRef}
-              className={cn(
-                "relative rounded-2xl whitespace-pre-wrap bg-slate-50 dark:bg-gray-800 border-2",
-                "transition-shadow duration-300",
-                "focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
-              )}
-              placeholder={placeholder}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(input);
-                }
-              }}
-              style={{
-                minHeight: TEXTAREA_MIN_HEIGHT,
-                maxHeight: TEXTAREA_MAX_HEIGHT,
-              }}
-              translate="no"
-            />
-          </motion.div>
-
-          {/* Drag and drop */}
-          {isDragging && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center"
-              >
-                <PaperclipIcon className="h-6 w-6 text-muted-foreground mb-2" />
-                <p className="text-sm font-medium">
-                  Drop files here to add to your message
-                </p>
-              </motion.div>
-            </div>
-          )}
+        <div className="relative rounded-2xl transition-all">
+          {/* File Input Area with Textarea */}
+          <FileInputArea
+            textareaRef={textareaRef}
+            fileInputRef={fileInputRef}
+            input={input}
+            setInput={setInput}
+            handleSubmit={handleSubmit}
+            placeholder={placeholder}
+            isLoading={isLoading}
+            TEXTAREA_MIN_HEIGHT={TEXTAREA_MIN_HEIGHT}
+            TEXTAREA_MAX_HEIGHT={TEXTAREA_MAX_HEIGHT}
+          />
 
           <div className="absolute right-2 bottom-2 flex items-center gap-2">
             {/* Attach files */}
@@ -328,14 +154,14 @@ export const ChatInput = memo(
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-muted/80"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <PaperclipIcon className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <p>Attach files (images, pdfs only)</p>
+                  <p>Attach files (images, PDFs only)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -392,54 +218,8 @@ export const ChatInput = memo(
           </div>
         </div>
 
-        {/* Uploaded Files */}
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-2 py-2 rounded-lg bg-background/50">
-            <AnimatePresence>
-              {files.map((fileItem) => (
-                <motion.div
-                  key={fileItem.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-2 bg-background border rounded-md px-2 py-1 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    {fileItem.uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : fileItem.preview ? (
-                      <div className="h-8 w-8 rounded overflow-hidden">
-                        <img
-                          src={fileItem.preview || "/placeholder.svg"}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <FileTextIcon className="h-8 w-8 text-muted-foreground" />
-                    )}
-                    <div className="flex flex-col gap-1">
-                      <div className="max-w-[120px] truncate">
-                        {fileItem.file.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground text-left">
-                        {(fileItem.file.size / 1024).toFixed(1)} KB
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => handleFileRemove(fileItem.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
+        {/* Uploaded Files List */}
+        <UploadedFilesList />
       </div>
     );
   }

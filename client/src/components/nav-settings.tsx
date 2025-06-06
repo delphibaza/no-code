@@ -18,12 +18,10 @@ import { ConnectionsTab } from "./connections/ConnectionsTab";
 import { Label } from "./ui/label";
 
 export const NavSettings = memo(function NavSettings() {
-  const { wordWrap, setWordWrap, reasoning, setReasoning } = useGeneralStore(
+  const { wordWrap, setWordWrap } = useGeneralStore(
     useShallow((state) => ({
       wordWrap: state.wordWrap,
       setWordWrap: state.setWordWrap,
-      reasoning: state.reasoning,
-      setReasoning: state.setReasoning,
     }))
   );
   return (
@@ -53,7 +51,7 @@ export const NavSettings = memo(function NavSettings() {
               onCheckedChange={setWordWrap}
             />
           </div>
-          <div className="flex items-center justify-between gap-4">
+          {/* <div className="flex items-center justify-between gap-4">
             <Label htmlFor="reasoning" className="text-right">
               Reasoning
             </Label>
@@ -62,7 +60,7 @@ export const NavSettings = memo(function NavSettings() {
               checked={reasoning}
               onCheckedChange={setReasoning}
             />
-          </div>
+          </div> */}
           {/* separator */}
           <div className="h-[1px] bg-slate-200 dark:bg-slate-700" />
           <ConnectionsTab />

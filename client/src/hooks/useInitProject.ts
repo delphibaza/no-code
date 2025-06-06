@@ -1,11 +1,13 @@
 import { webcontainer } from "@/config/webContainer";
 import { API_URL, IMPORT_ARTIFACT_ID } from "@/lib/constants";
 import { projectFilesMsg, projectInstructionsMsg } from "@/lib/prompts";
-import { getImportArtifact, mountFiles } from "@/lib/runtime";
+import { getImportArtifact, mountFiles, processFiles } from "@/lib/runtime";
 import { customToast } from "@/lib/utils";
 import { actionRunner } from "@/services/action-runner";
 import { useFilesStore } from "@/stores/files";
+import { useGeneralStore } from "@/stores/general";
 import { useProjectStore } from "@/stores/project";
+import { Message } from "@ai-sdk/react";
 import {
   Artifact,
   BlankTemplateProject,
@@ -14,7 +16,6 @@ import {
   NewProject,
 } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
-import { Message } from "ai/react";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import useFetch from "./useFetch";
@@ -27,6 +28,13 @@ export function useInitProject(
 ) {
   const [initializingProject, setInitializingProject] = useState(true);
   const { customFetch } = useFetch();
+  const { attachments, setAttachments, setReasoning } = useGeneralStore(
+    useShallow((state) => ({
+      attachments: state.attachments,
+      setAttachments: state.setAttachments,
+      setReasoning: state.setReasoning,
+    }))
+  );
   const { setSelectedFile, setProjectFiles, setIgnorePatterns } = useFilesStore(
     useShallow((state) => ({
       setProjectFiles: state.setProjectFiles,
@@ -119,6 +127,7 @@ export function useInitProject(
     container: WebContainer
   ) {
     const { messages, projectFiles, ignorePatterns } = data;
+    setReasoning(false);
     messages.forEach((message) => {
       if (!message.content) return;
       if (message.role === "user") {
@@ -162,46 +171,51 @@ export function useInitProject(
   ) {
     const { enhancedPrompt, templateFiles, templatePrompt, ignorePatterns } =
       data;
-    const messages = [
+    const messages: Message[] = [
       {
         id: "1",
-        role: "user",
+        role: "user" as const,
         content: projectFilesMsg(templateFiles, ignorePatterns),
       },
       ...(templatePrompt
         ? [
-            { id: "2", role: "user", content: templatePrompt },
+            { id: "2", role: "user" as const, content: templatePrompt },
             {
               id: "3",
-              role: "user",
+              role: "user" as const,
               content: projectInstructionsMsg(enhancedPrompt),
+              experimental_attachments: processFiles(attachments),
             },
           ]
         : [
             {
               id: "2",
-              role: "user",
+              role: "user" as const,
               content: projectInstructionsMsg(enhancedPrompt),
+              experimental_attachments: processFiles(attachments),
             },
           ]),
     ];
     // Store ignore patterns for further use
     setIgnorePatterns(ignorePatterns);
-    setMessages(messages as Message[]);
+    setMessages(messages);
     // Store template prompt for further use, if available
     if (templatePrompt) {
       upsertMessage({
         id: crypto.randomUUID(),
-        role: "data",
+        role: "data" as const,
         content: templatePrompt,
         timestamp: Date.now(),
       });
     }
+    setReasoning(true);
     // Add files to project store
     setProjectFiles(templateFiles);
     await mountFiles(templateFiles, container);
     setCurrentMessageId(crypto.randomUUID());
     reload();
+    // Clear attachments
+    setAttachments([]);
   }
 
   // We don't setMessages and reload here because we are not using chat as of now
@@ -217,11 +231,12 @@ export function useInitProject(
     if (templatePrompt) {
       upsertMessage({
         id: crypto.randomUUID(),
-        role: "data",
+        role: "data" as const,
         content: templatePrompt,
         timestamp: Date.now(),
       });
     }
+    setReasoning(true);
     await setupImportArtifact(templateFiles, container);
   }
 

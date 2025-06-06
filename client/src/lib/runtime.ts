@@ -1,14 +1,20 @@
 import {
   Artifact,
+  Attachment,
   File,
   FileAction,
+  FileItem,
   MessageHistory,
   ShellAction,
 } from "@repo/common/types";
 import type { WebContainer } from "@webcontainer/api";
 import { IMPORT_ARTIFACT_ID } from "./constants";
 import { buildHierarchy, formatFilesToMount } from "./formatterHelpers";
-import { chatHistoryMsg, projectFilesMsg } from "./prompts";
+import {
+  chatHistoryMsg,
+  projectFilesMsg,
+  projectInstructionsMsg,
+} from "./prompts";
 
 export function parseActions(
   actions: (Partial<FileAction> | Partial<ShellAction>)[]
@@ -58,7 +64,8 @@ export function constructMessages(
   currentMessageId: string,
   projectFiles: File[],
   messageHistory: MessageHistory[],
-  ignorePatterns: string[]
+  ignorePatterns: string[],
+  attachments?: Attachment[]
 ) {
   // Initialize with system messages
   const payload: MessageHistory[] = [
@@ -109,9 +116,10 @@ export function constructMessages(
   payload.push({
     id: "currentMessage",
     role: "user",
-    content: `Current Message : ${currentInput}`,
+    content: projectInstructionsMsg(currentInput),
     rawContent: currentInput,
     timestamp: Date.now(),
+    experimental_attachments: attachments,
   });
   return payload;
 }
@@ -162,3 +170,30 @@ export const detectSetupCommand = (files: File[]) => {
   // Hardcoded default for unknown project types
   return { setupCommand: "npm run dev" };
 };
+
+export function processFiles(files: FileItem[]): Attachment[] {
+  if (!files.length) return [];
+  const attachments: Attachment[] = [];
+  for (const fileItem of files) {
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (e.target?.result) {
+          const base64String = e.target.result.toString();
+          // Add the base64 string to your message
+          const message: Attachment = {
+            name: fileItem.file.name,
+            contentType: fileItem.file.type,
+            url: base64String,
+          };
+          // Send this message directly to your chat endpoint
+          attachments.push(message);
+        }
+      };
+      reader.readAsDataURL(fileItem.file);
+    } catch (error) {
+      console.error("Error reading file:", error);
+    }
+  }
+  return attachments;
+}
