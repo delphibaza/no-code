@@ -5,6 +5,8 @@ import { customToast } from "@/lib/utils";
 import { API_URL } from "@/lib/constants";
 import { Github, Loader2, Eye, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 
 const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[^\/]+\/[^\/]+(\/tree\/[^\/]+\/.*)?$/;
 
@@ -33,6 +35,11 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [filteredPatterns, setFilteredPatterns] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [importTaskId, setImportTaskId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<number>(0);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -61,6 +68,7 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
     setError(null);
     setIsPreviewLoading(true);
     setShowPreview(true);
+    console.log("[analytics] preview_opened", { repo: githubUrl });
     try {
       const body: any = { repoUrl: githubUrl };
       if (branch) body.branch = branch;
@@ -75,31 +83,103 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
     } catch (error: any) {
       setPreview(null);
       setError(error?.message || "Ошибка при получении структуры репозитория");
+      console.log("[analytics] preview_error", { repo: githubUrl, error: error?.message });
     } finally {
       setIsPreviewLoading(false);
     }
   }
 
+  function handleToggleFile(filePath: string, checked: boolean, allChildren: string[] = []) {
+    setSelectedFiles(prev => {
+      if (checked) {
+        // Добавить файл и все дочерние
+        return Array.from(new Set([...prev, filePath, ...allChildren]));
+      } else {
+        // Убрать файл и все дочерние
+        return prev.filter(f => f !== filePath && !allChildren.includes(f));
+      }
+    });
+  }
+
+  function getAllChildrenPaths(node: any, prefix = ""): string[] {
+    if (node === null) return [prefix];
+    let res: string[] = [];
+    for (const k in node) {
+      res = res.concat(getAllChildrenPaths(node[k], prefix ? `${prefix}/${k}` : k));
+    }
+    return res;
+  }
+
+  function buildTree(files: any[]) {
+    const tree: Record<string, any> = {};
+    files.forEach(f => {
+      const parts = f.filePath.split("/");
+      let node = tree;
+      for (let i = 0; i < parts.length; i++) {
+        if (!node[parts[i]]) node[parts[i]] = i === parts.length - 1 ? null : {};
+        node = node[parts[i]];
+      }
+    });
+    return tree;
+  }
+
+  function renderNodeWithCheckbox(node: any, name: string, lvl: number, prefix = "") {
+    const path = prefix ? `${prefix}/${name}` : name;
+    const allChildren = node === null ? [] : getAllChildrenPaths(node, path);
+    const checked = selectedFiles.includes(path);
+    const indeterminate = !checked && allChildren.some(f => selectedFiles.includes(f));
+    return (
+      <div key={path} style={{ marginLeft: lvl * 16 }} className="flex items-center gap-1">
+        <Checkbox
+          checked={checked}
+          indeterminate={indeterminate}
+          onCheckedChange={val => handleToggleFile(path, !!val, allChildren)}
+        />
+        {node === null ? (
+          <span>{name}</span>
+        ) : (
+          <b>{name}</b>
+        )}
+        {node !== null && Object.entries(node).map(([k, v]) => renderNodeWithCheckbox(v, k, lvl + 1, path))}
+      </div>
+    );
+  }
+
   async function handleImportGithub(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setImportError(null);
     if (!validateUrl(githubUrl)) {
       setError("Введите корректную ссылку на GitHub-репозиторий");
       inputRef.current?.focus();
       return;
     }
+    if (showPreview && selectedFiles.length === 0) {
+      setError("Выберите хотя бы один файл для импорта");
+      return;
+    }
+    console.log("[analytics] import_start", { repo: githubUrl, selectedFiles, async: showPreview });
     setIsImporting(true);
     try {
       const body: any = { repoUrl: githubUrl };
       if (projectName) body.projectName = projectName;
       if (branch) body.branch = branch;
       if (userToken) body.userToken = userToken;
-      const data = await authenticatedFetch(`${API_URL}/api/import-github`, {
+      if (showPreview) body.selectedFiles = selectedFiles;
+      if (showPreview) body.async = true;
+      const data = await authenticatedFetch(`${API_URL}/api/import-github${showPreview ? '?async=true' : ''}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      // Обновить историю
+      if (showPreview) {
+        setImportTaskId(data.taskId);
+        setImportProgress(0);
+        setImportStatus("pending");
+        console.log("[analytics] async_import_task_created", { taskId: data.taskId });
+        return;
+      }
+      console.log("[analytics] import_success", { repo: githubUrl, projectId: data.projectId });
       const newHistory = [githubUrl, ...history.filter((h) => h !== githubUrl)];
       setHistory(newHistory);
       setHistoryState(newHistory);
@@ -110,10 +190,13 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
       setUserToken("");
       setPreview(null);
       setShowPreview(false);
+      setSelectedFiles([]);
       navigate(`/project/${data.projectId}`);
     } catch (error: any) {
       const errorMessage = error?.message || "Ошибка при импорте из GitHub";
       setError(errorMessage);
+      setImportError(errorMessage);
+      console.log("[analytics] import_error", { repo: githubUrl, error: errorMessage });
       customToast(errorMessage, "error");
     } finally {
       setIsImporting(false);
@@ -126,28 +209,35 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
     setHistoryState(newHistory);
   }
 
-  function renderPreviewTree(files: any[], level = 0) {
-    // files: [{filePath, name}]
-    const tree: Record<string, any> = {};
-    files.forEach(f => {
-      const parts = f.filePath.split("/");
-      let node = tree;
-      for (let i = 0; i < parts.length; i++) {
-        if (!node[parts[i]]) node[parts[i]] = i === parts.length - 1 ? null : {};
-        node = node[parts[i]];
+  useEffect(() => {
+    if (!importTaskId) return;
+    setImportStatus("pending");
+    setImportError(null);
+    const interval = setInterval(async () => {
+      try {
+        const res = await authenticatedFetch(`${API_URL}/api/import-github-status/${importTaskId}`);
+        if (res.status === "done") {
+          setImportProgress(100);
+          setImportStatus("done");
+          setTimeout(() => {
+            navigate(`/project/${res.projectId}`);
+          }, 800);
+          clearInterval(interval);
+        } else if (res.status === "error") {
+          setImportStatus("error");
+          setImportError(res.error || "Ошибка при импорте");
+          clearInterval(interval);
+        } else {
+          setImportProgress(res.progress || 0);
+        }
+      } catch (e) {
+        setImportStatus("error");
+        setImportError("Ошибка при получении статуса импорта");
+        clearInterval(interval);
       }
-    });
-    function renderNode(node: any, name: string, lvl: number) {
-      if (node === null) return <div key={name} style={{ marginLeft: lvl * 16 }}>{name}</div>;
-      return (
-        <div key={name} style={{ marginLeft: lvl * 16 }}>
-          <b>{name}</b>
-          {Object.entries(node).map(([k, v]) => renderNode(v, k, lvl + 1))}
-        </div>
-      );
-    }
-    return Object.entries(tree).map(([k, v]) => renderNode(v, k, level));
-  }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [importTaskId, authenticatedFetch, navigate]);
 
   return (
     <div className="w-full mb-6">
@@ -194,7 +284,7 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
             <Eye className="w-4 h-4" />
             {isPreviewLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Preview"}
           </Button>
-          <Button type="submit" disabled={isImporting || !githubUrl} className="flex items-center gap-2">
+          <Button type="submit" disabled={isImporting || !githubUrl || (showPreview && selectedFiles.length === 0)} className="flex items-center gap-2">
             <Github className="w-4 h-4" />
             {isImporting ? <Loader2 className="animate-spin w-4 h-4" /> : "Импортировать из GitHub"}
           </Button>
@@ -211,9 +301,22 @@ export function ImportGithubForm({ authenticatedFetch }: { authenticatedFetch: a
           <div className="font-semibold mb-1 flex items-center gap-2">
             <Eye className="w-4 h-4" /> Preview структуры репозитория
           </div>
-          {isPreviewLoading ? <Loader2 className="animate-spin w-4 h-4" /> : preview ? renderPreviewTree(preview) : <div className="text-xs text-muted-foreground">Нет данных для предпросмотра</div>}
+          {isPreviewLoading ? <Loader2 className="animate-spin w-4 h-4" /> : preview ? (
+            <div>
+              {Object.entries(buildTree(preview)).map(([k, v]) => renderNodeWithCheckbox(v, k, 0))}
+            </div>
+          ) : <div className="text-xs text-muted-foreground">Нет данных для предпросмотра</div>}
           {filteredPatterns.length > 0 && (
             <div className="text-xs text-muted-foreground mt-2">Файлы, которые будут проигнорированы: <span className="font-mono">{filteredPatterns.join(", ")}</span></div>
+          )}
+        </div>
+      )}
+      {importTaskId && (
+        <div className="mt-3">
+          <div className="font-semibold mb-1">Импортируется проект...</div>
+          <Progress value={importProgress} className="h-2" />
+          {importStatus === "error" && (
+            <div className="text-red-600 text-sm mt-1">{importError}</div>
           )}
         </div>
       )}

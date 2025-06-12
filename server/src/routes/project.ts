@@ -30,6 +30,10 @@ import { getGitHubRepoContent, DANGEROUS_PATTERNS } from "../utils/getRepoConten
 
 const router = express.Router();
 
+// Для асинхронного импорта (эмуляция очереди задач)
+const importTasks = new Map();
+let importTaskId = 1;
+
 router.post("/new", ensureUserExists, async (req: Request, res: Response) => {
   const validation = promptSchema.safeParse(req.body);
   if (!validation.success) {
@@ -347,8 +351,9 @@ router.delete("/project/:projectId", async (req, res) => {
 
 // Импорт файлов из публичного репозитория GitHub по URL
 router.post("/import-github", ensureUserExists, async (req, res) => {
-  const { repoUrl, projectName, branch, userToken } = req.body;
+  const { repoUrl, projectName, branch, userToken, selectedFiles } = req.body;
   const isPreview = req.query.preview === 'true';
+  const isAsync = req.query.async === 'true' || req.body.async === true;
   if (!repoUrl) {
     return res.status(400).json({ message: "Missing repoUrl" });
   }
@@ -367,15 +372,52 @@ router.post("/import-github", ensureUserExists, async (req, res) => {
   const branchName = branch || match[3] || "main";
   try {
     // Получаем все файлы из репозитория или подпапки
-    const files = await getGitHubRepoContent(repoName, folder, branchName, userToken);
+    let files = await getGitHubRepoContent(repoName, folder, branchName, userToken);
     if (!files || files.length === 0) {
       return res.status(404).json({ message: "No files found in the repository (или все файлы были отфильтрованы)" });
+    }
+    // Если выбран частичный импорт
+    if (Array.isArray(selectedFiles) && selectedFiles.length > 0) {
+      files = files.filter(f => selectedFiles.includes(f.filePath));
+      if (files.length === 0) {
+        return res.status(400).json({ message: "Нет выбранных файлов для импорта" });
+      }
     }
     if (isPreview) {
       // Только preview структуры файлов
       return res.json({ projectFiles: files.map(f => ({ filePath: f.filePath, name: f.name })), filteredPatterns: DANGEROUS_PATTERNS.map(r => r.toString()) });
     }
-    // Создаем проект для пользователя
+    if (isAsync) {
+      // Эмуляция асинхронного импорта (очередь задач)
+      const taskId = (importTaskId++).toString();
+      importTasks.set(taskId, { status: "pending", progress: 0 });
+      // Импорт запускается в фоне
+      setTimeout(async () => {
+        try {
+          const userId = req.auth.userId;
+          const newProject = await require("@repo/db/client").project.create({
+            data: {
+              name: projectName || repo,
+              userId,
+              state: "blankTemplate",
+              templateName: null,
+              messages: {
+                create: {
+                  role: "user",
+                  content: { text: `Imported from ${repoUrl} (branch: ${branchName})` },
+                },
+              },
+            },
+          });
+          await require("../services/projectService").createProjectFiles(newProject.id, files);
+          importTasks.set(taskId, { status: "done", projectId: newProject.id, progress: 100 });
+        } catch (e) {
+          importTasks.set(taskId, { status: "error", error: e.message });
+        }
+      }, 1000); // эмуляция задержки
+      return res.json({ taskId });
+    }
+    // Синхронный импорт
     const userId = req.auth.userId;
     const newProject = await require("@repo/db/client").project.create({
       data: {
@@ -391,7 +433,6 @@ router.post("/import-github", ensureUserExists, async (req, res) => {
         },
       },
     });
-    // Сохраняем файлы в проект
     await require("../services/projectService").createProjectFiles(newProject.id, files);
     res.json({
       projectId: newProject.id,
@@ -401,12 +442,19 @@ router.post("/import-github", ensureUserExists, async (req, res) => {
     });
   } catch (error) {
     let message = error && error.message ? error.message : "Failed to import from GitHub";
-    // Улучшенная детализация ошибок
     if (message.includes("rate limit")) {
       message += ". Попробуйте позже или используйте персональный GitHub-токен.";
     }
     res.status(500).json({ message });
   }
+});
+
+// Endpoint для проверки статуса асинхронного импорта
+router.get("/import-github-status/:taskId", ensureUserExists, (req, res) => {
+  const { taskId } = req.params;
+  const task = importTasks.get(taskId);
+  if (!task) return res.status(404).json({ message: "Task not found" });
+  res.json(task);
 });
 
 export default router;
