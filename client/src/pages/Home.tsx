@@ -13,6 +13,9 @@ import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useShallow } from "zustand/react/shallow";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ImportGithubForm } from "@/components/ImportGithubForm";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -37,6 +40,8 @@ export default function HomePage() {
       upsertMessage: state.upsertMessage,
     }))
   );
+  const [githubUrl, setGithubUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   async function handleSubmit(input: string, templateName?: string) {
     try {
@@ -68,6 +73,25 @@ export default function HomePage() {
       customToast(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleImportGithub(e: React.FormEvent) {
+    e.preventDefault();
+    if (!githubUrl) return;
+    setIsImporting(true);
+    try {
+      const data = await authenticatedFetch(`${API_URL}/api/import-github`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repoUrl: githubUrl }),
+      });
+      navigate(`/project/${data.projectId}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error importing from GitHub";
+      customToast(errorMessage);
+    } finally {
+      setIsImporting(false);
     }
   }
 
@@ -151,6 +175,8 @@ export default function HomePage() {
                     },
                   }}
                 >
+                  {/* Импорт из GitHub - улучшенная форма */}
+                  <ImportGithubForm authenticatedFetch={authenticatedFetch} />
                   <div className="w-full mx-auto">
                     <PromptInput
                       handleSubmit={handleSubmit}

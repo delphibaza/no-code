@@ -26,6 +26,7 @@ import {
 } from "../services/subscriptionService";
 import { getTemplate } from "../utils/getTemplate";
 import { ApplicationError } from "../utils/timeHelpers";
+import { getGitHubRepoContent, DANGEROUS_PATTERNS } from "../utils/getRepoContent";
 
 const router = express.Router();
 
@@ -341,6 +342,70 @@ router.delete("/project/:projectId", async (req, res) => {
     res.status(500).json({
       msg: "Failed to delete project",
     });
+  }
+});
+
+// Импорт файлов из публичного репозитория GitHub по URL
+router.post("/import-github", ensureUserExists, async (req, res) => {
+  const { repoUrl, projectName, branch, userToken } = req.body;
+  const isPreview = req.query.preview === 'true';
+  if (!repoUrl) {
+    return res.status(400).json({ message: "Missing repoUrl" });
+  }
+  // Пример: https://github.com/user/repo или https://github.com/user/repo/tree/main/subfolder
+  const match = repoUrl.match(
+    /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)(?:\/tree\/([^\/]+)\/(.*))?/
+  );
+  if (!match) {
+    return res.status(400).json({ message: "Invalid GitHub repo URL" });
+  }
+  const owner = match[1];
+  const repo = match[2];
+  // Если указан путь к подпапке
+  const folder = match[4] || "";
+  const repoName = `${owner}/${repo}`;
+  const branchName = branch || match[3] || "main";
+  try {
+    // Получаем все файлы из репозитория или подпапки
+    const files = await getGitHubRepoContent(repoName, folder, branchName, userToken);
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: "No files found in the repository (или все файлы были отфильтрованы)" });
+    }
+    if (isPreview) {
+      // Только preview структуры файлов
+      return res.json({ projectFiles: files.map(f => ({ filePath: f.filePath, name: f.name })), filteredPatterns: DANGEROUS_PATTERNS.map(r => r.toString()) });
+    }
+    // Создаем проект для пользователя
+    const userId = req.auth.userId;
+    const newProject = await require("@repo/db/client").project.create({
+      data: {
+        name: projectName || repo,
+        userId,
+        state: "blankTemplate",
+        templateName: null,
+        messages: {
+          create: {
+            role: "user",
+            content: { text: `Imported from ${repoUrl} (branch: ${branchName})` },
+          },
+        },
+      },
+    });
+    // Сохраняем файлы в проект
+    await require("../services/projectService").createProjectFiles(newProject.id, files);
+    res.json({
+      projectId: newProject.id,
+      projectFiles: files,
+      state: "blankTemplate",
+      filteredPatterns: DANGEROUS_PATTERNS.map(r => r.toString()),
+    });
+  } catch (error) {
+    let message = error && error.message ? error.message : "Failed to import from GitHub";
+    // Улучшенная детализация ошибок
+    if (message.includes("rate limit")) {
+      message += ". Попробуйте позже или используйте персональный GitHub-токен.";
+    }
+    res.status(500).json({ message });
   }
 });
 
